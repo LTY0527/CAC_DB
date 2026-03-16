@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="319e0fdd-f0fa-4c07-b1f6-2bbcbb88129a" name="更改" comment="">
+      <change afterPath="$PROJECT_DIR$/CF-all.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Enrollment_CF_Engine.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/FPgrowth-all.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Job_Recommendation_Engine.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/LSTM-all.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/LSTM_Salary_Predictor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Spark-all.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Spark_Data_Aggregation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/platform_data_factory.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PutData.py" beforeDir="false" afterPath="$PROJECT_DIR$/PutData.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Spark_FP_Growth.py" beforeDir="false" afterPath="$PROJECT_DIR$/Spark_FP_Growth.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data_factory.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_factory.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="3AyMiR24vwT1x1Ghr6IJReLPoCm" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.CF-all.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Enrollment_CF_Engine.executor&quot;: &quot;Run&quot;,
+    &quot;Python.FPgrowth-all.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Job_Recommendation_Engine.executor&quot;: &quot;Run&quot;,
+    &quot;Python.LSTM-all.executor&quot;: &quot;Run&quot;,
+    &quot;Python.LSTM_Salary_Predictor.executor&quot;: &quot;Run&quot;,
+    &quot;Python.PutData.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Spark-all.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Spark_Data_Aggregation.executor&quot;: &quot;Run&quot;,
+    &quot;Python.Spark_FP_Growth.executor&quot;: &quot;Run&quot;,
+    &quot;Python.config.executor&quot;: &quot;Run&quot;,
+    &quot;Python.data_factory.executor&quot;: &quot;Run&quot;,
+    &quot;Python.platform_data_factory.executor&quot;: &quot;Run&quot;,
+    &quot;Python.spark_processor.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;
+  }
+}</component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-41e8cd69c857-64d779b69b7a-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-251.26927.90" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="默认任务">
+      <changelist id="319e0fdd-f0fa-4c07-b1f6-2bbcbb88129a" name="更改" comment="" />
+      <created>1773560483272</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1773560483272</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Enrollment_CF_Engine.py</url>
+          <line>31</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

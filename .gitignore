@@ -1,0 +1,13 @@
+# 忽略 Python 虚拟环境
+.venv/
+__pycache__/
+
+# 忽略敏感配置文件（包含数据库密码）
+config.py
+
+# 忽略大规模原始数据文件（GitHub 不适合存大文件）
+*.csv
+libs/*.jar
+
+# 忽略 Spark 运行生成的临时文件
+spark-warehouse/
