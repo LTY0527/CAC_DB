@@ -1,0 +1,198 @@
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+body {
+  margin: 0;
+  background: #061522;
+  color: #d9eeff;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.ant-layout {
+  background: #061522 !important;
+}
+
+.ant-menu-dark .ant-menu-item {
+  color: #b7dfff !important;
+  margin: 8px 8px !important;
+  border-radius: 8px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+}
+
+.ant-menu-dark .ant-menu-item-selected {
+  background: linear-gradient(90deg, rgba(30, 120, 255, 0.95), rgba(33, 182, 255, 0.72)) !important;
+  border-right: 3px solid #56e0ff;
+  box-shadow: 0 0 12px rgba(0, 153, 255, 0.26);
+}
+
+.ant-menu-dark .ant-menu-item:hover {
+  background: rgba(35, 88, 143, 0.55) !important;
+}
+
+.ant-card {
+  background: transparent !important;
+}
+
+.ant-card .ant-card-head {
+  border-bottom: 1px solid rgba(46, 103, 145, 0.45);
+  min-height: 54px;
+}
+
+.ant-card .ant-card-head-title {
+  color: #d9eeff;
+  font-weight: 700;
+}
+
+.ant-card .ant-card-body {
+  background: transparent;
+}
+
+.ant-statistic .ant-statistic-content {
+  color: #30d6ff !important;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(48, 214, 255, 0.18);
+}
+
+.ant-statistic .ant-statistic-title {
+  color: #d9eeff !important;
+  font-weight: 600;
+}
+
+.ant-table {
+  background: transparent !important;
+  color: #d9eeff !important;
+}
+
+.ant-table-thead > tr > th {
+  background: #0a2137 !important;
+  color: #d9eeff !important;
+  border-bottom: 1px solid #1b4f7d !important;
+}
+
+.ant-table-tbody > tr > td {
+  background: #081a2b !important;
+  color: #cce9ff !important;
+  border-bottom: 1px solid rgba(27, 79, 125, 0.35) !important;
+}
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-input-textarea textarea {
+  background: #081a2b !important;
+  color: #d9eeff !important;
+  border: 1px solid #1b4f7d !important;
+}
+
+.ant-btn-primary {
+  box-shadow: 0 0 10px rgba(20, 184, 255, 0.22);
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
