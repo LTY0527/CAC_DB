@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, Input, Button, Space } from 'antd'
-import recommendationData from '../assets/mock/job_recommendation.json'
+// import recommendationData from '../assets/mock/job_recommendation.json'
 import { getRecommendationByStudent } from '../utils/dataAdapter'
 import {
   panelStyle,
@@ -12,7 +12,14 @@ import {
 } from '../utils/uiTheme'
 
 
-export default function JobRecommendation() {
+export default function JobRecommendation({
+  recommendationData = [],
+  loading,
+  error,
+}) {
+  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
+  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
+
   const [studentId, setStudentId] = useState('')
   const [result, setResult] = useState(null)
 

@@ -201,9 +201,9 @@
 
 import { Card, Col, Row, Statistic } from 'antd'
 import ReactECharts from 'echarts-for-react'
-import employmentData from '../assets/mock/employment_summary.json'
-import forecastData from '../assets/mock/salary_forecast.json'
-import rulesData from '../assets/mock/major_matching_rules.json'
+// import employmentData from '../assets/mock/employment_summary.json'
+// import forecastData from '../assets/mock/salary_forecast.json'
+// import rulesData from '../assets/mock/major_matching_rules.json'
 import { getEmploymentOverview, getForecastData, getRulesTableData } from '../utils/dataAdapter'
 import {
   panelStyle,
@@ -216,10 +216,38 @@ import {
   darkTooltip,
 } from '../utils/uiTheme'
 
-export default function Dashboard() {
+export default function Dashboard({
+  employmentData = [],
+  forecastData = [],
+  rulesData = [],
+  loading,
+  error,
+}) {
+  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
+  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
+
   const overview = getEmploymentOverview(employmentData)
   const forecast = getForecastData(forecastData)
   const rules = getRulesTableData(rulesData).sort((a, b) => b.lift - a.lift).slice(0, 5)
+
+    const kpiCardStyle = {
+    ...panelStyle,
+    minHeight: 138,
+    borderRadius: 14,
+    boxShadow: '0 10px 24px rgba(0, 0, 0, 0.18)',
+  }
+
+  const chartCardStyle = {
+    ...panelStyle,
+    borderRadius: 16,
+    boxShadow: '0 12px 28px rgba(0, 0, 0, 0.18)',
+  }
+
+  const insightTextStyle = {
+    color: '#d9e6f2',
+    lineHeight: 2,
+    fontSize: 14,
+  }
 
   const overviewOption = {
     backgroundColor: 'transparent',
@@ -270,7 +298,11 @@ export default function Dashboard() {
     grid: { left: '8%', right: '4%', bottom: '10%', top: '14%', containLabel: true },
     xAxis: {
       type: 'category',
-      data: rules.map((_, i) => `规则${i + 1}`),
+      // data: rules.map((_, i) => `规则${i + 1}`),
+      data: rules.map((item, i) => {
+        const label = item.rule_name || item.rule || `规则${i + 1}`
+        return String(label).length > 10 ? `${String(label).slice(0, 10)}...` : label
+      }),
       axisLabel: { color: '#b7dfff' },
       axisLine: { lineStyle: { color: '#3c6e91' } },
     },
@@ -349,6 +381,17 @@ export default function Dashboard() {
           <ReactECharts option={liftOption} style={{ height: 380 }} />
         </Card>
       </Col>
+
+      {/* <Col span={24}>
+        <Card title={<span style={sectionTitleStyle}>关键发现与建议</span>} style={panelStyle}>
+          <div style={{ color: '#d9e6f2', lineHeight: 2, fontSize: 14 }}>
+          <div>1. 当前总览页以入职人数、加权平均起薪和三大先导产业吸纳人数为核心指标，把握整体就业质量。</div>
+          <div>2. 起薪预测曲线显示未来几个月薪资水平仍有上升趋势，可作为招生宣传和专业建设的辅助依据。</div>
+          <div>3. 高提升度规则反映出部分专业与产业方向之间存在较强关联，建议作为人才培养方案优化与校企合作布局的参考。</div>
+          <div>4. 后续补充年度、院校、学历等筛选维度，进一步升级为多维联动分析首页。</div>
+        </div>
+      </Card>
+    </Col> */}
     </Row>
   )
 }

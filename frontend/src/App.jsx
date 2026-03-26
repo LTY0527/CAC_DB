@@ -109,30 +109,51 @@ import EnrollmentMatching from './pages/EnrollmentMatching'
 import RuleAnalysis from './pages/RuleAnalysis'
 import JobRecommendation from './pages/JobRecommendation'
 import AIReport from './pages/AIReport'
+import usePlatformData from './hooks/usePlatformData'
 
 const { Header, Sider, Content } = Layout
 
 export default function App() {
   const [current, setCurrent] = useState('dashboard')
 
+  const {
+    employmentData,
+    forecastData,
+    enrollmentData,
+    rulesData,
+    recommendationData,
+    loading,
+    error,
+  } = usePlatformData()
+
+  const pageProps = {
+    employmentData,
+    forecastData,
+    enrollmentData,
+    rulesData,
+    recommendationData,
+    loading,
+    error,
+  }
+
   const renderPage = () => {
     switch (current) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard {...pageProps} />
       case 'employment':
-        return <EmploymentMonitor />
+        return <EmploymentMonitor {...pageProps} />
       case 'forecast':
-        return <SalaryForecast />
+        return <SalaryForecast {...pageProps} />
       case 'enrollment':
-        return <EnrollmentMatching />
+        return <EnrollmentMatching {...pageProps} />
       case 'rules':
-        return <RuleAnalysis />
+        return <RuleAnalysis {...pageProps} />
       case 'recommendation':
-        return <JobRecommendation />
+        return <JobRecommendation {...pageProps} />
       case 'report':
-        return <AIReport />
+        return <AIReport {...pageProps} />
       default:
-        return <Dashboard />
+        return <Dashboard {...pageProps} />
     }
   }
 
@@ -230,7 +251,7 @@ export default function App() {
                 marginTop: 40,
               }}
             >
-              高校就业与招生联动分析平台
+              高校就业需求分析平台
             </div>
             <div
               style={{
@@ -245,7 +266,9 @@ export default function App() {
 
           <Space size={10}>
             <Tag color="blue">数据版本：V1.0</Tag>
-            <Tag color="cyan">状态：已连接 Mock 数据</Tag>
+            <Tag color={loading ? 'gold' : error ? 'red' : 'cyan'}>
+              {loading ? '状态：数据加载中' : error ? '状态：数据异常' : '状态：已连接后端数据'}
+              </Tag>
           </Space>
         </Header>
 

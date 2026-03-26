@@ -1,7 +1,7 @@
 import { Card, Col, Row, Select, Table } from 'antd'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import ReactECharts from 'echarts-for-react'
-import enrollmentData from '../assets/mock/enrollment_matching.json'
+// import enrollmentData from '../assets/mock/enrollment_matching.json'
 import { getEnrollmentMajors, getEnrollmentTopByMajor } from '../utils/dataAdapter'
 import {
   panelStyle,
@@ -10,10 +10,26 @@ import {
   noteTextStyle,
 } from '../utils/uiTheme'
 
-export default function EnrollmentMatching() {
-  const majors = useMemo(() => getEnrollmentMajors(enrollmentData), [])
-  const [major, setMajor] = useState(majors[0])
-  const topList = getEnrollmentTopByMajor(enrollmentData, major)
+export default function EnrollmentMatching({
+  enrollmentData = [],
+  loading,
+  error,
+}) {
+  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
+  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
+
+  const majors = useMemo(() => getEnrollmentMajors(enrollmentData), [enrollmentData])
+  const [major, setMajor] = useState('')
+  const [topN, setTopN] = useState(10)
+  const [minScore, setMinScore] = useState(0)
+  const topList = getEnrollmentTopByMajor(enrollmentData, major, topN, minScore)
+
+  useEffect(() => {
+    if (majors.length > 0 && !major) {
+      setMajor(majors[0])
+    }
+  }, [majors, major])
+
 
   const option = {
     backgroundColor: 'transparent',
@@ -25,7 +41,7 @@ export default function EnrollmentMatching() {
     xAxis: {
       type: 'category',
       data: topList.map(item => String(item.top_potential_student_id)),
-      axisLabel: { color: '#b7dfff', rotate: 25 },
+      axisLabel: { color: '#b7dfff', rotate: 0 },
       axisLine: { lineStyle: { color: '#3c6e91' } },
     },
     yAxis: {
@@ -59,13 +75,49 @@ export default function EnrollmentMatching() {
   return (
     <Row gutter={[16, 16]}>
       <Col span={24}>
-        <Card title={<span style={sectionTitleStyle}>专业匹配 Top10</span>} style={panelStyle}>
-          <Select
-            value={major}
-            onChange={setMajor}
-            options={majors.map(item => ({ label: item, value: item }))}
-            style={{ width: 260, marginBottom: 16 }}
-          />
+        <Card
+          title={<span style={sectionTitleStyle}>{major || '专业'} 匹配结果（Top {topN}）</span>}
+          style={panelStyle}
+        >
+          <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+            <Col>
+              <Select
+                value={major}
+                onChange={setMajor}
+                options={majors.map(item => ({ label: item, value: item }))}
+                style={{ width: 220 }}
+                placeholder="选择专业"
+              />
+            </Col>
+
+            <Col>
+              <Select
+                value={topN}
+                onChange={setTopN}
+                style={{ width: 140 }}
+                options={[
+                  { label: 'Top 5', value: 5 },
+                  { label: 'Top 10', value: 10 },
+                  { label: 'Top 15', value: 15 },
+                ]}
+              />
+            </Col>
+
+            <Col>
+              <Select
+                value={minScore}
+                onChange={setMinScore}
+                style={{ width: 160 }}
+                options={[
+                  { label: '全部', value: 0 },
+                  { label: '高匹配（28000+）', value: 28000 },
+                  { label: '较高匹配（30000+）', value: 30000 },
+                  { label: '核心目标（45000+）', value: 45000 },
+                ]}
+              />
+            </Col>
+          </Row>
+
           <ReactECharts option={option} style={{ height: 340 }} />
         </Card>
       </Col>
@@ -82,10 +134,11 @@ export default function EnrollmentMatching() {
       </Col>
 
       <Col span={24}>
-        <Card title={<span style={sectionTitleStyle}>当前限制说明</span>} style={panelStyle}>
+        <Card title={<span style={sectionTitleStyle}>招生分析提示</span>} style={panelStyle}>
           <div style={noteTextStyle}>
-            当前数据只有 target_major、top_potential_student_id、matching_score，
-            适合先做 Top10 排行榜。若后续补充学生画像字段，再升级为雷达图。
+            当前页面主要展示各专业对应的高匹配潜在生源分布情况。结合匹配分排名结果可以发现，
+            不同专业在潜在人群中的吸引力存在明显差异，适合用于前期识别重点招生对象、
+            优化招生资源投放顺序，并为后续精细化触达提供依据。
           </div>
         </Card>
       </Col>

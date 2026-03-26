@@ -42,25 +42,97 @@ export function getEmploymentOverview(data = []) {
   }
 }
 
-export function getEmploymentBarSeries(data = []) {
+export function getEmploymentFilterOptions(data = []) {
+  return {
+    majors: [...new Set(data.map(item => item.major_name))],
+    eduLevels: [...new Set(data.map(item => item.edu_level))],
+    industries: [...new Set(data.map(item => item.leading_industry_tag))],
+  }
+}
+
+
+export function getEmploymentBarSeries(
+  data = [],
+  {
+    selectedIndustry = '全部',
+    selectedEduLevels = [],
+    metric = 'avg_salary',
+  } = {}
+) {
   const majors = [...new Set(data.map(item => item.major_name))]
-  const eduLevels = [...new Set(data.map(item => item.edu_level))]
+
+  // const filtered = data.filter(item => {
+  //   const matchIndustry =
+  //     selectedIndustry === '全部' || item.leading_industry_tag === selectedIndustry
+
+  //   const matchEdu =
+  //     selectedEduLevels.length === 0 || selectedEduLevels.includes(item.edu_level)
+
+  //   return matchIndustry && matchEdu
+  // })
+
+  const eduLevels =
+    selectedEduLevels.length > 0
+      ? selectedEduLevels
+      : [...new Set(data.map(item => item.edu_level))]
 
   const series = eduLevels.map(level => ({
     name: level,
     type: 'bar',
     barMaxWidth: 28,
     data: majors.map(major => {
-      const row = data.find(
-        item => item.major_name === major && item.edu_level === level && item.leading_industry_tag === '三大先导'
-      )
-      return row ? Number(row.avg_salary) : 0
+      // 先找到“这个专业 + 这个学历”的所有记录
+      const rows = data.filter(item => {
+        const matchMajor = item.major_name === major
+        const matchLevel = item.edu_level === level
+
+        // 如果选了具体产业，就只取该产业
+        // 如果是“全部”，就把两类产业都纳入
+        const matchIndustry =
+          selectedIndustry === '全部' || item.leading_industry_tag === selectedIndustry
+
+        return matchMajor && matchLevel && matchIndustry
+      })
+
+      if (!rows.length) return 0
+
+      // “全部产业”下要做聚合
+      if (selectedIndustry === '全部') {
+        // 平均起薪：按 emp_count 加权平均
+        if (metric === 'avg_salary') {
+          const totalCount = rows.reduce(
+            (sum, row) => sum + Number(row.emp_count || 0),
+            0
+          )
+
+          if (totalCount === 0) return 0
+
+          const weightedSalary = rows.reduce(
+            (sum, row) =>
+              sum +
+              Number(row.avg_salary || 0) * Number(row.emp_count || 0),
+            0
+          )
+
+          return Number((weightedSalary / totalCount).toFixed(2))
+        }
+
+        // 入职人数：直接相加
+        if (metric === 'emp_count') {
+          return rows.reduce(
+            (sum, row) => sum + Number(row.emp_count || 0),
+            0
+          )
+        }
+      }
+
+      // 选中了具体产业时，只有一条，直接取值
+      return Number(rows[0][metric] || 0)
     }),
   }))
 
   return { majors, eduLevels, series }
 }
-
 export function getSankeyData(data = []) {
   const nodeSet = new Set()
   const links = []
@@ -147,11 +219,20 @@ export function getRulesGraphData(data = []) {
   }
 }
 
-export function getEnrollmentTopByMajor(data = [], major) {
+export function getEnrollmentTopByMajor(
+  data = [],
+  major,
+  topN = 10,
+  minScore = 0
+) {
   return data
-    .filter(item => item.target_major === major)
+    .filter(
+      item =>
+        item.target_major === major &&
+        Number(item.matching_score || 0) >= minScore
+    )
     .sort((a, b) => Number(b.matching_score || 0) - Number(a.matching_score || 0))
-    .slice(0, 10)
+    .slice(0, topN)
 }
 
 export function getEnrollmentMajors(data = []) {

@@ -1,6 +1,6 @@
 import { Card, Col, Row, Statistic, Alert } from 'antd'
 import ReactECharts from 'echarts-for-react'
-import forecastData from '../assets/mock/salary_forecast.json'
+// import forecastData from '../assets/mock/salary_forecast.json'
 import { getForecastData } from '../utils/dataAdapter'
 import {
   panelStyle,
@@ -12,7 +12,14 @@ import {
   darkTooltip,
 } from '../utils/uiTheme'
 
-export default function SalaryForecast() {
+export default function SalaryForecast({
+  forecastData = [],
+  loading,
+  error,
+}) {
+  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
+  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
+
   const { months, values, updateTime } = getForecastData(forecastData)
   const latest = values[values.length - 1] || 0
   const first = values[0] || 0

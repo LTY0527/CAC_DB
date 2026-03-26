@@ -130,7 +130,7 @@
 
 import { Card, Table, Row, Col } from 'antd'
 import ReactECharts from 'echarts-for-react'
-import rulesData from '../assets/mock/major_matching_rules.json'
+// import rulesData from '../assets/mock/major_matching_rules.json'
 import { getRulesTableData, getRulesGraphData } from '../utils/dataAdapter'
 import {
   panelStyle,
@@ -138,7 +138,14 @@ import {
   darkTooltip,
 } from '../utils/uiTheme'
 
-export default function RuleAnalysis() {
+export default function RuleAnalysis({
+  rulesData = [],
+  loading,
+  error,
+}) {
+  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
+  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
+
   const tableData = getRulesTableData(rulesData)
   const graphData = getRulesGraphData(rulesData)
 
@@ -177,7 +184,7 @@ export default function RuleAnalysis() {
     grid: { left: '4%', right: '4%', bottom: '10%', top: '18%', containLabel: true },
     xAxis: {
       type: 'category',
-      axisLabel: { rotate: 25, color: '#b7dfff' },
+      axisLabel: { rotate: 0, color: '#b7dfff' },
       axisLine: { lineStyle: { color: '#3c6e91' } },
       data: tableData.map((_, index) => `规则${index + 1}`),
     },
