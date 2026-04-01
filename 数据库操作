@@ -1,0 +1,123 @@
+数据库名称设为bigdata
+#生成结果表各个名称含义
+--  ads_employment_summary;  -- 现状 spark
+-- ads_salary_forecast LSTM
+-- ads_enrollment_matching 协同过滤
+-- ads_major_matching_rules FP-GROWTH
+-- ads_job_recommendation 余弦相似度分析
+
+#数据库生成语句
+CREATE TABLE fact_academic (
+    academic_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL COMMENT '关联dim_student',
+    school_name VARCHAR(100) DEFAULT '上海大学',
+    edu_level VARCHAR(50) COMMENT '办学层次 (高职/本科/研究生)',
+    degree_name VARCHAR(50) COMMENT '学历名称',
+    subject_category VARCHAR(50) COMMENT '学科门类',
+    major_code VARCHAR(20) NOT NULL COMMENT '专业代码 (1047类)',
+    major_name VARCHAR(100) COMMENT '专业',
+    skill_level VARCHAR(50) COMMENT '技能等级',
+    certificate_name TEXT COMMENT '证书名称',
+    FOREIGN KEY (student_id) REFERENCES dim_student(student_id),
+    INDEX idx_major (major_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学籍与培养事实表';
+
+CREATE TABLE fact_employment (
+    emp_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    student_id BIGINT NOT NULL,
+    destination_code VARCHAR(20) COMMENT '毕业去向代码',
+    employer_name VARCHAR(200) COMMENT '单位名称',
+    industry_code VARCHAR(50) COMMENT '单位行业 (21类)',
+    is_sh_insured TINYINT(1) DEFAULT 0 COMMENT '在沪参保状态',
+    avg_salary DECIMAL(10, 2) COMMENT '上年度平均工资',
+    first_insured_date DATE COMMENT '首次在沪参保年月',
+    leading_industry_tag VARCHAR(100) COMMENT '三大先导产业标记',
+    FOREIGN KEY (student_id) REFERENCES dim_student(student_id),
+    INDEX idx_industry_salary (industry_code, avg_salary)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='就业监测事实表';
+CREATE TABLE dim_company (
+    company_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    employer_name VARCHAR(200) UNIQUE NOT NULL COMMENT '单位名称',
+    company_scale VARCHAR(50) COMMENT '单位规模',
+    is_top_500 TINYINT(1) DEFAULT 0 COMMENT '是否世界/中国500强',
+    is_listed TINYINT(1) DEFAULT 0 COMMENT '是否上市',
+    strategic_tags JSON COMMENT '存储先导产业/重点领域等标签',
+    reg_capital DECIMAL(18, 2) COMMENT '注册资本',
+    last_year_revenue DECIMAL(18, 2) COMMENT '上年度营收总额',
+    INDEX idx_company_name (employer_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='就业单位维度表';
+
+#学生信息脱敏：
+CREATE OR REPLACE VIEW v_student_job_analysis AS
+SELECT 
+    s.student_id,
+    -- 姓名脱敏：保留姓氏，名字用星号代替
+    CONCAT(LEFT(s.student_name, 1), REPEAT('*', CHAR_LENGTH(s.student_name)-1)) AS masked_name,
+    -- 身份证号强脱敏：只保留前4位和后4位
+    CONCAT(LEFT(s.id_card, 4), '**********', RIGHT(s.id_card, 4)) AS masked_id,
+    s.gender,
+    a.major_name,
+    a.skill_level,
+    e.employer_name,
+    e.avg_salary,
+    e.leading_industry_tag
+FROM dim_student s
+JOIN fact_academic a ON s.student_id = a.student_id
+JOIN fact_employment e ON s.student_id = e.student_id;
+
+#学生表新加字段
+ALTER TABLE dim_student 
+ADD COLUMN school_name VARCHAR(100) DEFAULT '上海大学' COMMENT '学校名称',
+ADD COLUMN school_level VARCHAR(50) COMMENT '办学层次 (如：双一流/重点/普通)',
+ADD COLUMN edu_name VARCHAR(50) COMMENT '学历名称 (5类精细化)';
+
+#company新加字段
+ALTER TABLE fact_employment ADD COLUMN (
+    job_category_code VARCHAR(50), -- 职位类别 
+    contract_type VARCHAR(20),     -- 合同类型 
+    sh_insurance_status TINYINT(1) -- 在沪参保状态 
+);
+-- 为学籍事实表扩容字段，以对齐附件要求
+ALTER TABLE fact_academic 
+ADD COLUMN discipline_category VARCHAR(50) COMMENT '学科门类 (31类)', -- 
+ADD COLUMN major_category VARCHAR(100) COMMENT '专业类 (257类)';     --
+
+-- 在 MySQL 中建立预测结果展示表
+CREATE TABLE ads_salary_forecast (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    forecast_month VARCHAR(10), -- 存储如 '2026-03'
+    predicted_salary DECIMAL(10,2),
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 存储专业匹配度分析结果
+CREATE TABLE ads_major_matching_rules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    antecedent VARCHAR(255),  -- 关联前项（如：软件工程）
+    consequent VARCHAR(255),  -- 关联后项（如：三大先导）
+    confidence DOUBLE,        -- 置信度
+    lift DOUBLE,              -- 提升度
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 存储核心 KPI 汇总
+CREATE TABLE ads_employment_summary (
+    major_name VARCHAR(100),
+    avg_salary DECIMAL(10,2),
+    matching_rate DOUBLE,
+    total_count INT
+);
+
+
+#一键删除操作
+-- 1. 禁用外键检查
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- 2. 执行清空操作（顺序随意）
+TRUNCATE TABLE dim_student;
+TRUNCATE TABLE dim_company;
+TRUNCATE TABLE fact_academic;
+TRUNCATE TABLE fact_employment;
+
+-- 3. 重新启用外键检查（务必执行，确保后续数据准确性）
+SET FOREIGN_KEY_CHECKS = 1;
