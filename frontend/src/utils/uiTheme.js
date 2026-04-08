@@ -60,10 +60,26 @@ export const inputStyle = {
 }
 
 export const primaryButtonStyle = {
+  height: 30,
+  padding: '0 18px',
+  borderRadius: 8,
+  fontSize: 14,
+  fontWeight: 600,
   background: 'linear-gradient(90deg, #0b6cff 0%, #14b8ff 100%)',
   border: 'none',
-  fontWeight: 600,
+  color: '#ffffff',
   boxShadow: '0 0 12px rgba(20, 184, 255, 0.25)',
+}
+
+export const secondaryButtonStyle = {
+  height: 30,
+  padding: '0 18px',
+  borderRadius: 8,
+  fontSize: 14,
+  fontWeight: 600,
+  background: '#f3f4f6',
+  border: 'none',
+  color: '#1f2937',
 }
 
 export const noteTextStyle = {

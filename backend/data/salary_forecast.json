@@ -1,3 +1,6 @@
-[{"id":1, "forecast_month":"2026-03", "predicted_salary":16388.2, "update_time":"2026-03-17 19:56:33"},
- {"id":2, "forecast_month":"2026-04", "predicted_salary":16460.79, "update_time":"2026-03-17 19:56:33"},
- {"id":3, "forecast_month":"2026-05", "predicted_salary":16615.92, "update_time":"2026-03-17 19:56:33"}]
+[{"forecast_month":"2026-04", "predicted_salary":19365.22},
+ {"forecast_month":"2026-05", "predicted_salary":19370.6},
+ {"forecast_month":"2026-06", "predicted_salary":19370.58},
+ {"forecast_month":"2026-07", "predicted_salary":19372.69},
+ {"forecast_month":"2026-08", "predicted_salary":19378.02},
+ {"forecast_month":"2026-09", "predicted_salary":19380.56}]

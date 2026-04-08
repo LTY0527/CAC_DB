@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import {
   fetchEmploymentSummary,
-  fetchSalaryForecast,
   fetchEnrollmentMatching,
-  fetchMajorMatchingRules,
   fetchJobRecommendation,
+  fetchMajorMatchingRules,
+  fetchSalaryForecast,
 } from '../services/dataService'
+
+function ensureList(value) {
+  return Array.isArray(value) ? value : []
+}
 
 export default function usePlatformData() {
   const [employmentData, setEmploymentData] = useState([])
@@ -13,44 +17,55 @@ export default function usePlatformData() {
   const [enrollmentData, setEnrollmentData] = useState([])
   const [rulesData, setRulesData] = useState([])
   const [recommendationData, setRecommendationData] = useState([])
-
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const loadAllData = async () => {
-      try {
-        setLoading(true)
-        setError('')
+    let alive = true
 
-        const [
-          employmentRes,
-          forecastRes,
-          enrollmentRes,
-          rulesRes,
-          recommendationRes,
-        ] = await Promise.all([
-          fetchEmploymentSummary(),
-          fetchSalaryForecast(),
-          fetchEnrollmentMatching(),
-          fetchMajorMatchingRules(),
-          fetchJobRecommendation(),
-        ])
+    async function loadAllData() {
+      setLoading(true)
+      setError('')
 
-        setEmploymentData(employmentRes.data.data || [])
-        setForecastData(forecastRes.data.data || [])
-        setEnrollmentData(enrollmentRes.data.data || [])
-        setRulesData(rulesRes.data.data || [])
-        setRecommendationData(recommendationRes.data.data || [])
-      } catch (err) {
-        console.error(err)
-        setError('数据加载失败，请检查后端服务或 JSON 文件。')
-      } finally {
-        setLoading(false)
+      const results = await Promise.allSettled([
+        fetchEmploymentSummary(),
+        fetchSalaryForecast(),
+        fetchEnrollmentMatching(),
+        fetchMajorMatchingRules(),
+        fetchJobRecommendation(),
+      ])
+
+      if (!alive) return
+
+      const [
+        employmentRes,
+        forecastRes,
+        enrollmentRes,
+        rulesRes,
+        recommendationRes,
+      ] = results
+
+      setEmploymentData(ensureList(employmentRes.status === 'fulfilled' ? employmentRes.value : []))
+      setForecastData(ensureList(forecastRes.status === 'fulfilled' ? forecastRes.value : []))
+      setEnrollmentData(ensureList(enrollmentRes.status === 'fulfilled' ? enrollmentRes.value : []))
+      setRulesData(ensureList(rulesRes.status === 'fulfilled' ? rulesRes.value : []))
+      setRecommendationData(
+        ensureList(recommendationRes.status === 'fulfilled' ? recommendationRes.value : [])
+      )
+
+      const hasFailure = results.some((item) => item.status === 'rejected')
+      if (hasFailure) {
+        setError('部分数据加载失败，当前页面已使用可用数据继续渲染。')
       }
+
+      setLoading(false)
     }
 
     loadAllData()
+
+    return () => {
+      alive = false
+    }
   }, [])
 
   return {

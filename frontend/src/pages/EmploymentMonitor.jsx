@@ -1,290 +1,182 @@
-import { Card, Col, Row, Statistic, Table, Select, Segmented } from 'antd'
+import { Card, Col, Row, Select, Statistic, Table } from 'antd'
 import { useMemo, useState } from 'react'
-import ReactECharts from 'echarts-for-react'
-// import employmentData from '../assets/mock/employment_summary.json'
+import EmploymentSankey from '../components/charts/EmploymentSankey'
 import {
-  getEmploymentOverview,
-  getEmploymentBarSeries,
   getEmploymentFilterOptions,
-  getSankeyData,
+  getEmploymentOverview,
+  formatNumber,
 } from '../utils/dataAdapter'
 import {
   panelStyle,
   sectionTitleStyle,
   statTitleStyle,
-  statValuePrimary,
   statValueBlue,
   statValueCyan,
+  statValuePrimary,
   statValuePurple,
-  darkTooltip,
+  noteTextStyle,
 } from '../utils/uiTheme'
+
+function filterEmploymentData(data = [], { school, industry, roleMode, currentSchool }) {
+  return (Array.isArray(data) ? data : []).filter((item) => {
+    const safeSchool = item?.school_name || ''
+    const safeIndustry = item?.leading_industry_tag || ''
+    const scopedSchool = roleMode === 'school' ? currentSchool : school
+
+    const matchSchool = scopedSchool === '全部' || !scopedSchool || safeSchool === scopedSchool
+    const matchIndustry = industry === '全部' || !industry || safeIndustry === industry
+    return matchSchool && matchIndustry
+  })
+}
 
 export default function EmploymentMonitor({
   employmentData = [],
+  currentSchool = '上海大学',
+  roleMode = 'school',
   loading,
   error,
 }) {
-  const safeData = Array.isArray(employmentData) ? employmentData : []
-  const overview = getEmploymentOverview(safeData)
-  const filterOptions = useMemo(() => getEmploymentFilterOptions(safeData), [safeData])
-
+  const [selectedSchool, setSelectedSchool] = useState('全部')
   const [selectedIndustry, setSelectedIndustry] = useState('全部')
-  const [selectedEduLevels, setSelectedEduLevels] = useState([])
-  const [metric, setMetric] = useState('avg_salary')
 
-  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
-  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
+  const options = useMemo(() => getEmploymentFilterOptions(employmentData), [employmentData])
+  const filteredData = useMemo(
+    () =>
+      filterEmploymentData(employmentData, {
+        school: selectedSchool,
+        industry: selectedIndustry,
+        roleMode,
+        currentSchool,
+      }),
+    [employmentData, selectedIndustry, selectedSchool, roleMode, currentSchool]
+  )
+  const overview = useMemo(() => getEmploymentOverview(filteredData), [filteredData])
 
-  const { majors, series } = getEmploymentBarSeries(safeData, {
-    selectedIndustry,
-    selectedEduLevels,
-    metric,
-   })
-
-
-  const sankeyData = useMemo(() => {
-    const filtered = safeData.filter(item => {
-      const matchIndustry =
-      selectedIndustry === '全部' || item.leading_industry_tag === selectedIndustry
-    
-      const matchEdu =
-      selectedEduLevels.length === 0 || selectedEduLevels.includes(item.edu_level)
-   
-      return matchIndustry && matchEdu
-    })
-    return getSankeyData(filtered)
-  }, [safeData, selectedIndustry, selectedEduLevels])
-
-  // const eduColorMap = {
-  //   博士: '#5b8cff',
-  //   硕士: '#30d6ff',
-  //   本科: '#b9d532',
-  //   专科: '#6f7697',
-  // }
-  const eduColorMap = {
-    博士: '#7db7ff',
-    硕士: '#58d5ff',
-    本科: '#7ee0c6',
-    专科: '#b7c3d7',
-  }
- 
-  const barOption = {
-  backgroundColor: 'transparent',
-  tooltip: {
-    trigger: 'axis',
-    ...darkTooltip,
-    formatter: params => {
-      if (!params || !params.length) return ''
-
-      const major = params[0].axisValueLabel || params[0].name
-      const lines = params.map(item => {
-        const value =
-          metric === 'avg_salary'
-            ? Number(item.value || 0).toLocaleString('zh-CN', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })
-            : Number(item.value || 0).toLocaleString('zh-CN')
-
-        return `${item.marker}${item.seriesName}　${value}`
-      })
-
-      return [major, ...lines].join('<br/>')
-    },
-  },
-  legend: {
-    top: 8,
-    textStyle: { color: '#b7dfff' }
-  },
-  grid: { left: '6%', right: '4%', bottom: '10%', top: '18%', containLabel: true },
-  xAxis: {
-    type: 'category',
-    data: majors,
-    axisLabel: {
-      color: '#b7dfff',
-      interval: 0,
-      rotate: 0,
-    },
-    axisLine: { lineStyle: { color: '#3c6e91' } },
-  },
-  yAxis: {
-    type: 'value',
-    axisLabel: { color: '#b7dfff' },
-    splitLine: { lineStyle: { color: 'rgba(80,130,170,0.18)' } },
-  },
-  series: series.map(item => ({
-    ...item,
-    itemStyle: {
-      color: eduColorMap[item.name] || '#5b8cff',
-      borderRadius: [6, 6, 0, 0],
-    },
-  })),
-}
-  
-  const sankeyOption = {
-    backgroundColor: 'transparent',
-    tooltip: {
-      trigger: 'item',
-      ...darkTooltip,
-    },
-    series: [
-      {
-        type: 'sankey',
-        data: sankeyData.nodes,
-        links: sankeyData.links,
-        emphasis: {
-          focus: 'adjacency',
-        },
-        lineStyle: {
-          color: 'gradient',
-          curveness: 0.5,
-        },
-        label: {
-          color: '#d9eeff',
-        },
-      },
-    ],
-  }
+  const tableData = useMemo(
+    () =>
+      filteredData
+        .slice(0, 12)
+        .map((item, index) => ({
+          key: `${item?.school_name || 'school'}-${item?.major_name || 'major'}-${index}`,
+          school_name: item?.school_name || '-',
+          origin_place: item?.origin_place || '-',
+          school_level: item?.school_level || '-',
+          major_name: item?.major_name || '-',
+          leading_industry_tag: item?.leading_industry_tag || '-',
+          emp_count: Number(item?.emp_count || 0),
+          avg_salary: Number(item?.avg_salary || 0),
+        })),
+    [filteredData]
+  )
 
   const columns = [
+    ...(roleMode === 'gov'
+      ? [{ title: '学校', dataIndex: 'school_name' }]
+      : []),
+    { title: '生源地', dataIndex: 'origin_place' },
+    { title: '院校层级', dataIndex: 'school_level' },
+    { title: '专业', dataIndex: 'major_name' },
+    { title: '就业行业', dataIndex: 'leading_industry_tag' },
     {
-      title: <span style={{ color: '#d9eeff' }}>专业</span>,
-      dataIndex: 'major_name',
-    },
-    {
-      title: <span style={{ color: '#d9eeff' }}>学历</span>,
-      dataIndex: 'edu_level',
-    },
-    {
-      title: <span style={{ color: '#d9eeff' }}>产业方向</span>,
-      dataIndex: 'leading_industry_tag',
-    },
-    {
-      title: <span style={{ color: '#d9eeff' }}>平均起薪</span>,
-      dataIndex: 'avg_salary',
-      render: (v) => `¥${Number(v).toFixed(2)}`,
-    },
-    {
-      title: <span style={{ color: '#d9eeff' }}>入职人数</span>,
+      title: '人数',
       dataIndex: 'emp_count',
+      render: (value) => formatNumber(value),
+    },
+    {
+      title: '平均薪资',
+      dataIndex: 'avg_salary',
+      render: (value) => `¥${formatNumber(value, 0)}`,
     },
   ]
 
-   return (
+  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
+  if (error && !employmentData.length) return <div style={{ color: '#ff7875' }}>{error}</div>
+
+  return (
     <Row gutter={[16, 16]}>
-      <Col span={6}>
-    <Card style={panelStyle}>
-      <Statistic
-      title="总入职人数"
+      <Col xs={24} md={12} xl={6}>
+        <Card style={panelStyle}>
+          <Statistic
+            title="样本人数"
             value={overview.totalEmpCount}
             styles={{ title: statTitleStyle, content: statValuePrimary }}
-      />
-    </Card>
-  </Col>
-
-  <Col span={6}>
-    <Card style={panelStyle}>
-      <Statistic
-      title="加权平均起薪"
-      value={Number(overview.avgSalaryWeighted.toFixed(2))}
-      prefix="¥"
-      styles={{ title: statTitleStyle, content: statValueBlue }}
-      />
-    </Card>
-  </Col>
-
-  <Col span={6}>
-    <Card style={panelStyle}>
-      <Statistic
-      title="三大先导人数"
-       value={overview.leadEmpCount}
-       styles={{ title: statTitleStyle, content: statValueCyan }}
-       />
-    </Card>
-  </Col>
-
-  <Col span={6}>
-    <Card style={panelStyle}>
-      <Statistic
-      title="覆盖专业数"
-      value={overview.majorCount}
-      styles={{ title: statTitleStyle, content: statValuePurple }}
-      />
-    </Card>
-  </Col>
-
-  <Col span={24}>
-    <Card
-      title={<span style={sectionTitleStyle}>专业 × 学历对比分析</span>}
-      style={panelStyle}
-    >
-      <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-        <Col>
-          <Select
-            value={selectedIndustry}
-            onChange={setSelectedIndustry}
-            style={{ width: 160 }}
-            options={[
-              { label: '全部产业', value: '全部' },
-              ...filterOptions.industries.map(item => ({ label: item, value: item })),
-            ]}
           />
-        </Col>
-
-        <Col>
-          <Select
-            mode="multiple"
-            allowClear
-            placeholder="选择学历"
-            value={selectedEduLevels}
-            onChange={setSelectedEduLevels}
-            style={{ width: 220 }}
-            options={filterOptions.eduLevels.map(item => ({
-              label: item,
-              value: item,
-            }))}
-          />
-        </Col>
-
-        <Col>
-          <Segmented
-            value={metric}
-            onChange={setMetric}
-            options={[
-              { label: '平均起薪', value: 'avg_salary' },
-              { label: '入职人数', value: 'emp_count' },
-            ]}
-          />
-        </Col>
-      </Row>
-
-        <ReactECharts
-          key={`${selectedIndustry}-${selectedEduLevels.join(',')}-${metric}`}
-          option={barOption}
-          notMerge={true}
-          lazyUpdate={true}
-          style={{ height: 420 }}
-        />
-    </Card>
-  </Col>
-
-      <Col span={24}>
-        <Card
-          title={<span style={sectionTitleStyle}>专业 → 学历 → 产业分流图</span>}
-          style={panelStyle}
-        >
-         <ReactECharts option={sankeyOption} style={{ height: 480 }} />
         </Card>
       </Col>
-      
-      <Col span={24}>
-        <Card title={<span style={sectionTitleStyle}>原始数据预览</span>} style={panelStyle}>
-          <Table
-            rowKey={(record, index) => `${record.major_name}-${record.edu_level}-${index}`}
-            columns={columns}
-            dataSource={safeData.slice(0, 12)}
-            pagination={false}
+      <Col xs={24} md={12} xl={6}>
+        <Card style={panelStyle}>
+          <Statistic
+            title="加权平均薪资"
+            value={Number(overview.avgSalaryWeighted.toFixed(2))}
+            prefix="¥"
+            styles={{ title: statTitleStyle, content: statValueBlue }}
           />
+        </Card>
+      </Col>
+      <Col xs={24} md={12} xl={6}>
+        <Card style={panelStyle}>
+          <Statistic
+            title="三大先导人数"
+            value={overview.leadEmpCount}
+            styles={{ title: statTitleStyle, content: statValueCyan }}
+          />
+        </Card>
+      </Col>
+      <Col xs={24} md={12} xl={6}>
+        <Card style={panelStyle}>
+          <Statistic
+            title="覆盖专业数"
+            value={overview.majorCount}
+            styles={{ title: statTitleStyle, content: statValuePurple }}
+          />
+        </Card>
+      </Col>
+
+      <Col span={24}>
+        <Card title={<span style={sectionTitleStyle}>就业流向筛选</span>} style={panelStyle}>
+          <Row gutter={[12, 12]}>
+            {roleMode === 'gov' ? (
+              <Col xs={24} md={8}>
+                <Select
+                  value={selectedSchool}
+                  onChange={setSelectedSchool}
+                  style={{ width: '100%' }}
+                  options={[
+                    { label: '全部高校', value: '全部' },
+                    ...(options?.schools || []).map((item) => ({ label: item, value: item })),
+                  ]}
+                />
+              </Col>
+            ) : null}
+            <Col xs={24} md={roleMode === 'gov' ? 8 : 12}>
+              <Select
+                value={selectedIndustry}
+                onChange={setSelectedIndustry}
+                style={{ width: '100%' }}
+                options={[
+                  { label: '全部行业', value: '全部' },
+                  ...(options?.industries || []).map((item) => ({ label: item, value: item })),
+                ]}
+              />
+            </Col>
+            <Col xs={24} md={roleMode === 'gov' ? 8 : 12}>
+              <div style={noteTextStyle}>
+                当前图表基于“生源地 → 院校层级 → 最终就业行业”的流向网络，权重来自后端返回的就业样本人数。
+              </div>
+            </Col>
+          </Row>
+        </Card>
+      </Col>
+
+      <Col span={24}>
+        <Card title={<span style={sectionTitleStyle}>就业归宿桑基图</span>} style={panelStyle}>
+          <EmploymentSankey data={filteredData} style={{ height: '58vh', minHeight: 420 }} />
+        </Card>
+      </Col>
+
+      <Col span={24}>
+        <Card title={<span style={sectionTitleStyle}>流向样本明细</span>} style={panelStyle}>
+          <Table columns={columns} dataSource={tableData} pagination={{ pageSize: 8 }} />
         </Card>
       </Col>
     </Row>

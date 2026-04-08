@@ -1,7 +1,6 @@
-import { Card, Col, Row, Select, Table } from 'antd'
-import { useEffect, useMemo, useState } from 'react'
+﻿import { Card, Col, Row, Select, Table } from 'antd'
+import { useMemo, useState } from 'react'
 import ReactECharts from 'echarts-for-react'
-// import enrollmentData from '../assets/mock/enrollment_matching.json'
 import { getEnrollmentMajors, getEnrollmentTopByMajor } from '../utils/dataAdapter'
 import {
   panelStyle,
@@ -15,21 +14,16 @@ export default function EnrollmentMatching({
   loading,
   error,
 }) {
-  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
-  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
-
   const majors = useMemo(() => getEnrollmentMajors(enrollmentData), [enrollmentData])
   const [major, setMajor] = useState('')
   const [topN, setTopN] = useState(10)
   const [minScore, setMinScore] = useState(0)
-  const topList = getEnrollmentTopByMajor(enrollmentData, major, topN, minScore)
 
-  useEffect(() => {
-    if (majors.length > 0 && !major) {
-      setMajor(majors[0])
-    }
-  }, [majors, major])
+  const currentMajor = major || majors[0] || ''
+  const topList = getEnrollmentTopByMajor(enrollmentData, currentMajor, topN, minScore)
 
+  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
+  if (error) return <div style={{ color: '#ff7875' }}>{error}</div>
 
   const option = {
     backgroundColor: 'transparent',
@@ -40,7 +34,7 @@ export default function EnrollmentMatching({
     grid: { left: '6%', right: '4%', bottom: '12%', top: '12%', containLabel: true },
     xAxis: {
       type: 'category',
-      data: topList.map(item => String(item.top_potential_student_id)),
+      data: topList.map((item) => String(item.top_potential_student_id)),
       axisLabel: { color: '#b7dfff', rotate: 0 },
       axisLine: { lineStyle: { color: '#3c6e91' } },
     },
@@ -54,7 +48,7 @@ export default function EnrollmentMatching({
         name: '匹配分',
         type: 'bar',
         barWidth: 22,
-        data: topList.map(item => Number(item.matching_score)),
+        data: topList.map((item) => Number(item.matching_score)),
         itemStyle: {
           color: '#30d6ff',
           borderRadius: [6, 6, 0, 0],
@@ -68,7 +62,7 @@ export default function EnrollmentMatching({
     {
       title: '匹配分',
       dataIndex: 'matching_score',
-      render: value => Number(value).toFixed(2),
+      render: (value) => Number(value).toFixed(2),
     },
   ]
 
@@ -76,15 +70,15 @@ export default function EnrollmentMatching({
     <Row gutter={[16, 16]}>
       <Col span={24}>
         <Card
-          title={<span style={sectionTitleStyle}>{major || '专业'} 匹配结果（Top {topN}）</span>}
+          title={<span style={sectionTitleStyle}>{currentMajor || '专业'} 匹配结果（Top {topN}）</span>}
           style={panelStyle}
         >
           <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
             <Col>
               <Select
-                value={major}
+                value={currentMajor || undefined}
                 onChange={setMajor}
-                options={majors.map(item => ({ label: item, value: item }))}
+                options={majors.map((item) => ({ label: item, value: item }))}
                 style={{ width: 220 }}
                 placeholder="选择专业"
               />
@@ -107,12 +101,12 @@ export default function EnrollmentMatching({
               <Select
                 value={minScore}
                 onChange={setMinScore}
-                style={{ width: 160 }}
+                style={{ width: 180 }}
                 options={[
-                  { label: '全部', value: 0 },
-                  { label: '高匹配（28000+）', value: 28000 },
-                  { label: '较高匹配（30000+）', value: 30000 },
-                  { label: '核心目标（45000+）', value: 45000 },
+                  { label: '全部候选', value: 0 },
+                  { label: '优先关注', value: 7.5 },
+                  { label: '重点跟进', value: 7.8 },
+                  { label: '核心目标', value: 8.0 },
                 ]}
               />
             </Col>
@@ -136,9 +130,7 @@ export default function EnrollmentMatching({
       <Col span={24}>
         <Card title={<span style={sectionTitleStyle}>招生分析提示</span>} style={panelStyle}>
           <div style={noteTextStyle}>
-            当前页面主要展示各专业对应的高匹配潜在生源分布情况。结合匹配分排名结果可以发现，
-            不同专业在潜在人群中的吸引力存在明显差异，适合用于前期识别重点招生对象、
-            优化招生资源投放顺序，并为后续精细化触达提供依据。
+            当前页面展示的是某个专业对应的高匹配潜在生源分布结果。后续可以继续补充录取分数、位次、生源地域、报名热度等字段，形成更完整的招生决策分析。
           </div>
         </Card>
       </Col>
