@@ -1,172 +1,214 @@
+import io
 import os
 import sys
 import traceback
-import time
+from pathlib import Path
 
-# ==========================================
-# 1. 环境初始化（必须位于所有 PySpark 导入之前）
-# ==========================================
-os.environ['HADOOP_HOME'] = r'D:\hadoop'
-os.environ['PATH'] = os.environ['HADOOP_HOME'] + r'\bin;' + os.environ['PATH']
-os.environ['PYSPARK_PYTHON'] = sys.executable
-os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
-
-from pyspark.sql import SparkSession
+from sqlalchemy import create_engine
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from pyspark.ml.functions import vector_to_array
 from pyspark.ml.recommendation import ALS
-from pyspark.ml.feature import StringIndexer, IndexToString, MinMaxScaler, VectorAssembler
-from pyspark.sql.functions import col, explode, round, avg, coalesce, udf
-from pyspark.sql.types import FloatType
+from pyspark.sql import Window
+from pyspark.sql.functions import avg, col, concat, count, dense_rank, explode, lit, round, sqrt, when
 
-# 【关键点】确保路径完全正确，建议放在不含中文和空格的目录下
-JAR_PATH = r"D:\PythonProject\libs\mysql-connector-java-8.0.11.jar"
+from config import DB_URL
+from spark_common import DB_PROPERTIES, create_spark_session, jdbc_url, load_joined_dataset
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+
+BASE_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = BASE_DIR / "outputs"
+TXT_DOCTOR = "\u535a\u58eb"
+TXT_MASTER = "\u7855\u58eb"
+TXT_TOP_SCHOOL = "\u53cc\u4e00\u6d41\u5efa\u8bbe\u9ad8\u6821"
+TXT_KEY_SCHOOL = "\u5e02\u5c5e\u91cd\u70b9\u9ad8\u6821"
+TXT_FEATURED_MAJOR = "\u7279\u8272\u4e13\u4e1a"
+TXT_ENGINEERING = "\u5de5\u5b66"
+TXT_SCIENCE = "\u7406\u5b66"
+TXT_MEDICINE = "\u533b\u5b66"
+TXT_SKILL_HIGH = "\u9ad8"
+TXT_SKILL_MID = "\u4e2d"
+TXT_STRATEGIC = "\u4e09\u5927\u5148\u5bfc"
+TXT_LARGE = "\u5927\u578b"
+TXT_FINANCE = "\u73b0\u4ee3\u91d1\u878d"
+TXT_SMART_MFG = "\u667a\u80fd\u5236\u9020"
+TXT_NEW_MATERIAL = "\u65b0\u6750\u6599"
+DB_ENGINE = create_engine(DB_URL)
 
 
-def run_enrollment_cf():
-    print("🚀 [招生匹配模块] 启动 10 万级数据深度计算引擎...")
+def build_als_matching(df):
+    training_df = (
+        df.select("student_id", "origin_place", "school_level", "major_name", "avg_salary")
+        .dropna()
+        .filter(col("avg_salary") > 0)
+    )
 
-    # ==========================================
-    # 2. 初始化 Spark 引擎（针对单机 10W 数据极致调优）
-    # ==========================================
-    spark = SparkSession.builder \
-        .appName("Enrollment_Matching_10W_Scale") \
-        .master("local[*]") \
-        .config("spark.jars", JAR_PATH) \
-        .config("spark.driver.extraClassPath", JAR_PATH) \
-        .config("spark.executor.extraClassPath", JAR_PATH) \
-        .config("spark.driver.memory", "10g") \
-        .config("spark.executor.memory", "10g") \
-        .config("spark.sql.shuffle.partitions", "50") \
-        .config("spark.memory.fraction", "0.8") \
-        .config("spark.driver.maxResultSize", "2g") \
-        .getOrCreate()
+    major_model = StringIndexer(inputCol="major_name", outputCol="major_index", handleInvalid="skip").fit(training_df)
+    indexed_df = major_model.transform(training_df)
 
-    spark.sparkContext.setLogLevel("ERROR")
+    als = ALS(
+        userCol="student_id",
+        itemCol="major_index",
+        ratingCol="avg_salary",
+        coldStartStrategy="drop",
+        nonnegative=True,
+        rank=8,
+        maxIter=12,
+        regParam=0.08,
+    )
+    model = als.fit(indexed_df)
 
-    # 验证驱动是否加载成功
-    try:
-        spark._jvm.java.lang.Class.forName("com.mysql.cj.jdbc.Driver")
-        print("✅ 驱动类探测成功，环境就绪。")
-    except:
-        print(f"❌ 驱动加载失败！请检查文件是否存在: {JAR_PATH}")
+    recs = model.recommendForAllUsers(10).select("student_id", explode("recommendations").alias("rec")).select(
+        "student_id",
+        col("rec.major_index").alias("major_index"),
+        col("rec.rating").alias("pred_rating"),
+    )
+
+    major_lookup = indexed_df.select("major_name", "major_index").dropDuplicates(["major_index"])
+    student_bg = indexed_df.select(
+        "student_id",
+        concat(col("origin_place"), lit("|"), col("school_level")).alias("background_dim"),
+    ).dropDuplicates(["student_id"])
+
+    return (
+        recs.join(major_lookup, "major_index", "left")
+        .join(student_bg, "student_id", "left")
+        .groupBy("background_dim", "major_name")
+        .agg(round(avg("pred_rating"), 4).alias("matching_score"), count("student_id").alias("sample_size"))
+        .orderBy(col("matching_score").desc())
+    )
+
+
+def build_cosine_job_matching(df):
+    student_df = (
+        df.withColumn("edu_score", when(col("edu_name") == TXT_DOCTOR, 3.0).when(col("edu_name") == TXT_MASTER, 2.0).otherwise(1.0))
+        .withColumn(
+            "school_score",
+            when(col("school_level") == TXT_TOP_SCHOOL, 3.0).when(col("school_level") == TXT_KEY_SCHOOL, 2.0).otherwise(1.0),
+        )
+        .withColumn(
+            "major_score",
+            when(col("major_type") == TXT_FEATURED_MAJOR, 3.0)
+            .when(col("discipline_category").isin(TXT_ENGINEERING, TXT_SCIENCE, TXT_MEDICINE), 2.5)
+            .otherwise(1.5),
+        )
+        .withColumn("skill_score", when(col("skill_level") == TXT_SKILL_HIGH, 3.0).when(col("skill_level") == TXT_SKILL_MID, 2.0).otherwise(1.0))
+    )
+
+    student_df = VectorAssembler(
+        inputCols=["edu_score", "school_score", "major_score", "skill_score"],
+        outputCol="student_features",
+    ).transform(student_df)
+
+    job_df = (
+        df.select("employer_name", "industry_type", "leading_industry_tag", "company_scale")
+        .dropDuplicates(["employer_name"])
+        .withColumn(
+            "job_edu_score",
+            when(col("leading_industry_tag") == TXT_STRATEGIC, 2.3).when(col("company_scale") == TXT_LARGE, 2.0).otherwise(1.3),
+        )
+        .withColumn(
+            "job_industry_score",
+            when(col("leading_industry_tag") == TXT_STRATEGIC, 3.0)
+            .when(col("industry_type").isin(TXT_FINANCE, TXT_SMART_MFG, TXT_NEW_MATERIAL), 2.5)
+            .otherwise(1.5),
+        )
+        .withColumn(
+            "job_skill_score",
+            when(col("leading_industry_tag") == TXT_STRATEGIC, 2.8).when(col("company_scale") == TXT_LARGE, 2.2).otherwise(1.4),
+        )
+    )
+
+    job_df = VectorAssembler(
+        inputCols=["job_edu_score", "job_industry_score", "job_skill_score"],
+        outputCol="job_features",
+    ).transform(job_df)
+
+    candidate_pairs = student_df.select(
+        "student_id",
+        "student_name",
+        "industry_type",
+        "leading_industry_tag",
+        "student_features",
+    ).join(
+        job_df.select("employer_name", "industry_type", "leading_industry_tag", "job_features"),
+        on=["industry_type", "leading_industry_tag"],
+        how="inner",
+    )
+
+    scored = (
+        candidate_pairs.withColumn("student_arr", vector_to_array("student_features"))
+        .withColumn("job_arr", vector_to_array("job_features"))
+        .withColumn("s1", col("student_arr")[0])
+        .withColumn("s2", col("student_arr")[1])
+        .withColumn("s4", col("student_arr")[3])
+        .withColumn("j1", col("job_arr")[0])
+        .withColumn("j2", col("job_arr")[1])
+        .withColumn("j3", col("job_arr")[2])
+        .withColumn("dot_product", col("s1") * col("j1") + col("s2") * col("j2") + col("s4") * col("j3"))
+        .withColumn("student_norm", sqrt(col("s1") * col("s1") + col("s2") * col("s2") + col("s4") * col("s4")))
+        .withColumn("job_norm", sqrt(col("j1") * col("j1") + col("j2") * col("j2") + col("j3") * col("j3")))
+        .withColumn("cosine_similarity", round(col("dot_product") / (col("student_norm") * col("job_norm")), 6))
+    )
+
+    ranking = Window.partitionBy("student_id").orderBy(col("cosine_similarity").desc(), col("employer_name"))
+    return (
+        scored.withColumn("rank_no", dense_rank().over(ranking))
+        .filter(col("rank_no") <= 3)
+        .select("student_id", "student_name", "employer_name", "cosine_similarity", "rank_no")
+        .orderBy("student_id", "rank_no")
+    )
+
+
+def persist_result(df, table_name: str):
+    output_mode = os.environ.get("MATCHING_OUTPUT_MODE", "jdbc").lower()
+    output_path = OUTPUT_DIR / f"{table_name}.csv"
+
+    if output_mode == "csv":
+        df.toPandas().to_csv(output_path, index=False, encoding="utf-8-sig")
+        print(f"[Matching] \u5df2\u5199\u51fa\u672c\u5730\u7ed3\u679c: {output_path}")
         return
 
-    # 数据库配置
-    DB_SETTINGS = {
-        "host": "localhost",
-        "port": "3306",
-        "user": "root",
-        "password": "123456",  # 请务必在此处填入正确密码
-        "database": "bigdata"
-    }
+    try:
+        pandas_df = df.toPandas()
+        pandas_df.to_sql(
+            name=table_name,
+            con=DB_ENGINE,
+            if_exists="replace",
+            index=False,
+            chunksize=5000,
+            method="multi",
+        )
+        print(f"[Matching] \u5df2\u5199\u5165\u6570\u636e\u8868: {table_name}")
+    except Exception as exc:
+        print(f"[Matching] JDBC \u5199\u5165\u5931\u8d25\uff0c\u81ea\u52a8\u56de\u9000\u5230\u672c\u5730 CSV: {exc}")
+        df.toPandas().to_csv(output_path, index=False, encoding="utf-8-sig")
+        print(f"[Matching] \u5df2\u5199\u51fa\u672c\u5730\u7ed3\u679c: {output_path}")
 
-    # 【优化】开启 rewriteBatchedStatements 提升 10W 条数据的写入速度
-    jdbc_url = (f"jdbc:mysql://{DB_SETTINGS['host']}:{DB_SETTINGS['port']}/{DB_SETTINGS['database']}"
-                "?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true"
-                "&rewriteBatchedStatements=true")
 
-    db_properties = {
-        "user": DB_SETTINGS["user"],
-        "password": DB_SETTINGS["password"],
-        "driver": "com.mysql.cj.jdbc.Driver"
-    }
+def run_matching_pipeline():
+    spark = create_spark_session("SHU_Employment_CF_Refactor")
 
     try:
-        # 3. 数据加载
-        print("📥 正在从 MySQL 读取 10 万级原始数据...")
-        query = """
-            (SELECT CAST(student_id AS SIGNED) as student_id, major_name, avg_salary 
-             FROM fact_academic 
-             JOIN fact_employment USING(student_id)) as raw_data
-        """
-        raw_df = spark.read.jdbc(url=jdbc_url, table=query, properties=db_properties)
+        print("[Matching] \u6b63\u5728\u52a0\u8f7d\u56db\u8868\u5173\u8054\u6570\u636e...")
+        df = load_joined_dataset(spark).cache()
 
-        # 4. 特征工程 (Scaling & Indexing)
-        # --- 核心优化 A: 薪资缩放 (无需 Python UDF, 使用 Spark 原生算子) ---
-        from pyspark.ml.functions import vector_to_array
+        print("[Matching] \u6b63\u5728\u8ba1\u7b97 ALS \u62db\u751f\u5339\u914d\u7ed3\u679c...")
+        als_result = build_als_matching(df)
+        persist_result(als_result, "ads_enrollment_matching")
 
-        assembler = VectorAssembler(inputCols=["avg_salary"], outputCol="salary_vec")
-        df_vec = assembler.transform(raw_df)
+        print("[Matching] \u6b63\u5728\u8ba1\u7b97\u4eba\u5c97\u5339\u914d\u63a8\u8350\u7ed3\u679c...")
+        cosine_result = build_cosine_job_matching(df)
+        persist_result(cosine_result, "ads_job_recommendation")
 
-        scaler = MinMaxScaler(inputCol="salary_vec", outputCol="scaled_salary_vec", min=1.0, max=10.0)
-        scaler_model = scaler.fit(df_vec)
-        df_scaled = scaler_model.transform(df_vec)
-
-        # 核心修正：使用 vector_to_array 提取 rating，并将结果列存入 df_ready
-        df_ready = df_scaled.withColumn("rating_arr", vector_to_array("scaled_salary_vec")) \
-            .withColumn("rating", col("rating_arr")[0]) \
-            .drop("rating_arr", "salary_vec", "scaled_salary_vec")
-
-        # --- 3. 数字化专业标签 ---
-        major_indexer = StringIndexer(inputCol="major_name", outputCol="major_index", handleInvalid="skip")
-        major_model = major_indexer.fit(df_ready)  # 此处确保使用 df_ready
-
-        # 将数字化后的 DataFrame 存入 df_indexed
-        df_indexed = major_model.transform(df_ready).repartition(20)
-
-        # --- 4. ALS 模型训练 ---
-        print(f"💡 正在执行矩阵分解... 当前样本量: {df_indexed.count()}")
-        als = ALS(
-            userCol="student_id",
-            itemCol="major_index",
-            ratingCol="rating",
-            coldStartStrategy="drop",
-            nonnegative=True,
-            rank=4,  # 10万条数据建议保持低 rank
-            maxIter=10,
-            regParam=0.1,
-            intermediateStorageLevel="MEMORY_AND_DISK"
-        )
-        # 确保此处训练的是 df_indexed
-        model = als.fit(df_indexed)
-
-        # 6. 生成结果与兜底
-        print("📊 正在生成全专业匹配矩阵...")
-        major_recs = model.recommendForAllItems(25)  # 减少单专业推荐数以节省内存
-
-        converter = IndexToString(inputCol="major_index", outputCol="target_major", labels=major_model.labels)
-
-        recs_exploded = major_recs.select(
-            col("major_index"),
-            explode(col("recommendations")).alias("rec")
-        ).select(
-            col("major_index"),
-            col("rec.student_id").alias("top_potential_student_id"),
-            col("rec.rating").alias("matching_score")
-        )
-
-        df_with_names = converter.transform(recs_exploded)
-        major_avgs = df_indexed.groupBy("major_name").agg(avg("rating").alias("major_avg_rating"))
-
-        # 解决歧义并持久化
-        result_final = df_with_names.join(
-            major_avgs,
-            df_with_names.target_major == major_avgs.major_name,
-            how="left"
-        ).select(
-            "target_major",
-            col("top_potential_student_id"),
-            round(coalesce(col("matching_score"), col("major_avg_rating") * 0.7), 4).alias("matching_score")
-        ).filter(col("matching_score") > 0)
-
-        # 7. 持久化至 MySQL
-        print(f"📤 正在分批写入应用层 ADS 表 (总记录数: {result_final.count()})...")
-        result_final.write.jdbc(
-            url=jdbc_url,
-            table="ads_enrollment_matching",
-            mode="overwrite",
-            properties=db_properties
-        )
-
-        print("✅ [招生匹配模块] 10 万级数据分析圆满成功。")
-
-    except Exception as e:
-        print(f"🚨 运行异常: {e}")
+        print("[Matching] ALS \u4e0e\u4eba\u5c97\u5339\u914d\u7ed3\u679c\u5904\u7406\u5b8c\u6210\u3002")
+    except Exception as exc:
+        print(f"[Matching] \u8fd0\u884c\u5931\u8d25: {exc}")
         traceback.print_exc()
     finally:
-        if 'spark' in locals() and spark:
-            time.sleep(2)  # 缓冲延迟，减少 WinError 10038 几率
-            spark.stop()
+        spark.stop()
 
 
 if __name__ == "__main__":
-    run_enrollment_cf()
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    run_matching_pipeline()

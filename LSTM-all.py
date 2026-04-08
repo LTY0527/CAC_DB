@@ -5,7 +5,9 @@ from sqlalchemy import create_engine, text
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout, Input
-
+import sys
+import io
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 # 修正：从 DB_URL 或直接定义连接串
 DB_URL = "mysql+pymysql://root:123456@localhost:3306/bigdata?charset=utf8mb4"
 
