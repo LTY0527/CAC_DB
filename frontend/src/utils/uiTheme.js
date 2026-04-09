@@ -88,6 +88,31 @@ export const noteTextStyle = {
   fontSize: 14,
 }
 
+export const metaLabelStyle = {
+  color: 'rgba(205, 228, 245, 0.66)',
+  fontSize: 12,
+  textTransform: 'uppercase',
+  letterSpacing: 0.8,
+}
+
+export const metaValueStyle = {
+  color: '#eef6ff',
+  fontSize: 15,
+  lineHeight: 1.8,
+}
+
+export const riskTextStyle = {
+  color: '#ffd591',
+  lineHeight: 1.8,
+  fontSize: 13,
+}
+
+export const algorithmTextStyle = {
+  color: '#9dd6ff',
+  lineHeight: 1.8,
+  fontSize: 13,
+}
+
 // export const panelStyle = {
 //   background: 'linear-gradient(180deg, rgba(10,24,40,0.96) 0%, rgba(8,18,32,0.98) 100%)',
 //   border: '1px solid rgba(126, 160, 192, 0.16)',

@@ -19,9 +19,7 @@ export default function LayoutComponent() {
   const platformData = usePlatformData()
 
   const roleConfig = ROLE_CONFIGS[session?.role] || ROLE_CONFIGS.teacher
-  const allSchools = Array.from(
-    new Set((platformData.employmentData || []).map((item) => item.school_name).filter(Boolean))
-  )
+  const allSchools = Array.from(new Set((platformData.employmentData || []).map((item) => item.school_name).filter(Boolean)))
   const currentSchool =
     session?.role === 'teacher' && session?.school
       ? session.school
@@ -37,7 +35,7 @@ export default function LayoutComponent() {
   return (
     <Layout style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #08111b 0%, #0b1622 100%)' }}>
       <Sider
-        width={248}
+        width={260}
         theme="dark"
         style={{
           background: 'linear-gradient(180deg, #0b1622 0%, #0d1826 100%)',
@@ -111,9 +109,9 @@ export default function LayoutComponent() {
                 {session?.school ? <Tag color="geekblue">{session.school}</Tag> : null}
               </Space>
             </div>
-            <Tag color="blue">数据版本：v2.0</Tag>
+            <Tag color="blue">数据版本：V2.0</Tag>
             <Tag color={platformData.loading ? 'gold' : platformData.error ? 'red' : 'cyan'}>
-              {platformData.loading ? '状态：数据加载中' : platformData.error ? '状态：数据异常' : '状态：平台数据已连接'}
+              {platformData.loading ? '状态：数据加载中' : platformData.error ? '状态：部分数据异常' : '状态：数据已连接'}
             </Tag>
             <Button
               icon={<LogoutOutlined />}

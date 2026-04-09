@@ -110,8 +110,48 @@ def get_salary_forecast():
             DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s') AS update_time
         FROM ads_salary_forecast
         ORDER BY forecast_month
+        LIMIT 12
     """
     return success_response(fetch_rows(sql))
+
+
+@app.route("/api/salary-forecast-evaluation", methods=["GET"])
+def get_salary_forecast_evaluation():
+    metrics_sql = """
+        SELECT
+            metric_name,
+            metric_value,
+            metric_label,
+            metric_unit,
+            sample_size,
+            train_window_size,
+            test_window_size,
+            metric_desc
+        FROM ads_salary_forecast_eval
+        ORDER BY
+            CASE metric_name
+                WHEN 'MAE' THEN 1
+                WHEN 'RMSE' THEN 2
+                WHEN 'MAPE' THEN 3
+                ELSE 99
+            END
+    """
+    backtest_sql = """
+        SELECT
+            forecast_month,
+            actual_salary,
+            predicted_salary,
+            abs_error,
+            dataset_split
+        FROM ads_salary_forecast_backtest
+        ORDER BY forecast_month
+    """
+    return success_response(
+        {
+            "metrics": fetch_rows(metrics_sql),
+            "backtest": fetch_rows(backtest_sql),
+        }
+    )
 
 
 @app.route("/api/enrollment-matching", methods=["GET"])
@@ -128,12 +168,36 @@ def get_enrollment_matching():
     return success_response(fetch_rows(sql))
 
 
+@app.route("/api/enrollment-matching-evaluation", methods=["GET"])
+def get_enrollment_matching_evaluation():
+    sql = """
+        SELECT
+            metric_name,
+            metric_value,
+            metric_label,
+            metric_desc,
+            k_value,
+            evaluated_profiles,
+            eval_mode
+        FROM ads_enrollment_matching_eval
+        ORDER BY
+            CASE metric_name
+                WHEN 'Precision@K' THEN 1
+                WHEN 'Recall@K' THEN 2
+                WHEN 'HitRate@K' THEN 3
+                ELSE 99
+            END
+    """
+    return success_response(fetch_rows(sql))
+
+
 @app.route("/api/major-matching-rules", methods=["GET"])
 def get_major_matching_rules():
     sql = """
         SELECT
             antecedent,
             consequent,
+            support,
             confidence,
             lift
         FROM ads_major_matching_rules
@@ -142,19 +206,147 @@ def get_major_matching_rules():
     return success_response(fetch_rows(sql))
 
 
+@app.route("/api/training-program-optimization", methods=["GET"])
+def get_training_program_optimization():
+    sql = """
+        SELECT
+            school_name,
+            school_level,
+            discipline_category,
+            major_name,
+            major_type,
+            employment_count,
+            employment_rate_estimate,
+            avg_salary,
+            strategic_ratio,
+            high_skill_ratio,
+            dominant_industry,
+            dominant_skill_level,
+            matched_rule_count,
+            top_rule_support,
+            top_rule_confidence,
+            top_rule_lift,
+            priority_score,
+            action_type,
+            recommended_courses,
+            recommended_skills,
+            recommended_practice,
+            recommended_structure,
+            rule_evidence,
+            evidence_summary,
+            explanation
+        FROM ads_training_program_suggestions
+        ORDER BY priority_score DESC, top_rule_lift DESC, avg_salary DESC
+    """
+    return success_response(fetch_rows(sql))
+
+
 @app.route("/api/job-recommendation", methods=["GET"])
 def get_job_recommendation():
+    student_id = request.args.get("student_id", type=str)
     sql = """
         SELECT
             student_id AS student_id,
             student_name AS student_name,
             employer_name AS recommended_job,
-            cosine_similarity AS matching_score
+            industry_type AS industry_type,
+            leading_industry_tag AS leading_industry_tag,
+            company_scale AS company_scale,
+            cosine_similarity AS matching_score,
+            recommend_reason AS recommend_reason,
+            rank_no AS rank_no
         FROM ads_job_recommendation
-        WHERE rank_no = 1
-        ORDER BY student_id
+        WHERE (:student_id IS NULL OR student_id = :student_id)
+        ORDER BY student_id, rank_no
+    """
+    return success_response(fetch_rows(sql, {"student_id": student_id if student_id else None}))
+
+
+@app.route("/api/job-recommendation-evaluation", methods=["GET"])
+def get_job_recommendation_evaluation():
+    sql = """
+        SELECT
+            metric_name,
+            metric_value,
+            metric_label,
+            metric_desc,
+            sample_size,
+            eval_mode
+        FROM ads_job_recommendation_eval
+        ORDER BY
+            CASE metric_name
+                WHEN 'AvgTop1Similarity' THEN 1
+                WHEN 'AvgTopKSimilarity' THEN 2
+                WHEN 'HighConfidenceRatio' THEN 3
+                ELSE 99
+            END
     """
     return success_response(fetch_rows(sql))
+
+
+@app.route("/api/model-metrics", methods=["GET"])
+def get_model_metrics():
+    salary_metrics = fetch_rows(
+        """
+        SELECT
+            'salary_forecast' AS module_key,
+            metric_name,
+            metric_label,
+            metric_value,
+            metric_desc
+        FROM ads_salary_forecast_eval
+        """
+    )
+    enrollment_metrics = fetch_rows(
+        """
+        SELECT
+            'enrollment_matching' AS module_key,
+            metric_name,
+            metric_label,
+            metric_value,
+            metric_desc
+        FROM ads_enrollment_matching_eval
+        """
+    )
+    rule_metrics = fetch_rows(
+        """
+        SELECT
+            'rule_mining' AS module_key,
+            'AvgSupport' AS metric_name,
+            '平均支持度' AS metric_label,
+            ROUND(AVG(support), 4) AS metric_value,
+            '反映规则覆盖样本的平均比例，值越高说明规则覆盖面越广。' AS metric_desc
+        FROM ads_major_matching_rules
+        UNION ALL
+        SELECT
+            'rule_mining' AS module_key,
+            'AvgConfidence' AS metric_name,
+            '平均置信度' AS metric_label,
+            ROUND(AVG(confidence), 4) AS metric_value,
+            '反映前项出现时后项同时出现的稳定性，值越高说明规则可靠性越强。' AS metric_desc
+        FROM ads_major_matching_rules
+        UNION ALL
+        SELECT
+            'rule_mining' AS module_key,
+            'AvgLift' AS metric_name,
+            '平均提升度' AS metric_label,
+            ROUND(AVG(lift), 4) AS metric_value,
+            '反映规则相比随机命中的增益倍数，大于 1 表示存在正向关联。' AS metric_desc
+        FROM ads_major_matching_rules
+        """
+    )
+    job_metrics = fetch_rows(
+        """
+        SELECT
+            'job_recommendation' AS module_key,
+            metric_name,
+            metric_label,
+            metric_value,
+            metric_desc
+        FROM ads_job_recommendation_eval
+        """
+    )
+    return success_response(salary_metrics + enrollment_metrics + rule_metrics + job_metrics)
 
 
 @app.route("/api/report/generate", methods=["POST"])

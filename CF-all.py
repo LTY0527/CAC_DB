@@ -2,38 +2,66 @@ import io
 import os
 import sys
 import traceback
+from builtins import round as py_round
 from pathlib import Path
 
+import pandas as pd
 from sqlalchemy import create_engine
 from pyspark.ml.feature import StringIndexer, VectorAssembler
 from pyspark.ml.functions import vector_to_array
 from pyspark.ml.recommendation import ALS
 from pyspark.sql import Window
-from pyspark.sql.functions import avg, col, concat, count, dense_rank, explode, lit, round, sqrt, when
+from pyspark.sql.functions import avg, col, collect_set, concat, count, dense_rank, explode, lit, round as spark_round, sqrt, when
 
 from config import DB_URL
-from spark_common import DB_PROPERTIES, create_spark_session, jdbc_url, load_joined_dataset
+from spark_common import create_spark_session, load_joined_dataset
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "outputs"
-TXT_DOCTOR = "\u535a\u58eb"
-TXT_MASTER = "\u7855\u58eb"
-TXT_TOP_SCHOOL = "\u53cc\u4e00\u6d41\u5efa\u8bbe\u9ad8\u6821"
-TXT_KEY_SCHOOL = "\u5e02\u5c5e\u91cd\u70b9\u9ad8\u6821"
-TXT_FEATURED_MAJOR = "\u7279\u8272\u4e13\u4e1a"
-TXT_ENGINEERING = "\u5de5\u5b66"
-TXT_SCIENCE = "\u7406\u5b66"
-TXT_MEDICINE = "\u533b\u5b66"
-TXT_SKILL_HIGH = "\u9ad8"
-TXT_SKILL_MID = "\u4e2d"
-TXT_STRATEGIC = "\u4e09\u5927\u5148\u5bfc"
-TXT_LARGE = "\u5927\u578b"
-TXT_FINANCE = "\u73b0\u4ee3\u91d1\u878d"
-TXT_SMART_MFG = "\u667a\u80fd\u5236\u9020"
-TXT_NEW_MATERIAL = "\u65b0\u6750\u6599"
-DB_ENGINE = create_engine(DB_URL)
+TOP_K = 3
+TXT_DOCTOR = "博士"
+TXT_MASTER = "硕士"
+TXT_TOP_SCHOOL = "双一流建设高校"
+TXT_KEY_SCHOOL = "市属重点高校"
+TXT_FEATURED_MAJOR = "特色专业"
+TXT_ENGINEERING = "工学"
+TXT_SCIENCE = "理学"
+TXT_MEDICINE = "医学"
+TXT_SKILL_HIGH = "高"
+TXT_SKILL_MID = "中"
+TXT_STRATEGIC = "三大先导"
+TXT_LARGE = "大型"
+TXT_FINANCE = "现代金融"
+TXT_SMART_MFG = "智能制造"
+TXT_NEW_MATERIAL = "新材料"
+DB_ENGINE = create_engine(DB_URL, pool_pre_ping=True)
+
+
+def persist_result(df, table_name: str):
+    output_mode = os.environ.get("MATCHING_OUTPUT_MODE", "jdbc").lower()
+    output_path = OUTPUT_DIR / f"{table_name}.csv"
+
+    pandas_df = df.toPandas()
+    if output_mode == "csv":
+        pandas_df.to_csv(output_path, index=False, encoding="utf-8-sig")
+        print(f"[Matching] 已写出本地结果: {output_path}, rows={len(pandas_df)}")
+        return pandas_df
+
+    try:
+        pandas_df.to_sql(
+            name=table_name,
+            con=DB_ENGINE,
+            if_exists="replace",
+            index=False,
+            chunksize=5000,
+            method="multi",
+        )
+        print(f"[Matching] 已写入数据表: {table_name}, rows={len(pandas_df)}")
+        return pandas_df
+    except Exception as exc:
+        raise RuntimeError(f"[Matching] JDBC 写入失败: table={table_name}, error={exc}") from exc
 
 
 def build_als_matching(df):
@@ -74,8 +102,142 @@ def build_als_matching(df):
         recs.join(major_lookup, "major_index", "left")
         .join(student_bg, "student_id", "left")
         .groupBy("background_dim", "major_name")
-        .agg(round(avg("pred_rating"), 4).alias("matching_score"), count("student_id").alias("sample_size"))
+        .agg(spark_round(avg("pred_rating"), 4).alias("matching_score"), count("student_id").alias("sample_size"))
         .orderBy(col("matching_score").desc())
+    )
+
+
+def evaluate_enrollment_matching(df, top_k=TOP_K):
+    evaluation_df = (
+        df.select(
+            concat(col("origin_place"), lit("|"), col("school_level")).alias("background_dim"),
+            "major_name",
+            "avg_salary",
+        )
+        .dropna()
+        .filter(col("avg_salary") > 0)
+        .groupBy("background_dim", "major_name")
+        .agg(avg("avg_salary").alias("rating"), count("*").alias("interaction_count"))
+    )
+
+    if evaluation_df.count() < 20:
+        return pd.DataFrame(
+            [
+                {
+                    "metric_name": "Precision@K",
+                    "metric_value": 0.0,
+                    "metric_label": f"Precision@{top_k}",
+                    "metric_desc": "样本不足，无法完成稳定评估。",
+                    "k_value": top_k,
+                    "evaluated_profiles": 0,
+                    "eval_mode": "近似评估",
+                }
+            ]
+        )
+
+    profile_indexer = StringIndexer(inputCol="background_dim", outputCol="background_index", handleInvalid="skip").fit(evaluation_df)
+    major_indexer = StringIndexer(inputCol="major_name", outputCol="major_index", handleInvalid="skip").fit(evaluation_df)
+    indexed_df = major_indexer.transform(profile_indexer.transform(evaluation_df))
+
+    train_df, test_df = indexed_df.randomSplit([0.8, 0.2], seed=42)
+    train_profiles = train_df.select("background_index").distinct()
+    test_df = test_df.join(train_profiles, "background_index", "inner")
+
+    if test_df.count() == 0:
+        return pd.DataFrame(
+            [
+                {
+                    "metric_name": "Precision@K",
+                    "metric_value": 0.0,
+                    "metric_label": f"Precision@{top_k}",
+                    "metric_desc": "测试画像在训练集中不可见，无法计算 Precision@K。",
+                    "k_value": top_k,
+                    "evaluated_profiles": 0,
+                    "eval_mode": "近似评估",
+                }
+            ]
+        )
+
+    als = ALS(
+        userCol="background_index",
+        itemCol="major_index",
+        ratingCol="rating",
+        coldStartStrategy="drop",
+        nonnegative=True,
+        rank=6,
+        maxIter=10,
+        regParam=0.1,
+    )
+    model = als.fit(train_df)
+
+    target_profiles = test_df.select("background_index").distinct()
+    recommendations = (
+        model.recommendForUserSubset(target_profiles, top_k)
+        .select("background_index", explode("recommendations").alias("rec"))
+        .select("background_index", col("rec.major_index").alias("major_index"))
+        .groupBy("background_index")
+        .agg(collect_set("major_index").alias("predicted_items"))
+        .toPandas()
+    )
+    actual = (
+        test_df.groupBy("background_index")
+        .agg(collect_set("major_index").alias("actual_items"))
+        .toPandas()
+    )
+
+    merged = actual.merge(recommendations, on="background_index", how="inner")
+    if merged.empty:
+        evaluated_profiles = 0
+        precision_at_k = 0.0
+        recall_at_k = 0.0
+        hit_rate_at_k = 0.0
+    else:
+        precision_scores = []
+        recall_scores = []
+        hit_scores = []
+        for _, row in merged.iterrows():
+            actual_items = set(row["actual_items"] or [])
+            predicted_items = set(row["predicted_items"] or [])
+            hits = actual_items & predicted_items
+            precision_scores.append(len(hits) / top_k if top_k else 0.0)
+            recall_scores.append(len(hits) / len(actual_items) if actual_items else 0.0)
+            hit_scores.append(1.0 if hits else 0.0)
+
+        evaluated_profiles = len(merged)
+        precision_at_k = float(sum(precision_scores) / evaluated_profiles)
+        recall_at_k = float(sum(recall_scores) / evaluated_profiles)
+        hit_rate_at_k = float(sum(hit_scores) / evaluated_profiles)
+
+    return pd.DataFrame(
+        [
+            {
+                "metric_name": "Precision@K",
+                "metric_value": py_round(precision_at_k, 4),
+                "metric_label": f"Precision@{top_k}",
+                "metric_desc": "近似评估：按生源画像背景维度划分训练/测试后，Top-K 推荐中命中真实专业的平均比例。",
+                "k_value": top_k,
+                "evaluated_profiles": evaluated_profiles,
+                "eval_mode": "近似评估",
+            },
+            {
+                "metric_name": "Recall@K",
+                "metric_value": py_round(recall_at_k, 4),
+                "metric_label": f"Recall@{top_k}",
+                "metric_desc": "近似评估：测试集中真实专业被 Top-K 推荐覆盖的平均比例。",
+                "k_value": top_k,
+                "evaluated_profiles": evaluated_profiles,
+                "eval_mode": "近似评估",
+            },
+            {
+                "metric_name": "HitRate@K",
+                "metric_value": py_round(hit_rate_at_k, 4),
+                "metric_label": f"HitRate@{top_k}",
+                "metric_desc": "近似评估：至少命中一个真实专业的背景画像占比。",
+                "k_value": top_k,
+                "evaluated_profiles": evaluated_profiles,
+                "eval_mode": "近似评估",
+            },
+        ]
     )
 
 
@@ -131,7 +293,7 @@ def build_cosine_job_matching(df):
         "leading_industry_tag",
         "student_features",
     ).join(
-        job_df.select("employer_name", "industry_type", "leading_industry_tag", "job_features"),
+        job_df.select("employer_name", "industry_type", "leading_industry_tag", "company_scale", "job_features"),
         on=["industry_type", "leading_industry_tag"],
         how="inner",
     )
@@ -148,67 +310,127 @@ def build_cosine_job_matching(df):
         .withColumn("dot_product", col("s1") * col("j1") + col("s2") * col("j2") + col("s4") * col("j3"))
         .withColumn("student_norm", sqrt(col("s1") * col("s1") + col("s2") * col("s2") + col("s4") * col("s4")))
         .withColumn("job_norm", sqrt(col("j1") * col("j1") + col("j2") * col("j2") + col("j3") * col("j3")))
-        .withColumn("cosine_similarity", round(col("dot_product") / (col("student_norm") * col("job_norm")), 6))
+        .withColumn("cosine_similarity", spark_round(col("dot_product") / (col("student_norm") * col("job_norm")), 6))
+        .withColumn(
+            "recommend_reason",
+            concat(
+                lit("该岗位与学生当前匹配的行业方向为"),
+                col("industry_type"),
+                lit("，产业标签为"),
+                col("leading_industry_tag"),
+                lit("，企业规模为"),
+                col("company_scale"),
+                lit("，因此在向量空间中获得较高相似度。"),
+            ),
+        )
     )
 
     ranking = Window.partitionBy("student_id").orderBy(col("cosine_similarity").desc(), col("employer_name"))
     return (
         scored.withColumn("rank_no", dense_rank().over(ranking))
-        .filter(col("rank_no") <= 3)
-        .select("student_id", "student_name", "employer_name", "cosine_similarity", "rank_no")
+        .filter(col("rank_no") <= TOP_K)
+        .select(
+            "student_id",
+            "student_name",
+            "employer_name",
+            "industry_type",
+            "leading_industry_tag",
+            "company_scale",
+            "cosine_similarity",
+            "recommend_reason",
+            "rank_no",
+        )
         .orderBy("student_id", "rank_no")
     )
 
 
-def persist_result(df, table_name: str):
-    output_mode = os.environ.get("MATCHING_OUTPUT_MODE", "jdbc").lower()
-    output_path = OUTPUT_DIR / f"{table_name}.csv"
+def evaluate_job_recommendation(cosine_pdf):
+    if cosine_pdf.empty:
+        return pd.DataFrame()
 
-    if output_mode == "csv":
-        df.toPandas().to_csv(output_path, index=False, encoding="utf-8-sig")
-        print(f"[Matching] \u5df2\u5199\u51fa\u672c\u5730\u7ed3\u679c: {output_path}")
-        return
+    top1 = cosine_pdf[cosine_pdf["rank_no"] == 1].copy()
+    topk = cosine_pdf[cosine_pdf["rank_no"] <= TOP_K].copy()
+    avg_top1 = float(top1["cosine_similarity"].mean()) if not top1.empty else 0.0
+    avg_topk = float(topk["cosine_similarity"].mean()) if not topk.empty else 0.0
+    high_conf_ratio = float((top1["cosine_similarity"] >= 0.9).mean()) if not top1.empty else 0.0
 
-    try:
-        pandas_df = df.toPandas()
-        pandas_df.to_sql(
-            name=table_name,
-            con=DB_ENGINE,
-            if_exists="replace",
-            index=False,
-            chunksize=5000,
-            method="multi",
-        )
-        print(f"[Matching] \u5df2\u5199\u5165\u6570\u636e\u8868: {table_name}")
-    except Exception as exc:
-        print(f"[Matching] JDBC \u5199\u5165\u5931\u8d25\uff0c\u81ea\u52a8\u56de\u9000\u5230\u672c\u5730 CSV: {exc}")
-        df.toPandas().to_csv(output_path, index=False, encoding="utf-8-sig")
-        print(f"[Matching] \u5df2\u5199\u51fa\u672c\u5730\u7ed3\u679c: {output_path}")
+    return pd.DataFrame(
+        [
+            {
+                "metric_name": "AvgTop1Similarity",
+                "metric_value": py_round(avg_top1, 4),
+                "metric_label": "Top1 平均相似度",
+                "metric_desc": "Top1 推荐结果的平均余弦相似度，反映模型对首推岗位的匹配强度。",
+                "sample_size": int(len(top1)),
+                "eval_mode": "相似度统计",
+            },
+            {
+                "metric_name": "AvgTopKSimilarity",
+                "metric_value": py_round(avg_topk, 4),
+                "metric_label": f"Top{TOP_K} 平均相似度",
+                "metric_desc": "Top-K 推荐列表的平均余弦相似度，用于观察候选岗位整体匹配水平。",
+                "sample_size": int(len(topk)),
+                "eval_mode": "相似度统计",
+            },
+            {
+                "metric_name": "HighConfidenceRatio",
+                "metric_value": py_round(high_conf_ratio, 4),
+                "metric_label": "高相似度占比",
+                "metric_desc": "Top1 推荐中相似度不低于 0.90 的学生占比，属于可运行的可信度统计指标。",
+                "sample_size": int(len(top1)),
+                "eval_mode": "相似度统计",
+            },
+        ]
+    )
 
 
 def run_matching_pipeline():
     spark = create_spark_session("SHU_Employment_CF_Refactor")
 
     try:
-        print("[Matching] \u6b63\u5728\u52a0\u8f7d\u56db\u8868\u5173\u8054\u6570\u636e...")
+        print("[Matching] 正在加载四表关联数据...")
         df = load_joined_dataset(spark).cache()
 
-        print("[Matching] \u6b63\u5728\u8ba1\u7b97 ALS \u62db\u751f\u5339\u914d\u7ed3\u679c...")
+        print("[Matching] 正在计算 ALS 招生匹配结果...")
         als_result = build_als_matching(df)
         persist_result(als_result, "ads_enrollment_matching")
 
-        print("[Matching] \u6b63\u5728\u8ba1\u7b97\u4eba\u5c97\u5339\u914d\u63a8\u8350\u7ed3\u679c...")
-        cosine_result = build_cosine_job_matching(df)
-        persist_result(cosine_result, "ads_job_recommendation")
+        print("[Matching] 正在评估 ALS 招生匹配效果...")
+        enrollment_eval_pdf = evaluate_enrollment_matching(df, TOP_K)
+        enrollment_eval_pdf.to_sql(
+            name="ads_enrollment_matching_eval",
+            con=DB_ENGINE,
+            if_exists="replace",
+            index=False,
+            chunksize=1000,
+            method="multi",
+        )
 
-        print("[Matching] ALS \u4e0e\u4eba\u5c97\u5339\u914d\u7ed3\u679c\u5904\u7406\u5b8c\u6210\u3002")
+        print("[Matching] 正在计算人岗匹配推荐结果...")
+        cosine_result = build_cosine_job_matching(df)
+        cosine_pdf = persist_result(cosine_result, "ads_job_recommendation")
+
+        print("[Matching] 正在统计余弦推荐可信度...")
+        job_eval_pdf = evaluate_job_recommendation(cosine_pdf)
+        job_eval_pdf.to_sql(
+            name="ads_job_recommendation_eval",
+            con=DB_ENGINE,
+            if_exists="replace",
+            index=False,
+            chunksize=1000,
+            method="multi",
+        )
+
+        print("[Matching] ALS 与人岗匹配结果处理完成。")
+        return True
     except Exception as exc:
-        print(f"[Matching] \u8fd0\u884c\u5931\u8d25: {exc}")
+        print(f"[Matching] 运行失败: {exc}")
         traceback.print_exc()
+        return False
     finally:
         spark.stop()
 
 
 if __name__ == "__main__":
     OUTPUT_DIR.mkdir(exist_ok=True)
-    run_matching_pipeline()
+    sys.exit(0 if run_matching_pipeline() else 1)

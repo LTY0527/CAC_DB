@@ -1,17 +1,23 @@
-import { Card, Col, Row, Statistic, Table } from 'antd'
+import { Card, Col, Row, Statistic, Table, Tag } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import {
   formatNumber,
   getDisciplineDistribution,
   getForecastData,
   getGovDashboardSummary,
+  getModelMetricCards,
   getSchoolDashboardSummary,
   getTieredRules,
   getTopSchoolsByEmployment,
 } from '../utils/dataAdapter'
 import {
+  algorithmTextStyle,
   darkTooltip,
+  metaLabelStyle,
+  metaValueStyle,
+  noteTextStyle,
   panelStyle,
+  riskTextStyle,
   sectionTitleStyle,
   statTitleStyle,
   statValueBlue,
@@ -71,7 +77,7 @@ function buildRulesLiftOption(rules) {
         const matched = rules[index] || {}
         return [
           cleanRuleLabel(matched.antecedent),
-          `结果：${cleanRuleLabel(matched.consequent)}`,
+          `结果项：${cleanRuleLabel(matched.consequent)}`,
           `支持度：${(Number(matched.support || 0) * 100).toFixed(1)}%`,
           `置信度：${(Number(matched.confidence || 0) * 100).toFixed(1)}%`,
           `提升度：${Number(matched.lift || 0).toFixed(2)}`,
@@ -82,13 +88,7 @@ function buildRulesLiftOption(rules) {
     xAxis: {
       type: 'category',
       data: rules.map((item, index) => compactRuleLabel(item.antecedent || `规则${index + 1}`)),
-      axisLabel: {
-        color: '#b7dfff',
-        interval: 0,
-        lineHeight: 18,
-        fontSize: 12,
-        margin: 18,
-      },
+      axisLabel: { color: '#b7dfff', interval: 0, lineHeight: 18, fontSize: 12, margin: 18 },
       axisLine: { lineStyle: { color: '#3c6e91' } },
     },
     yAxis: {
@@ -154,10 +154,21 @@ function buildDisciplineOption(disciplineData) {
   }
 }
 
+const chainItems = [
+  '动态监测',
+  '需求预测',
+  '招生匹配',
+  '规则证据',
+  '培养优化',
+  '就业推荐',
+]
+
 export default function Dashboard({
   employmentData = [],
   forecastData = [],
   rulesData = [],
+  modelMetricsData = [],
+  dataLoadedAt = '',
   loading,
   error,
   roleMode = 'school',
@@ -172,24 +183,63 @@ export default function Dashboard({
   const rules = getTieredRules(rulesData, 10)
   const topSchools = getTopSchoolsByEmployment(employmentData, 5)
   const disciplineData = getDisciplineDistribution(employmentData)
+  const modelMetricCards = getModelMetricCards(modelMetricsData)
 
   const summaryCards =
     roleMode === 'gov'
       ? [
-          { title: '覆盖高校数', value: formatNumber(govSummary.schoolCount), style: statValuePrimary },
-          { title: '全市样本人数', value: formatNumber(govSummary.totalEmp), style: statValueBlue },
-          { title: '全市平均薪资', value: `￥${formatNumber(govSummary.weightedSalary, 0)}`, style: statValueCyan },
-          { title: '重点产业吸纳人数', value: formatNumber(govSummary.topIndustryEmp), style: statValuePurple },
-        ]
+        { title: '覆盖高校数', value: formatNumber(govSummary.schoolCount), style: statValuePrimary },
+        { title: '全市就业样本', value: formatNumber(govSummary.totalEmp), style: statValueBlue },
+        { title: '全市平均薪资', value: `¥${formatNumber(govSummary.weightedSalary, 0)}`, style: statValueCyan },
+        { title: '先导产业吸纳人数', value: formatNumber(govSummary.topIndustryEmp), style: statValuePurple },
+      ]
       : [
-          { title: '本校样本人数', value: formatNumber(schoolSummary.totalEmp), style: statValuePrimary },
-          { title: '本校平均薪资', value: `￥${formatNumber(schoolSummary.weightedSalary, 0)}`, style: statValueBlue },
-          { title: '重点产业吸纳人数', value: formatNumber(schoolSummary.topIndustryEmp), style: statValueCyan },
-          { title: '覆盖专业数', value: formatNumber(schoolSummary.majorCount), style: statValuePurple },
-        ]
+        { title: '本校就业样本', value: formatNumber(schoolSummary.totalEmp), style: statValuePrimary },
+        { title: '本校平均薪资', value: `¥${formatNumber(schoolSummary.weightedSalary, 0)}`, style: statValueBlue },
+        { title: '先导产业吸纳人数', value: formatNumber(schoolSummary.topIndustryEmp), style: statValueCyan },
+        { title: '覆盖专业数', value: formatNumber(schoolSummary.majorCount), style: statValuePurple },
+      ]
 
   return (
     <Row gutter={[16, 16]}>
+      <Col span={24}>
+        <Card style={panelStyle}>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} xl={14}>
+              <div style={sectionTitleStyle}>平台主链路总览</div>
+              <div style={{ ...noteTextStyle, marginTop: 10 }}>
+                该页面用于把五大模块放到一条完整业务链上看：先通过动态监测识别结构变化，再用需求预测判断趋势，用招生匹配和培养优化支持前端决策，最终落到就业推荐与质量反馈。
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {chainItems.map((item, index) => (
+                  <Tag key={item} color={index % 2 === 0 ? 'processing' : 'cyan'}>
+                    {index + 1}. {item}
+                  </Tag>
+                ))}
+              </div>
+            </Col>
+            <Col xs={24} xl={10}>
+              <Row gutter={[12, 12]}>
+                <Col span={12}>
+                  <div style={metaLabelStyle}>数据载入时间</div>
+                  <div style={metaValueStyle}>{dataLoadedAt || '当前会话未记录'}</div>
+                </Col>
+                <Col span={12}>
+                  <div style={metaLabelStyle}>业务价值</div>
+                  <div style={metaValueStyle}>为招生、培养、就业形成闭环决策入口</div>
+                </Col>
+                <Col span={24}>
+                  <div style={algorithmTextStyle}>算法说明：总览页不单独训练模型，而是聚合 LSTM、协同过滤、关联规则、余弦相似度四类结果做管理层展示。</div>
+                </Col>
+                <Col span={24}>
+                  <div style={riskTextStyle}>风险提示：总览页强调趋势与信号，具体专业调整和学生推荐仍需回到对应模块查看细项证据。</div>
+                </Col>
+              </Row>
+            </Col>
+          </Row>
+        </Card>
+      </Col>
+
       {summaryCards.map((item) => (
         <Col xs={24} sm={12} xl={6} key={item.title}>
           <Card style={panelStyle}>
@@ -199,13 +249,21 @@ export default function Dashboard({
       ))}
 
       <Col xs={24} xl={14}>
-        <Card title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '全市需求侧薪资趋势' : '需求预测趋势对比'}</span>} style={panelStyle}>
+        <Card
+          title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '区域需求预测趋势' : '薪资需求预测趋势'}</span>}
+          extra={<span style={{ color: '#8fb7d8', fontSize: 12 }}>业务价值：提前识别需求变化，为招生规模和培养侧资源投入提供前置信号。</span>}
+          style={panelStyle}
+        >
           <ReactECharts option={buildForecastOverviewOption(forecast)} style={{ height: 380 }} />
         </Card>
       </Col>
 
       <Col xs={24} xl={10}>
-        <Card title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? 'Top 高校就业规模对比' : '高提升度规则分层展示'}</span>} style={panelStyle}>
+        <Card
+          title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '高校就业规模对比' : '高价值规则证据'}</span>}
+          extra={<span style={{ color: '#8fb7d8', fontSize: 12 }}>{roleMode === 'gov' ? '业务价值：支持区域高校结构分析。' : '业务价值：为培养方案调整提供规则证据。'}</span>}
+          style={panelStyle}
+        >
           <ReactECharts
             option={roleMode === 'gov' ? buildGovTopSchoolOption(topSchools) : buildRulesLiftOption(rules)}
             style={{ height: 380 }}
@@ -213,22 +271,51 @@ export default function Dashboard({
         </Card>
       </Col>
 
+      <Col span={24}>
+        <Card title={<span style={sectionTitleStyle}>模型评估与算法可信度</span>} style={panelStyle}>
+          <Row gutter={[16, 16]}>
+            {modelMetricCards.map((item) => (
+              <Col xs={24} md={12} xl={6} key={item.key}>
+                <Card style={{ ...panelStyle, minHeight: 176 }}>
+                  <Statistic
+                    title={item.title}
+                    value={item.value}
+                    precision={item.title.includes('Precision') || item.title.includes('相似度') || item.title.includes('Lift') ? 3 : 0}
+                    suffix={item.suffix}
+                    styles={{ title: statTitleStyle, content: statValuePrimary }}
+                  />
+                  <div style={{ color: '#8fb7d8', marginTop: 10, lineHeight: 1.8 }}>{item.description}</div>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      </Col>
+
       {roleMode === 'gov' ? (
         <Col span={24}>
-          <Card title={<span style={sectionTitleStyle}>全市学科门类结构分布</span>} style={panelStyle}>
+          <Card
+            title={<span style={sectionTitleStyle}>区域学科结构分布</span>}
+            extra={<span style={{ color: '#8fb7d8', fontSize: 12 }}>用于观察专业布局是否与就业结构匹配。</span>}
+            style={panelStyle}
+          >
             <ReactECharts option={buildDisciplineOption(disciplineData)} style={{ height: 400 }} />
           </Card>
         </Col>
       ) : (
         <Col span={24}>
-          <Card title={<span style={sectionTitleStyle}>十条分层规则明细</span>} style={panelStyle}>
+          <Card
+            title={<span style={sectionTitleStyle}>高价值规则摘要</span>}
+            extra={<span style={{ color: '#8fb7d8', fontSize: 12 }}>建议从 Lift 高且 Support 不低的规则开始解释。</span>}
+            style={panelStyle}
+          >
             <Table
               rowKey="key"
               pagination={false}
               dataSource={rules}
               columns={[
-                { title: '前置条件', dataIndex: 'antecedent', render: (value) => cleanRuleLabel(value) },
-                { title: '就业结果', dataIndex: 'consequent', render: (value) => cleanRuleLabel(value) },
+                { title: '前项条件', dataIndex: 'antecedent', render: (value) => cleanRuleLabel(value) },
+                { title: '结果项', dataIndex: 'consequent', render: (value) => cleanRuleLabel(value) },
                 { title: '支持度', dataIndex: 'support', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },
                 { title: '置信度', dataIndex: 'confidence', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },
                 { title: '提升度', dataIndex: 'lift', render: (value) => Number(value || 0).toFixed(2) },

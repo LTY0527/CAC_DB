@@ -2,10 +2,11 @@ import os
 import sys
 from pathlib import Path
 
+from sqlalchemy import create_engine
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, concat, lit, when
 
-from config import DB_SETTINGS, JAR_PATH, jdbc_url
+from config import DB_SETTINGS, DB_URL, JAR_PATH, jdbc_url
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -39,6 +40,7 @@ DB_PROPERTIES = {
     "password": DB_SETTINGS["password"],
     "driver": DB_SETTINGS["driver"],
 }
+DB_ENGINE = create_engine(DB_URL, pool_pre_ping=True)
 
 
 def create_spark_session(app_name: str) -> SparkSession:
@@ -80,12 +82,14 @@ def _load_tables_from_csv(spark: SparkSession):
 
 
 def _load_tables(spark: SparkSession):
-    preferred_source = os.environ.get("MATCHING_DATA_SOURCE", "csv").lower()
+    preferred_source = os.environ.get("MATCHING_DATA_SOURCE", "jdbc").lower()
 
     if preferred_source == "csv":
+        print("[Spark] 当前数据源: 本地 CSV")
         return _load_tables_from_csv(spark)
 
     try:
+        print("[Spark] 当前数据源: MySQL JDBC")
         return _load_tables_from_jdbc(spark)
     except Exception as exc:
         print(f"[Spark] JDBC \u8bfb\u53d6\u5931\u8d25\uff0c\u81ea\u52a8\u56de\u9000\u5230\u672c\u5730 CSV: {exc}")
@@ -190,3 +194,25 @@ def load_joined_dataset(spark: SparkSession):
         .withColumn("leading_industry_label", concat(lit("\u4ea7\u4e1a\u6807\u7b7e:"), col("leading_industry_tag")))
     )
     return labeled_df
+
+
+def write_dataframe_to_mysql(df, table_name: str) -> int:
+    try:
+        df.write.jdbc(url=jdbc_url, table=table_name, mode="overwrite", properties=DB_PROPERTIES)
+        row_count = df.count()
+        print(f"[Spark] 已通过 JDBC 写入数据表: {table_name}, rows={row_count}")
+        return row_count
+    except Exception as exc:
+        print(f"[Spark] JDBC 写入失败，自动回退到 SQLAlchemy: table={table_name}, error={exc}")
+        pandas_df = df.toPandas()
+        pandas_df.to_sql(
+            name=table_name,
+            con=DB_ENGINE,
+            if_exists="replace",
+            index=False,
+            chunksize=5000,
+            method="multi",
+        )
+        row_count = len(pandas_df)
+        print(f"[Spark] 已通过 SQLAlchemy 写入数据表: {table_name}, rows={row_count}")
+        return row_count

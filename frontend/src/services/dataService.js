@@ -45,8 +45,18 @@ export async function fetchSalaryForecast() {
   return ensurePayload(response)
 }
 
+export async function fetchSalaryForecastEvaluation() {
+  const response = await api.get('/salary-forecast-evaluation')
+  return ensurePayload(response)
+}
+
 export async function fetchEnrollmentMatching() {
   const response = await api.get('/enrollment-matching')
+  return ensurePayload(response)
+}
+
+export async function fetchEnrollmentMatchingEvaluation() {
+  const response = await api.get('/enrollment-matching-evaluation')
   return ensurePayload(response)
 }
 
@@ -55,8 +65,23 @@ export async function fetchMajorMatchingRules() {
   return ensurePayload(response)
 }
 
+export async function fetchTrainingProgramOptimization() {
+  const response = await api.get('/training-program-optimization')
+  return ensurePayload(response)
+}
+
 export async function fetchJobRecommendation() {
   const response = await api.get('/job-recommendation')
+  return ensurePayload(response)
+}
+
+export async function fetchJobRecommendationEvaluation() {
+  const response = await api.get('/job-recommendation-evaluation')
+  return ensurePayload(response)
+}
+
+export async function fetchModelMetrics() {
+  const response = await api.get('/model-metrics')
   return ensurePayload(response)
 }
 

@@ -200,7 +200,7 @@ def verify_tables(engine):
             tables = [row[0] for row in result]
             
             if len(tables) == 4:
-                logger.info("✓ 验证成功，所有表都已创建:")
+                logger.info("验证成功，所有表都已创建:")
                 for table in sorted(tables):
                     logger.info(f"  - {table}")
                 return True

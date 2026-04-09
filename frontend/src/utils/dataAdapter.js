@@ -14,6 +14,7 @@ const TXT_UNKNOWN_MAJOR = '未知专业'
 const TXT_UNKNOWN_EDU = '未知学历'
 const TXT_UNKNOWN_INDUSTRY = '未知产业'
 const TXT_UNKNOWN_DISCIPLINE = '未知学科'
+const TXT_UNKNOWN_ACTION = '待生成'
 
 export function formatNumber(num, digits = 0) {
   return Number(num || 0).toLocaleString('zh-CN', {
@@ -67,12 +68,7 @@ function useStaticRules(data = []) {
 }
 
 function useStaticForecast(data = []) {
-  if (!Array.isArray(data) || data.length < 12) return true
-  const hasTrack = data.some((item) => item?.track || item?.major_name || item?.series_name)
-  if (hasTrack) return false
-  const values = data.map((item) => Number(item?.predicted_salary || 0))
-  const spread = Math.max(...values, 0) - Math.min(...values, 0)
-  return spread < 1200
+  return !Array.isArray(data) || data.length === 0
 }
 
 export function normalizeEmploymentData(data = []) {
@@ -147,6 +143,7 @@ export function getForecastData(data = []) {
   const min = allValues.length ? Math.floor((Math.min(...allValues) - 600) / 500) * 500 : 0
   const max = allValues.length ? Math.ceil((Math.max(...allValues) + 600) / 500) * 500 : 20000
   return {
+    horizonMonths: months.length,
     months,
     series,
     values: series[0]?.data || [],
@@ -154,6 +151,82 @@ export function getForecastData(data = []) {
     min,
     max,
   }
+}
+
+function normalizeMetricItem(item = {}, index = 0) {
+  return {
+    key: item.key || `${item.metric_name || 'metric'}-${index}`,
+    module_key: item.module_key || '',
+    metric_name: item.metric_name || '',
+    metric_label: item.metric_label || item.metric_name || '',
+    metric_value: Number(item.metric_value || 0),
+    metric_unit: item.metric_unit || '',
+    metric_desc: item.metric_desc || '',
+    sample_size: Number(item.sample_size || 0),
+    train_window_size: Number(item.train_window_size || 0),
+    test_window_size: Number(item.test_window_size || 0),
+    k_value: Number(item.k_value || 0),
+    evaluated_profiles: Number(item.evaluated_profiles || 0),
+    eval_mode: item.eval_mode || '',
+  }
+}
+
+export function getSalaryForecastEvaluation(data = {}) {
+  const metrics = Array.isArray(data?.metrics) ? data.metrics.map(normalizeMetricItem) : []
+  const backtest = Array.isArray(data?.backtest)
+    ? data.backtest.map((item, index) => ({
+      key: `${item.forecast_month || index}`,
+      forecast_month: item.forecast_month || '',
+      actual_salary: Number(item.actual_salary || 0),
+      predicted_salary: Number(item.predicted_salary || 0),
+      abs_error: Number(item.abs_error || 0),
+      dataset_split: item.dataset_split || '',
+    }))
+    : []
+
+  const metricMap = Object.fromEntries(metrics.map((item) => [item.metric_name, item]))
+  return {
+    metrics,
+    backtest,
+    mae: metricMap.MAE?.metric_value || 0,
+    rmse: metricMap.RMSE?.metric_value || 0,
+    mape: metricMap.MAPE?.metric_value || 0,
+    trainWindowSize: metricMap.MAE?.train_window_size || metricMap.RMSE?.train_window_size || 0,
+    testWindowSize: metricMap.MAE?.test_window_size || metricMap.RMSE?.test_window_size || backtest.length,
+  }
+}
+
+export function getSalaryBacktestChartData(data = {}) {
+  const evaluation = getSalaryForecastEvaluation(data)
+  return {
+    months: evaluation.backtest.map((item) => item.forecast_month),
+    actual: evaluation.backtest.map((item) => item.actual_salary),
+    predicted: evaluation.backtest.map((item) => item.predicted_salary),
+  }
+}
+
+export function getMetricRows(data = []) {
+  return (Array.isArray(data) ? data : []).map(normalizeMetricItem)
+}
+
+export function getRuleMetricExplanations() {
+  return [
+    {
+      key: 'support',
+      metric: '支持度 Support',
+      explanation: '表示这条规则覆盖了多少样本，值越高说明规则不是个别现象，而是较常见的组合关系。',
+    },
+    {
+      key: 'confidence',
+      metric: '置信度 Confidence',
+      explanation: '表示当前项出现时结果项同时出现的稳定性，值越高说明规则更可靠。',
+    },
+    {
+      key: 'lift',
+      metric: '提升度 Lift',
+      explanation: '表示规则相对于随机命中的增益倍数，大于 1 说明前项会显著提高后项出现概率。',
+    },
+  ]
 }
 
 export function getRulesTableData(data = []) {
@@ -261,7 +334,9 @@ export function getEnrollmentMajors(data = []) {
 }
 
 export function getRecommendationByStudent(data = [], studentId) {
-  return (Array.isArray(data) ? data : []).find((item) => String(item.student_id) === String(studentId))
+  return (Array.isArray(data) ? data : [])
+    .filter((item) => String(item.student_id) === String(studentId))
+    .sort((a, b) => Number(a.rank_no || 99) - Number(b.rank_no || 99))
 }
 
 export function getRecommendationLevel(score) {
@@ -301,16 +376,59 @@ export function getRecommendationAdvice(jobName = '', score = 0) {
 export function getRecommendationStats(data = []) {
   const safeData = Array.isArray(data) ? data : []
   if (!safeData.length) return { totalStudents: 0, avgScore: 0, highMatchCount: 0, topJob: '-' }
-  const totalStudents = safeData.length
-  const avgScore = safeData.reduce((sum, item) => sum + Number(item.matching_score || 0), 0) / totalStudents
-  const highMatchCount = safeData.filter((item) => Number(item.matching_score || 0) >= 0.9).length
+  const top1Rows = safeData.filter((item) => Number(item.rank_no || 1) === 1)
+  const baseRows = top1Rows.length ? top1Rows : safeData
+  const totalStudents = baseRows.length
+  const avgScore = baseRows.reduce((sum, item) => sum + Number(item.matching_score || 0), 0) / totalStudents
+  const highMatchCount = baseRows.filter((item) => Number(item.matching_score || 0) >= 0.9).length
   const jobCountMap = {}
-  safeData.forEach((item) => {
+  baseRows.forEach((item) => {
     const job = item.recommended_job || '未知岗位'
     jobCountMap[job] = (jobCountMap[job] || 0) + 1
   })
   const topJob = Object.entries(jobCountMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'
   return { totalStudents, avgScore, highMatchCount, topJob }
+}
+
+export function getRecommendationTopKByStudent(data = [], studentId, topK = 3) {
+  return getRecommendationByStudent(data, studentId).slice(0, topK)
+}
+
+export function getModelMetricCards(data = []) {
+  const rows = getMetricRows(data)
+  const pick = (moduleKey, metricName) =>
+    rows.find((item) => item.module_key === moduleKey && item.metric_name === metricName)
+
+  return [
+    {
+      key: 'salary_rmse',
+      title: 'LSTM RMSE',
+      value: pick('salary_forecast', 'RMSE')?.metric_value || 0,
+      suffix: '元',
+      description: pick('salary_forecast', 'RMSE')?.metric_desc || '预测值与真实值的均方根误差。',
+    },
+    {
+      key: 'enrollment_precision',
+      title: '招生 Precision@K',
+      value: pick('enrollment_matching', 'Precision@K')?.metric_value || 0,
+      suffix: '',
+      description: pick('enrollment_matching', 'Precision@K')?.metric_desc || '衡量 Top-K 推荐中命中真实偏好专业的比例。',
+    },
+    {
+      key: 'rules_lift',
+      title: '规则平均 Lift',
+      value: pick('rule_mining', 'AvgLift')?.metric_value || 0,
+      suffix: '',
+      description: pick('rule_mining', 'AvgLift')?.metric_desc || '衡量规则相对于随机命中的增益倍数。',
+    },
+    {
+      key: 'job_similarity',
+      title: '就业 Top1 相似度',
+      value: pick('job_recommendation', 'AvgTop1Similarity')?.metric_value || 0,
+      suffix: '',
+      description: pick('job_recommendation', 'AvgTop1Similarity')?.metric_desc || '衡量首位推荐岗位与学生画像的平均相似度。',
+    },
+  ]
 }
 
 export function buildReportSummary({
@@ -377,6 +495,89 @@ export function getDisciplineDistribution(data = []) {
     map[item.discipline_category] = (map[item.discipline_category] || 0) + item.emp_count
   })
   return Object.entries(map).map(([name, value]) => ({ name, value }))
+}
+
+function safeJsonParseArray(value) {
+  if (Array.isArray(value)) return value
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return String(value)
+      .split(/[、,，;；]/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+  }
+}
+
+export function normalizeTrainingProgramData(data = []) {
+  return (Array.isArray(data) ? data : []).map((item = {}, index) => ({
+    key: item.key || `${item.school_name || TXT_UNKNOWN_SCHOOL}-${item.major_name || TXT_UNKNOWN_MAJOR}-${index}`,
+    school_name: item.school_name || TXT_UNKNOWN_SCHOOL,
+    school_level: item.school_level || '未知院校层级',
+    discipline_category: item.discipline_category || TXT_UNKNOWN_DISCIPLINE,
+    major_name: item.major_name || TXT_UNKNOWN_MAJOR,
+    major_type: item.major_type || '通用专业',
+    employment_count: Number(item.employment_count || 0),
+    employment_rate_estimate: Number(item.employment_rate_estimate || 0),
+    avg_salary: Number(item.avg_salary || 0),
+    strategic_ratio: Number(item.strategic_ratio || 0),
+    high_skill_ratio: Number(item.high_skill_ratio || 0),
+    dominant_industry: item.dominant_industry || TXT_UNKNOWN_INDUSTRY,
+    dominant_skill_level: item.dominant_skill_level || '中',
+    matched_rule_count: Number(item.matched_rule_count || 0),
+    top_rule_support: Number(item.top_rule_support || 0),
+    top_rule_confidence: Number(item.top_rule_confidence || 0),
+    top_rule_lift: Number(item.top_rule_lift || 0),
+    priority_score: Number(item.priority_score || 0),
+    action_type: item.action_type || TXT_UNKNOWN_ACTION,
+    recommended_courses: safeJsonParseArray(item.recommended_courses),
+    recommended_skills: safeJsonParseArray(item.recommended_skills),
+    recommended_practice: safeJsonParseArray(item.recommended_practice),
+    recommended_structure: item.recommended_structure || '',
+    rule_evidence: safeJsonParseArray(item.rule_evidence),
+    evidence_summary: item.evidence_summary || '',
+    explanation: item.explanation || '',
+  }))
+}
+
+export function getTrainingProgramFilterOptions(data = []) {
+  const safeData = normalizeTrainingProgramData(data)
+  const sortText = (arr) => [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'zh-CN'))
+  return {
+    schools: sortText(safeData.map((item) => item.school_name)),
+    disciplines: sortText(safeData.map((item) => item.discipline_category)),
+    actions: sortText(safeData.map((item) => item.action_type)),
+  }
+}
+
+export function getTrainingProgramRows(data = [], { currentSchool = TXT_UNKNOWN_SCHOOL, roleMode = 'school', selectedSchool = TXT_ALL } = {}) {
+  const safeData = normalizeTrainingProgramData(data)
+  const schoolScope = roleMode === 'gov' ? selectedSchool : currentSchool
+  const scopedData = schoolScope === TXT_ALL ? safeData : safeData.filter((item) => item.school_name === schoolScope)
+  return [...scopedData].sort((a, b) => b.priority_score - a.priority_score || b.top_rule_lift - a.top_rule_lift)
+}
+
+export function getTrainingProgramOverview(rows = []) {
+  if (!rows.length) {
+    return {
+      majorCount: 0,
+      focusCount: 0,
+      avgPriorityScore: 0,
+      avgEmploymentRate: 0,
+      avgSalary: 0,
+    }
+  }
+
+  const total = rows.length
+  return {
+    majorCount: total,
+    focusCount: rows.filter((item) => item.action_type === '重点调优').length,
+    avgPriorityScore: Number((rows.reduce((sum, item) => sum + Number(item.priority_score || 0), 0) / total).toFixed(1)),
+    avgEmploymentRate: Number((rows.reduce((sum, item) => sum + Number(item.employment_rate_estimate || 0), 0) / total).toFixed(1)),
+    avgSalary: Number((rows.reduce((sum, item) => sum + Number(item.avg_salary || 0), 0) / total).toFixed(0)),
+  }
 }
 
 function clamp(value, min, max) {
@@ -478,6 +679,10 @@ export function getMajorOptimizationOverview(rows = []) {
 }
 
 export function getMajorActionColor(action = '') {
+  if (action === '重点调优') return 'red'
+  if (action === '补强就业导向') return 'gold'
+  if (action === '优化课程结构') return 'blue'
+  if (action === '强化优势方向') return 'green'
   if (action === '建议扩招') return 'green'
   if (action === '建议缩招') return 'red'
   if (action === '建议调优') return 'gold'
