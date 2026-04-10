@@ -23,7 +23,7 @@ function RoleHomeRedirect() {
 function DashboardRoute() {
   const pageData = usePlatformPageData()
   return pageData.roleMode === 'public'
-    ? <RoleWorkspace roleMode={pageData.roleMode} />
+    ? <RoleWorkspace {...pageData} />
     : <Dashboard {...pageData} />
 }
 

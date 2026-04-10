@@ -1,19 +1,7 @@
 import { Card, Col, Row, Table } from 'antd'
 import ReactECharts from 'echarts-for-react'
-import {
-  getRuleMetricExplanations,
-  getRulesGraphData,
-  getStableRandomRules,
-} from '../utils/dataAdapter'
-import {
-  algorithmTextStyle,
-  darkTooltip,
-  metaLabelStyle,
-  metaValueStyle,
-  panelStyle,
-  riskTextStyle,
-  sectionTitleStyle,
-} from '../utils/uiTheme'
+import { getRulesGraphData, getStableRandomRules } from '../utils/dataAdapter'
+import { darkTooltip, designTokens, panelStyle, sectionTitleStyle } from '../utils/uiTheme'
 
 function cleanRuleLabel(text = '') {
   return String(text).replace(/[[\]"]/g, '').replace(/,/g, ' / ').replace(/\s+/g, ' ').trim()
@@ -42,13 +30,13 @@ function buildRulesMetricsOption(data = []) {
         ].join('<br/>')
       },
     },
-    legend: { top: 8, textStyle: { color: '#b7dfff' } },
+    legend: { top: 8, textStyle: { color: designTokens.textSecondary } },
     grid: { left: '6%', right: '5%', bottom: '18%', top: '16%', containLabel: true },
     xAxis: {
       type: 'category',
       data: labels,
-      axisLabel: { color: '#b7dfff', interval: 0 },
-      axisLine: { lineStyle: { color: '#3c6e91' } },
+      axisLabel: { color: designTokens.textSecondary, interval: 0 },
+      axisLine: { lineStyle: { color: designTokens.borderStrong } },
     },
     yAxis: [
       {
@@ -56,8 +44,8 @@ function buildRulesMetricsOption(data = []) {
         name: '比例',
         min: 0,
         max: 100,
-        axisLabel: { color: '#b7dfff', formatter: '{value}%' },
-        nameTextStyle: { color: '#b7dfff' },
+        axisLabel: { color: designTokens.textSecondary, formatter: '{value}%' },
+        nameTextStyle: { color: designTokens.textMuted },
         splitLine: { lineStyle: { color: 'rgba(80,130,170,0.18)' } },
       },
       {
@@ -65,8 +53,8 @@ function buildRulesMetricsOption(data = []) {
         name: '提升度',
         min: 1,
         max: 5,
-        axisLabel: { color: '#b7dfff' },
-        nameTextStyle: { color: '#b7dfff' },
+        axisLabel: { color: designTokens.textSecondary },
+        nameTextStyle: { color: designTokens.textMuted },
       },
     ],
     series: [
@@ -106,7 +94,7 @@ function buildRulesGraphOption(graphData) {
       ...darkTooltip,
       formatter(params) {
         if (params.dataType === 'edge') {
-          return `${cleanRuleLabel(params.data.source)} -> ${cleanRuleLabel(params.data.target)}<br/>提升度：${Number(params.data.value || 0).toFixed(2)}`
+          return `${cleanRuleLabel(params.data.source)} → ${cleanRuleLabel(params.data.target)}<br/>提升度：${Number(params.data.value || 0).toFixed(2)}`
         }
         return cleanRuleLabel(params.data.name)
       },
@@ -116,25 +104,53 @@ function buildRulesGraphOption(graphData) {
         type: 'graph',
         layout: 'force',
         roam: true,
-        label: { show: true, color: '#d9eeff' },
         force: { repulsion: 280, edgeLength: 140, gravity: 0.08 },
         categories: [{ name: '前项条件' }, { name: '结果项' }],
-        data: graphData.nodes,
+        data: graphData.nodes.map((node) => ({
+          ...node,
+          itemStyle: {
+            color: node.category === 0 ? '#2563eb' : '#0f766e',
+            borderColor: node.category === 0 ? '#93c5fd' : '#99f6e4',
+            borderWidth: 2,
+          },
+          label: {
+            show: true,
+            color: '#0f172a',
+            fontSize: node.category === 0 ? 13 : 12,
+            fontWeight: node.category === 0 ? 700 : 600,
+            backgroundColor: 'rgba(255,255,255,0.88)',
+            borderRadius: 6,
+            padding: [4, 6],
+            textBorderColor: 'rgba(255,255,255,0.96)',
+            textBorderWidth: 2,
+          },
+        })),
         links: graphData.links,
-        lineStyle: { color: 'source', opacity: 0.55, curveness: 0.2 },
+        lineStyle: {
+          color: 'source',
+          opacity: 0.8,
+          curveness: 0.2,
+          width: 2,
+        },
+        emphasis: {
+          focus: 'adjacency',
+          lineStyle: {
+            width: 3,
+            opacity: 1,
+          },
+        },
       },
     ],
   }
 }
 
-export default function RuleAnalysis({ rulesData = [], dataLoadedAt = '', loading, error }) {
-  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
-  if (error && !rulesData.length) return <div style={{ color: '#ff7875' }}>{error}</div>
+export default function RuleAnalysis({ rulesData = [], loading, error }) {
+  if (loading) return <div style={{ color: designTokens.textSecondary }}>数据加载中...</div>
+  if (error && !rulesData.length) return <div style={{ color: designTokens.danger }}>{error}</div>
 
   const sampledRules = getStableRandomRules(rulesData, 20)
   const metricRules = sampledRules.slice(0, 12)
   const graphData = getRulesGraphData(sampledRules.slice(0, 10))
-  const explanations = getRuleMetricExplanations()
 
   const columns = [
     { title: '前项条件', dataIndex: 'antecedent', render: (value) => cleanRuleLabel(value) },
@@ -148,66 +164,18 @@ export default function RuleAnalysis({ rulesData = [], dataLoadedAt = '', loadin
     <Row gutter={[16, 16]}>
       <Col span={24}>
         <Card style={panelStyle}>
-          <Row gutter={[16, 16]}>
-            <Col xs={24} xl={14}>
-              <div style={sectionTitleStyle}>规则证据库</div>
-              <div style={{ color: '#cfe9ff', lineHeight: 1.9, marginTop: 10 }}>
-                业务价值：把“哪些专业特征、技能特征、行业去向常常同时出现”沉淀为可解释的证据，为培养方案优化提供依据而不是只靠经验判断。
-              </div>
-            </Col>
-            <Col xs={24} xl={10}>
-              <Row gutter={[12, 12]}>
-                <Col span={12}>
-                  <div style={metaLabelStyle}>数据载入时间</div>
-                  <div style={metaValueStyle}>{dataLoadedAt || '当前会话未记录'}</div>
-                </Col>
-                <Col span={12}>
-                  <div style={metaLabelStyle}>规则样本数</div>
-                  <div style={metaValueStyle}>{sampledRules.length} 条展示规则</div>
-                </Col>
-                <Col span={24}>
-                  <div style={algorithmTextStyle}>算法说明：通过 FP-Growth 挖掘高频项集，再从中生成支持度、置信度、提升度三类规则指标。</div>
-                </Col>
-                <Col span={24}>
-                  <div style={riskTextStyle}>风险提示：关联规则反映的是统计共现关系，不直接等同于因果关系，需结合培养场景二次判断。</div>
-                </Col>
-              </Row>
-            </Col>
-          </Row>
+          <div style={sectionTitleStyle}>规则证据库</div>
         </Card>
       </Col>
 
       <Col span={24}>
-        <Card
-          title={<span style={sectionTitleStyle}>关联规则指标对比</span>}
-          extra={<span style={{ color: '#8fb7d8', fontSize: 12 }}>建议优先解释 Lift 高、Confidence 稳定且 Support 不低的规则。</span>}
-          style={panelStyle}
-        >
+        <Card title={<span style={sectionTitleStyle}>关联规则指标对比</span>} style={panelStyle}>
           <ReactECharts option={buildRulesMetricsOption(metricRules)} style={{ height: 420 }} />
         </Card>
       </Col>
 
       <Col span={24}>
-        <Card title={<span style={sectionTitleStyle}>指标业务解释</span>} style={panelStyle}>
-          <Row gutter={[16, 16]}>
-            {explanations.map((item) => (
-              <Col xs={24} md={8} key={item.key}>
-                <Card style={{ ...panelStyle, minHeight: 160 }}>
-                  <div style={{ color: '#eef4ff', fontSize: 18, fontWeight: 600, marginBottom: 12 }}>{item.metric}</div>
-                  <div style={{ color: '#b7dfff', lineHeight: 1.9 }}>{item.explanation}</div>
-                </Card>
-              </Col>
-            ))}
-          </Row>
-        </Card>
-      </Col>
-
-      <Col span={24}>
-        <Card
-          title={<span style={sectionTitleStyle}>规则关系网络</span>}
-          extra={<span style={{ color: '#8fb7d8', fontSize: 12 }}>适合在答辩时展示“从条件到结果”的规则传递关系。</span>}
-          style={panelStyle}
-        >
+        <Card title={<span style={sectionTitleStyle}>规则关系网络</span>} style={panelStyle}>
           <ReactECharts option={buildRulesGraphOption(graphData)} style={{ height: 420 }} />
         </Card>
       </Col>
@@ -220,5 +188,3 @@ export default function RuleAnalysis({ rulesData = [], dataLoadedAt = '', loadin
     </Row>
   )
 }
-
-export { buildRulesMetricsOption, buildRulesGraphOption }

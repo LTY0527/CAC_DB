@@ -4,6 +4,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ROLE_CONFIGS } from '../config/roleConfig.jsx'
 import { useAuth } from '../context/AuthContext'
 import usePlatformData from '../hooks/usePlatformData'
+import { designTokens } from '../utils/uiTheme'
 
 const { Header, Sider, Content } = Layout
 
@@ -33,36 +34,35 @@ export default function LayoutComponent() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #08111b 0%, #0b1622 100%)' }}>
+    <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
       <Sider
-        width={260}
-        theme="dark"
+        width={264}
+        theme="light"
         style={{
-          background: 'linear-gradient(180deg, #0b1622 0%, #0d1826 100%)',
-          borderRight: '1px solid rgba(120, 160, 200, 0.14)',
-          boxShadow: '8px 0 24px rgba(0, 0, 0, 0.18)',
+          background: 'rgba(255,255,255,0.78)',
+          borderRight: `1px solid ${designTokens.border}`,
+          boxShadow: 'inset -1px 0 0 rgba(148, 163, 184, 0.08)',
+          backdropFilter: 'blur(12px)',
         }}
       >
-        <div style={{ padding: '22px 18px 18px', borderBottom: '1px solid rgba(120, 160, 200, 0.16)' }}>
-          <div style={{ color: '#f3f7ff', fontSize: 22, fontWeight: 700, letterSpacing: 0.5, lineHeight: 1.4 }}>
+        <div style={{ padding: '24px 20px 18px', borderBottom: `1px solid ${designTokens.border}` }}>
+          <div style={{ color: designTokens.textPrimary, fontSize: 21, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.35 }}>
             {roleConfig.title}
           </div>
-          <div style={{ marginTop: 8, color: 'rgba(210, 225, 245, 0.68)', fontSize: 12, lineHeight: 1.7 }}>
+          <div style={{ marginTop: 8, color: designTokens.textMuted, fontSize: 12, lineHeight: 1.7 }}>
             {roleConfig.subtitle}
           </div>
         </div>
 
         <Menu
-          theme="dark"
+          theme="light"
           mode="inline"
           selectedKeys={[selectedKey]}
           onClick={({ key }) => navigate(key)}
           inlineIndent={16}
           style={{
-            background: 'transparent',
-            color: '#cfe0f5',
             marginTop: 14,
-            padding: '0 10px',
+            padding: '0 14px',
             borderInlineEnd: 'none',
           }}
           items={roleConfig.menuItems}
@@ -72,21 +72,21 @@ export default function LayoutComponent() {
       <Layout style={{ background: 'transparent' }}>
         <Header
           style={{
-            height: 96,
-            padding: '8px 24px',
-            background: 'rgba(10, 18, 28, 0.72)',
-            backdropFilter: 'blur(10px)',
-            borderBottom: '1px solid rgba(120, 160, 200, 0.14)',
+            height: 88,
+            padding: '10px 24px',
+            background: 'rgba(255,255,255,0.68)',
+            backdropFilter: 'blur(12px)',
+            borderBottom: `1px solid ${designTokens.border}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 64 }}>
-            <div style={{ color: '#eef4ff', fontSize: 24, fontWeight: 700, lineHeight: 1.25 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 56 }}>
+            <div style={{ color: designTokens.textPrimary, fontSize: 24, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.02em' }}>
               {roleConfig.headerTitle(currentSchool)}
             </div>
-            <div style={{ marginTop: 6, color: 'rgba(210, 225, 245, 0.64)', fontSize: 12, lineHeight: 1.6 }}>
+            <div style={{ marginTop: 6, color: designTokens.textMuted, fontSize: 12, lineHeight: 1.6 }}>
               {roleConfig.headerSubtitle}
             </div>
           </div>
@@ -96,8 +96,8 @@ export default function LayoutComponent() {
               style={{
                 padding: '10px 12px',
                 borderRadius: 14,
-                background: 'rgba(255, 255, 255, 0.04)',
-                border: '1px solid rgba(120, 160, 200, 0.14)',
+                background: 'rgba(255,255,255,0.76)',
+                border: `1px solid ${designTokens.border}`,
                 minWidth: 230,
               }}
             >
@@ -106,11 +106,11 @@ export default function LayoutComponent() {
                   {session?.name}
                 </Tag>
                 <Tag color="blue">{roleConfig.label}</Tag>
-                {session?.school ? <Tag color="geekblue">{session.school}</Tag> : null}
+                {session?.school ? <Tag color="default">{session.school}</Tag> : null}
               </Space>
             </div>
             <Tag color="blue">数据版本：V2.0</Tag>
-            <Tag color={platformData.loading ? 'gold' : platformData.error ? 'red' : 'cyan'}>
+            <Tag color={platformData.loading ? 'gold' : platformData.error ? 'red' : 'green'}>
               {platformData.loading ? '状态：数据加载中' : platformData.error ? '状态：部分数据异常' : '状态：数据已连接'}
             </Tag>
             <Button

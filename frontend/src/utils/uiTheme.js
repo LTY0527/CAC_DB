@@ -1,184 +1,242 @@
+export const designTokens = {
+  pageBg: '#f4f7fb',
+  pageBgAccent: '#eef3f8',
+  surface: '#ffffff',
+  surfaceAlt: '#f8fafc',
+  surfaceMuted: '#f1f5f9',
+  textPrimary: '#0f172a',
+  textSecondary: '#475569',
+  textMuted: '#64748b',
+  border: '#e2e8f0',
+  borderStrong: '#cbd5e1',
+  shadow: '0 12px 28px rgba(15, 23, 42, 0.06)',
+  shadowSoft: '0 6px 18px rgba(15, 23, 42, 0.04)',
+  accent: '#2563eb',
+  accentSoft: '#dbeafe',
+  accentSecondary: '#0f766e',
+  success: '#16a34a',
+  successSoft: '#dcfce7',
+  danger: '#dc2626',
+  dangerSoft: '#fee2e2',
+  warning: '#d97706',
+  warningSoft: '#fef3c7',
+  purple: '#6366f1',
+  purpleSoft: '#e0e7ff',
+}
+
+export const chartPalette = ['#2563eb', '#4f46e5', '#0f766e', '#0891b2', '#64748b', '#1d4ed8', '#0ea5e9', '#7c3aed', '#059669', '#475569']
+export const chartPositive = '#16a34a'
+export const chartNegative = '#dc2626'
+
+export const axisLabelStyle = { color: designTokens.textMuted, fontSize: 12 }
+export const axisLineStyle = { lineStyle: { color: designTokens.borderStrong } }
+export const splitLineStyle = { lineStyle: { color: 'rgba(148, 163, 184, 0.18)' } }
+export const legendTextStyle = { color: designTokens.textSecondary, fontSize: 12 }
+
 export const panelStyle = {
-  background: 'linear-gradient(180deg, rgba(8,30,56,0.98) 0%, rgba(6,22,42,0.98) 100%)',
-  border: '1px solid rgba(126, 160, 192, 0.16)',
-  borderRadius: 14,
-  boxShadow: '0 0 20px rgba(0, 153, 255, 0.10), inset 0 0 18px rgba(80, 160, 255, 0.05)',
+  background: designTokens.surface,
+  border: `1px solid ${designTokens.border}`,
+  borderRadius: 16,
+  boxShadow: designTokens.shadowSoft,
   overflow: 'hidden',
 }
 
 export const sectionTitleStyle = {
-  color: '#d9eeff',
-  fontSize: 16,
+  color: designTokens.textPrimary,
+  fontSize: 17,
   fontWeight: 700,
-  letterSpacing: 0.4,
+  letterSpacing: '-0.01em',
 }
 
 export const statTitleStyle = {
-  color: '#d9eeff',
-  fontSize: 15,
-  fontWeight: 600,
+  color: designTokens.textMuted,
+  fontSize: 13,
+  fontWeight: 500,
+}
+
+const statBase = {
+  fontSize: 34,
+  fontWeight: 700,
+  letterSpacing: '-0.02em',
 }
 
 export const statValuePrimary = {
-  color: '#e8f3ff',
-  fontSize: 38,
-  fontWeight: 700,
-  textShadow: '0 0 10px rgba(64, 169, 255, 0.18)',
+  ...statBase,
+  color: designTokens.textPrimary,
 }
 
 export const statValueBlue = {
-  color: '#7dd3fc',
-  fontSize: 36,
-  fontWeight: 700,
-  textShadow: '0 0 10px rgba(34, 211, 238, 0.18)',
+  ...statBase,
+  color: designTokens.accent,
 }
 
 export const statValueCyan = {
-  color: '#67e8f9',
-  fontSize: 38,
-  fontWeight: 700,
-  textShadow: '0 0 10px rgba(34, 211, 238, 0.18)',
+  ...statBase,
+  color: '#0f766e',
 }
 
 export const statValuePurple = {
-  color: '#c4b5fd',
-  fontSize: 38,
-  fontWeight: 700,
-  textShadow: '0 0 10px rgba(168, 85, 247, 0.18)',
+  ...statBase,
+  color: designTokens.purple,
 }
 
 export const darkTooltip = {
-  backgroundColor: 'rgba(6, 21, 34, 0.96)',
-  borderColor: '#2b78b8',
-  textStyle: { color: '#d8f0ff' },
+  backgroundColor: 'rgba(255, 255, 255, 0.98)',
+  borderColor: designTokens.border,
+  borderWidth: 1,
+  textStyle: { color: designTokens.textPrimary, fontSize: 12 },
+  extraCssText: `box-shadow:${designTokens.shadow};border-radius:12px;padding:10px 12px;`,
 }
 
 export const inputStyle = {
-  background: '#081a2b',
-  color: '#d9eeff',
-  border: '1px solid #1b4f7d',
+  background: designTokens.surface,
+  color: designTokens.textPrimary,
+  border: `1px solid ${designTokens.border}`,
+  borderRadius: 10,
+  boxShadow: 'none',
 }
 
 export const primaryButtonStyle = {
-  height: 30,
-  padding: '0 18px',
-  borderRadius: 8,
+  height: 36,
+  padding: '0 16px',
+  borderRadius: 10,
   fontSize: 14,
   fontWeight: 600,
-  background: 'linear-gradient(90deg, #0b6cff 0%, #14b8ff 100%)',
+  background: designTokens.accent,
   border: 'none',
   color: '#ffffff',
-  boxShadow: '0 0 12px rgba(20, 184, 255, 0.25)',
+  boxShadow: '0 6px 16px rgba(37, 99, 235, 0.18)',
 }
 
 export const secondaryButtonStyle = {
-  height: 30,
-  padding: '0 18px',
-  borderRadius: 8,
+  height: 36,
+  padding: '0 16px',
+  borderRadius: 10,
   fontSize: 14,
   fontWeight: 600,
-  background: '#f3f4f6',
-  border: 'none',
-  color: '#1f2937',
+  background: designTokens.surface,
+  border: `1px solid ${designTokens.border}`,
+  color: designTokens.textSecondary,
 }
 
 export const noteTextStyle = {
-  color: '#cfe9ff',
-  lineHeight: 1.9,
+  color: designTokens.textSecondary,
+  lineHeight: 1.8,
   fontSize: 14,
 }
 
 export const metaLabelStyle = {
-  color: 'rgba(205, 228, 245, 0.66)',
-  fontSize: 12,
+  color: designTokens.textMuted,
+  fontSize: 11,
   textTransform: 'uppercase',
-  letterSpacing: 0.8,
+  letterSpacing: 0.7,
 }
 
 export const metaValueStyle = {
-  color: '#eef6ff',
-  fontSize: 15,
-  lineHeight: 1.8,
+  color: designTokens.textPrimary,
+  fontSize: 14,
+  lineHeight: 1.7,
+  fontWeight: 500,
 }
 
 export const riskTextStyle = {
-  color: '#ffd591',
-  lineHeight: 1.8,
+  color: designTokens.warning,
+  lineHeight: 1.75,
   fontSize: 13,
 }
 
 export const algorithmTextStyle = {
-  color: '#9dd6ff',
-  lineHeight: 1.8,
+  color: designTokens.textSecondary,
+  lineHeight: 1.75,
   fontSize: 13,
 }
 
-// export const panelStyle = {
-//   background: 'linear-gradient(180deg, rgba(10,24,40,0.96) 0%, rgba(8,18,32,0.98) 100%)',
-//   border: '1px solid rgba(126, 160, 192, 0.16)',
-//   borderRadius: 16,
-//   boxShadow: '0 10px 30px rgba(0, 0, 0, 0.22)',
-//   overflow: 'hidden',
-// }
-
-// export const sectionTitleStyle = {
-//   color: '#e7f0fb',
-//   fontSize: 16,
-//   fontWeight: 700,
-//   letterSpacing: 0.3,
-// }
-
-// export const statTitleStyle = {
-//   color: 'rgba(219, 231, 245, 0.72)',
-//   fontSize: 14,
-//   fontWeight: 600,
-// }
-
-// export const statValuePrimary = {
-//   color: '#f3f7ff',
-//   fontSize: 36,
-//   fontWeight: 700,
-// }
-
-// export const statValueBlue = {
-//   color: '#8fd3ff',
-//   fontSize: 34,
-//   fontWeight: 700,
-// }
-
-// export const statValueCyan = {
-//   color: '#7fe7e7',
-//   fontSize: 36,
-//   fontWeight: 700,
-// }
-
-// export const statValuePurple = {
-//   color: '#c7b8ff',
-//   fontSize: 36,
-//   fontWeight: 700,
-// }
-
-// export const darkTooltip = {
-//   backgroundColor: 'rgba(8, 18, 30, 0.96)',
-//   borderColor: 'rgba(101, 150, 201, 0.45)',
-//   textStyle: { color: '#e6f0fb' },
-// }
-
-// export const inputStyle = {
-//   background: '#0a1a2a',
-//   color: '#e6f0fb',
-//   border: '1px solid rgba(95, 134, 173, 0.35)',
-// }
-
-// export const primaryButtonStyle = {
-//   background: 'linear-gradient(90deg, #1e5eff 0%, #3aa0ff 100%)',
-//   border: 'none',
-//   fontWeight: 600,
-//   boxShadow: '0 6px 18px rgba(58, 160, 255, 0.20)',
-// }
-
-// export const noteTextStyle = {
-//   color: '#d5e3f3',
-//   lineHeight: 1.9,
-//   fontSize: 14,
-// }
+export const antdTheme = {
+  token: {
+    colorPrimary: designTokens.accent,
+    colorSuccess: designTokens.success,
+    colorError: designTokens.danger,
+    colorWarning: designTokens.warning,
+    colorInfo: designTokens.accent,
+    colorText: designTokens.textPrimary,
+    colorTextSecondary: designTokens.textSecondary,
+    colorTextTertiary: designTokens.textMuted,
+    colorBorder: designTokens.border,
+    colorBorderSecondary: designTokens.border,
+    colorBgBase: designTokens.pageBg,
+    colorBgContainer: designTokens.surface,
+    colorBgElevated: designTokens.surface,
+    colorFillAlter: designTokens.surfaceMuted,
+    colorFillTertiary: designTokens.surfaceMuted,
+    borderRadius: 12,
+    borderRadiusLG: 16,
+    boxShadowSecondary: designTokens.shadow,
+    fontFamily: '"PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif',
+  },
+  components: {
+    Layout: {
+      bodyBg: 'transparent',
+      headerBg: 'transparent',
+      siderBg: 'transparent',
+      triggerBg: designTokens.surface,
+    },
+    Card: {
+      headerBg: designTokens.surface,
+      colorBorderSecondary: designTokens.border,
+      paddingLG: 20,
+    },
+    Statistic: {
+      contentFontSize: 34,
+    },
+    Menu: {
+      itemBg: 'transparent',
+      itemColor: designTokens.textSecondary,
+      itemHoverColor: designTokens.textPrimary,
+      itemSelectedColor: designTokens.accent,
+      itemSelectedBg: designTokens.accentSoft,
+      darkItemBg: 'transparent',
+      darkItemColor: designTokens.textSecondary,
+      darkItemSelectedBg: designTokens.accentSoft,
+      darkItemSelectedColor: designTokens.accent,
+      darkSubMenuItemBg: 'transparent',
+    },
+    Table: {
+      headerBg: designTokens.surfaceAlt,
+      headerColor: designTokens.textSecondary,
+      colorText: designTokens.textPrimary,
+      colorTextHeading: designTokens.textPrimary,
+      rowHoverBg: '#f8fbff',
+      borderColor: designTokens.border,
+    },
+    Select: {
+      controlHeight: 38,
+      optionSelectedBg: designTokens.accentSoft,
+      optionActiveBg: '#eff6ff',
+    },
+    Input: {
+      controlHeight: 38,
+      activeBorderColor: designTokens.accent,
+      hoverBorderColor: '#93c5fd',
+    },
+    Button: {
+      controlHeight: 36,
+      borderRadius: 10,
+      defaultBorderColor: designTokens.border,
+      defaultColor: designTokens.textSecondary,
+      defaultBg: designTokens.surface,
+      primaryShadow: '0 6px 16px rgba(37, 99, 235, 0.18)',
+    },
+    Segmented: {
+      itemColor: designTokens.textSecondary,
+      itemSelectedColor: designTokens.accent,
+      itemSelectedBg: designTokens.surface,
+      trackBg: designTokens.surfaceMuted,
+    },
+    Tag: {
+      borderRadiusSM: 999,
+    },
+    Empty: {
+      colorTextDescription: designTokens.textMuted,
+    },
+  },
+}

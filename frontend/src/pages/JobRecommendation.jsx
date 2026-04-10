@@ -7,16 +7,15 @@ import {
   getRecommendationLevel,
   getRecommendationStats,
   getRecommendationTopKByStudent,
+  getSchoolStudentCount,
 } from '../utils/dataAdapter'
 import {
-  algorithmTextStyle,
+  designTokens,
   inputStyle,
   metaLabelStyle,
   metaValueStyle,
-  noteTextStyle,
   panelStyle,
   primaryButtonStyle,
-  riskTextStyle,
   secondaryButtonStyle,
   sectionTitleStyle,
   statTitleStyle,
@@ -35,6 +34,9 @@ const miniCardStyle = {
 export default function JobRecommendation({
   recommendationData = [],
   jobRecommendationEvalData = [],
+  employmentData = [],
+  currentSchool = '',
+  roleMode = 'school',
   dataLoadedAt = '',
   loading,
   error,
@@ -44,25 +46,25 @@ export default function JobRecommendation({
   const [searched, setSearched] = useState(false)
 
   const stats = useMemo(() => getRecommendationStats(recommendationData), [recommendationData])
+  const scopedStudentCount = useMemo(
+    () => (roleMode === 'school' ? getSchoolStudentCount(employmentData, currentSchool) : stats.totalStudents),
+    [currentSchool, employmentData, roleMode, stats.totalStudents]
+  )
   const evalMetrics = useMemo(() => getMetricRows(jobRecommendationEvalData), [jobRecommendationEvalData])
   const evalMap = Object.fromEntries(evalMetrics.map((item) => [item.metric_name, item]))
 
-  if (loading) return <div style={{ color: '#d9eeff' }}>数据加载中...</div>
-  if (error && !recommendationData.length) return <div style={{ color: '#ff7875' }}>{error}</div>
+  if (loading) return <div style={{ color: designTokens.textSecondary }}>数据加载中...</div>
+  if (error && !recommendationData.length) return <div style={{ color: designTokens.danger }}>{error}</div>
 
   const handleSearch = () => {
     if (!studentId.trim()) {
       message.warning('请先输入学生 ID')
       return
     }
-
     const found = getRecommendationTopKByStudent(recommendationData, studentId, 3)
     setResult(found)
     setSearched(true)
-
-    if (!found.length) {
-      message.info('未查询到该学生的推荐结果')
-    }
+    if (!found.length) message.info('未查询到该学生的推荐结果')
   }
 
   const handleReset = () => {
@@ -83,98 +85,44 @@ export default function JobRecommendation({
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
       <Card style={panelStyle}>
-        <Row gutter={[16, 16]}>
-          <Col xs={24} xl={14}>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} xl={16}>
             <div style={sectionTitleStyle}>就业推荐（余弦相似度）</div>
-            <div style={{ ...noteTextStyle, marginTop: 10 }}>
-              业务价值：将学生画像与岗位画像进行相似度匹配，给出更具针对性的就业去向建议，并反向提示学生需要补强的能力。
-            </div>
           </Col>
-          <Col xs={24} xl={10}>
-            <Row gutter={[12, 12]}>
-              <Col span={12}>
-                <div style={metaLabelStyle}>数据载入时间</div>
-                <div style={metaValueStyle}>{dataLoadedAt || '当前会话未记录'}</div>
-              </Col>
-              <Col span={12}>
-                <div style={metaLabelStyle}>推荐口径</div>
-                <div style={metaValueStyle}>展示数据库中的 Top-3 推荐结果</div>
-              </Col>
-              <Col span={24}>
-                <div style={algorithmTextStyle}>算法说明：基于学生特征向量与岗位特征向量计算余弦相似度，再输出 Top-K 推荐列表和推荐原因。</div>
-              </Col>
-              <Col span={24}>
-                <div style={riskTextStyle}>风险提示：推荐结果适合做就业方向辅助，不应替代学生个体意愿、岗位实时需求和人工咨询判断。</div>
-              </Col>
-            </Row>
+          <Col xs={24} xl={8}>
+            <div style={metaLabelStyle}>数据载入时间</div>
+            <div style={metaValueStyle}>{dataLoadedAt || '当前会话未记录'}</div>
           </Col>
         </Row>
       </Card>
 
       <Card title={<span style={sectionTitleStyle}>就业推荐总览</span>} style={panelStyle}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} lg={6}>
-            <Card style={miniCardStyle}>
-              <Statistic title="推荐学生数" value={formatNumber(stats.totalStudents)} styles={{ title: statTitleStyle, content: statValuePrimary }} />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card style={miniCardStyle}>
-              <Statistic title="Top1 平均相似度" value={stats.avgScore} precision={3} styles={{ title: statTitleStyle, content: statValueBlue }} />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card style={miniCardStyle}>
-              <Statistic title="高匹配人数" value={formatNumber(stats.highMatchCount)} styles={{ title: statTitleStyle, content: statValueCyan }} />
-            </Card>
-          </Col>
-          <Col xs={24} sm={12} lg={6}>
-            <Card style={miniCardStyle}>
-              <Statistic title="最常见首荐单位" value={stats.topJob} styles={{ title: statTitleStyle, content: statValuePurple }} />
-            </Card>
-          </Col>
+          <Col xs={24} sm={12} lg={6}><Card style={miniCardStyle}><Statistic title="覆盖学生数" value={formatNumber(scopedStudentCount)} styles={{ title: statTitleStyle, content: statValuePrimary }} /></Card></Col>
+          <Col xs={24} sm={12} lg={6}><Card style={miniCardStyle}><Statistic title="高匹配人数" value={formatNumber(stats.highMatchCount)} styles={{ title: statTitleStyle, content: statValueBlue }} /></Card></Col>
+          <Col xs={24} sm={12} lg={6}><Card style={miniCardStyle}><Statistic title="覆盖推荐单位数" value={formatNumber(stats.employerCoverage)} styles={{ title: statTitleStyle, content: statValueCyan }} /></Card></Col>
+          <Col xs={24} sm={12} lg={6}><Card style={miniCardStyle}><Statistic title="单人展示深度" value={3} suffix="条" styles={{ title: statTitleStyle, content: statValuePurple }} /></Card></Col>
         </Row>
       </Card>
 
-      <Card title={<span style={sectionTitleStyle}>算法可信度</span>} style={panelStyle}>
+      <Card title={<span style={sectionTitleStyle}>推荐可信度摘要</span>} style={panelStyle}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} md={8}>
-            <Statistic title="AvgTop1Similarity" value={evalMap.AvgTop1Similarity?.metric_value || 0} precision={3} styles={{ title: statTitleStyle, content: statValuePrimary }} />
-            <div style={{ ...noteTextStyle, marginTop: 8 }}>{evalMap.AvgTop1Similarity?.metric_desc || '衡量首位推荐与学生画像的平均相似度。'}</div>
-          </Col>
-          <Col xs={24} md={8}>
-            <Statistic title="AvgTopKSimilarity" value={evalMap.AvgTopKSimilarity?.metric_value || 0} precision={3} styles={{ title: statTitleStyle, content: statValueBlue }} />
-            <div style={{ ...noteTextStyle, marginTop: 8 }}>{evalMap.AvgTopKSimilarity?.metric_desc || '衡量 Top-K 推荐整体相似度水平。'}</div>
-          </Col>
-          <Col xs={24} md={8}>
-            <Statistic title="HighConfidenceRatio" value={(evalMap.HighConfidenceRatio?.metric_value || 0) * 100} precision={2} suffix="%" styles={{ title: statTitleStyle, content: statValueCyan }} />
-            <div style={{ ...noteTextStyle, marginTop: 8 }}>{evalMap.HighConfidenceRatio?.metric_desc || '相似度高于阈值的高置信推荐占比。'}</div>
-          </Col>
+          <Col xs={24} md={12}><Statistic title="Top1 平均相似度" value={evalMap.AvgTop1Similarity?.metric_value || 0} precision={3} styles={{ title: statTitleStyle, content: statValuePrimary }} /></Col>
+          <Col xs={24} md={12}><Statistic title="高置信推荐占比" value={(evalMap.HighConfidenceRatio?.metric_value || 0) * 100} precision={2} suffix="%" styles={{ title: statTitleStyle, content: statValueBlue }} /></Col>
         </Row>
       </Card>
 
       <Card title={<span style={sectionTitleStyle}>按学生 ID 查询 Top-K 推荐</span>} style={panelStyle}>
         <Space wrap size="middle" style={{ width: '100%' }}>
-          <Input
-            placeholder="请输入学生 ID，例如 14"
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            onPressEnter={handleSearch}
-            style={{ ...inputStyle, width: 280, height: 40 }}
-          />
+          <Input placeholder="请输入学生 ID，例如 14" value={studentId} onChange={(e) => setStudentId(e.target.value)} onPressEnter={handleSearch} style={{ ...inputStyle, width: 280, height: 40 }} />
           <Button type="primary" onClick={handleSearch} style={primaryButtonStyle}>查询推荐</Button>
           <Button onClick={handleReset} style={secondaryButtonStyle}>清空</Button>
         </Space>
-        <div style={{ ...noteTextStyle, marginTop: 12 }}>
-          页面不仅显示推荐单位，还会给出相似度分数、推荐原因和培养建议，方便答辩时讲清“为什么推荐”。
-        </div>
       </Card>
 
       <Card title={<span style={sectionTitleStyle}>推荐结果分析</span>} style={panelStyle}>
-        {!searched && <div style={noteTextStyle}>请输入学生 ID 查看 Top-K 就业推荐结果。</div>}
-        {searched && !result.length && (
-          <Empty description={<span style={{ color: 'rgba(217,238,255,0.72)' }}>未查询到该学生推荐结果</span>} />
-        )}
+        {!searched && <div style={{ color: designTokens.textSecondary }}>请输入学生 ID 查看 Top-3 就业推荐结果。</div>}
+        {searched && !result.length && <Empty description={<span style={{ color: designTokens.textMuted }}>未查询到该学生推荐结果</span>} />}
         {!!result.length && (
           <Row gutter={[16, 16]}>
             <Col span={24}>
@@ -182,23 +130,18 @@ export default function JobRecommendation({
             </Col>
             <Col xs={24} lg={10}>
               <Card style={miniCardStyle}>
-                <div style={{ color: '#b7dfff', marginBottom: 12 }}>首位推荐解释</div>
-                <div style={{ color: '#d9eeff', lineHeight: 1.9 }}><strong>学生 ID：</strong>{topOne.student_id}</div>
-                <div style={{ color: '#d9eeff', lineHeight: 1.9 }}><strong>推荐单位：</strong>{topOne.recommended_job}</div>
-                <div style={{ color: '#d9eeff', lineHeight: 1.9 }}><strong>推荐原因：</strong>{topOne.recommend_reason || '根据历史去向与画像相似度生成推荐。'}</div>
-                <div style={{ marginTop: 10 }}>
-                  <Tag color={getRecommendationLevel(topOne.matching_score)?.color}>{getRecommendationLevel(topOne.matching_score)?.label}</Tag>
-                </div>
+                <div style={{ color: designTokens.textSecondary, marginBottom: 12 }}>首位推荐解释</div>
+                <div style={{ color: designTokens.textPrimary, lineHeight: 1.9 }}><strong>学生 ID：</strong>{topOne.student_id}</div>
+                <div style={{ color: designTokens.textPrimary, lineHeight: 1.9 }}><strong>推荐单位：</strong>{topOne.recommended_job}</div>
+                <div style={{ color: designTokens.textPrimary, lineHeight: 1.9 }}><strong>推荐原因：</strong>{topOne.recommend_reason || '根据历史去向与画像相似度生成推荐。'}</div>
+                <div style={{ marginTop: 10 }}><Tag color={getRecommendationLevel(topOne.matching_score)?.color}>{getRecommendationLevel(topOne.matching_score)?.label}</Tag></div>
               </Card>
             </Col>
             <Col xs={24} lg={14}>
               <Card style={miniCardStyle}>
-                <div style={{ color: '#b7dfff', marginBottom: 12 }}>培养建议</div>
-                <div style={{ color: '#d9eeff', lineHeight: 1.9 }}>
-                  {getRecommendationAdvice(
-                    `${topOne.recommended_job || ''}${topOne.industry_type || ''}${topOne.leading_industry_tag || ''}`,
-                    topOne.matching_score
-                  )}
+                <div style={{ color: designTokens.textSecondary, marginBottom: 12 }}>培养建议</div>
+                <div style={{ color: designTokens.textPrimary, lineHeight: 1.9 }}>
+                  {getRecommendationAdvice(`${topOne.recommended_job || ''}${topOne.industry_type || ''}${topOne.leading_industry_tag || ''}`, topOne.matching_score)}
                 </div>
               </Card>
             </Col>

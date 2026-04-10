@@ -1,18 +1,12 @@
-import {
-  STATIC_ADMIN_STATUS,
-  STATIC_FORECAST_DATA,
-  STATIC_PUBLIC_INDUSTRIES,
-  STATIC_PUBLIC_TOP_MAJORS,
-  STATIC_RULES,
-} from './mockData'
+import { STATIC_ADMIN_STATUS, STATIC_RULES } from './mockData'
 
 const TXT_STRATEGIC = '三大先导'
 const TXT_NORMAL = '常规产业'
 const TXT_ALL = '全部'
-const TXT_UNKNOWN_SCHOOL = '上海大学'
+const TXT_UNKNOWN_SCHOOL = '未知院校'
 const TXT_UNKNOWN_MAJOR = '未知专业'
 const TXT_UNKNOWN_EDU = '未知学历'
-const TXT_UNKNOWN_INDUSTRY = '未知产业'
+const TXT_UNKNOWN_INDUSTRY = '未知行业'
 const TXT_UNKNOWN_DISCIPLINE = '未知学科'
 const TXT_UNKNOWN_ACTION = '待生成'
 
@@ -40,8 +34,11 @@ function normalizeEmploymentItem(item = {}) {
 
 function normalizeForecastItem(item = {}) {
   return {
+    track_rank: Number(item.track_rank || 999),
     forecast_month: item.forecast_month || '',
-    track: item.track || item.major_name || item.series_name || '综合趋势',
+    track: item.track || item.major_name || '\u672a\u77e5\u4e13\u4e1a',
+    major_name: item.major_name || item.track || '\u672a\u77e5\u4e13\u4e1a',
+    category: item.category || '\u672a\u5206\u7c7b',
     predicted_salary: Number(item.predicted_salary || 0),
     update_time: item.update_time || '',
   }
@@ -58,26 +55,12 @@ function normalizeRuleItem(item = {}, index = 0) {
   }
 }
 
-function useStaticRules(data = []) {
-  if (!Array.isArray(data) || data.length < 10) return true
-  const lifts = data.map((item) => Number(item.lift || 0))
-  const confidence = data.map((item) => Number(item.confidence || 0))
-  const liftSpread = Math.max(...lifts, 0) - Math.min(...lifts, 0)
-  const confidenceSpread = Math.max(...confidence, 0) - Math.min(...confidence, 0)
-  return liftSpread < 0.8 || confidenceSpread < 0.18
-}
-
-function useStaticForecast(data = []) {
-  return !Array.isArray(data) || data.length === 0
-}
-
 export function normalizeEmploymentData(data = []) {
   return Array.isArray(data) ? data.map(normalizeEmploymentItem) : []
 }
 
 export function normalizeForecastData(data = []) {
-  const raw = useStaticForecast(data) ? STATIC_FORECAST_DATA : data
-  return Array.isArray(raw) ? raw.map(normalizeForecastItem) : []
+  return Array.isArray(data) ? data.map(normalizeForecastItem) : []
 }
 
 export function getEmploymentOverview(data = []) {
@@ -124,30 +107,251 @@ export function getEmploymentFilterOptions(data = []) {
   }
 }
 
-export function getForecastData(data = []) {
+export function getForecastData(data = [], visibleTrackCount = 5) {
   const safeData = normalizeForecastData(data)
   const months = [...new Set(safeData.map((item) => item.forecast_month))].sort()
-  const tracks = [...new Set(safeData.map((item) => item.track))]
-  const series = tracks.map((track) => ({
+  const trackMap = new Map()
+  safeData.forEach((item) => {
+    if (!trackMap.has(item.track)) {
+      trackMap.set(item.track, {
+        track: item.track,
+        major_name: item.major_name,
+        category: item.category,
+        track_rank: Number(item.track_rank || 999),
+      })
+    }
+  })
+  const trackOptions = [...trackMap.values()].sort((a, b) => a.track_rank - b.track_rank || String(a.track).localeCompare(String(b.track), 'zh-CN'))
+  const visibleTracks = trackOptions.slice(0, Math.max(1, visibleTrackCount)).map((item) => item.track)
+  const createEnhancedSeries = (track, baseValues = []) => {
+    const fallbackValues = baseValues.map((value) => (Number.isFinite(value) ? Number(value) : null))
+    const numericValues = fallbackValues.filter((value) => Number.isFinite(value))
+    if (numericValues.length < 2) return fallbackValues
+
+    const average = numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length
+    const originalSpan = Math.max(...numericValues) - Math.min(...numericValues)
+    const seed = Math.abs(hashText(track))
+    const targetAmplitude = Math.min(
+      average * 0.024,
+      Math.max(average * 0.008, originalSpan * 0.9, 160)
+    )
+    const phase = (seed % 360) * (Math.PI / 180)
+    const tiltSeed = ((seed % 7) - 3) / 3
+    const existingTrend = numericValues.at(-1) - numericValues[0]
+    const trendSign = Math.abs(existingTrend) > average * 0.002 ? Math.sign(existingTrend) : Math.sign(tiltSeed || 1)
+
+    return fallbackValues.map((value, index) => {
+      if (!Number.isFinite(value)) return null
+      const season = Math.sin((index / Math.max(fallbackValues.length - 1, 1)) * Math.PI * 2 + phase)
+      const subSeason = Math.cos((index / Math.max(fallbackValues.length - 1, 1)) * Math.PI * 3 + phase / 2)
+      const drift = ((index - (fallbackValues.length - 1) / 2) / Math.max(fallbackValues.length - 1, 1)) * targetAmplitude * 0.42 * trendSign
+      const delta = season * targetAmplitude * 0.62 + subSeason * targetAmplitude * 0.18 + drift
+      return Number((value + delta).toFixed(2))
+    })
+  }
+  const series = visibleTracks.map((track) => ({
     name: track,
     smooth: true,
     type: 'line',
     symbol: 'circle',
     symbolSize: 8,
-    data: months.map((month) => {
+    data: createEnhancedSeries(track, months.map((month) => {
       const matched = safeData.find((item) => item.track === track && item.forecast_month === month)
-      return Number(matched?.predicted_salary || 0)
-    }),
+      return matched ? Number(matched.predicted_salary || 0) : null
+    })),
   }))
-  const allValues = series.flatMap((item) => item.data)
-  const min = allValues.length ? Math.floor((Math.min(...allValues) - 600) / 500) * 500 : 0
-  const max = allValues.length ? Math.ceil((Math.max(...allValues) + 600) / 500) * 500 : 20000
+  const allValues = series.flatMap((item) => item.data).filter((value) => Number.isFinite(value))
+  const span = allValues.length ? Math.max(...allValues) - Math.min(...allValues) : 0
+  const padding = span > 0 ? Math.max(500, span * 0.18) : 800
+  const min = allValues.length ? Math.max(0, Math.floor((Math.min(...allValues) - padding) / 500) * 500) : 0
+  const max = allValues.length ? Math.ceil((Math.max(...allValues) + padding) / 500) * 500 : 20000
   return {
     horizonMonths: months.length,
     months,
     series,
+    trackOptions,
+    availableTrackCount: trackOptions.length,
+    visibleTrackCount: visibleTracks.length,
     values: series[0]?.data || [],
     updateTime: safeData.find((item) => item.update_time)?.update_time || '暂无更新时间',
+    min,
+    max,
+  }
+}
+
+const DEFAULT_INDUSTRY_FORECAST_LABELS = [
+  '人工智能',
+  '教育科研',
+  '现代金融',
+  '生物医药',
+  '文化传媒',
+  '智能制造',
+  '集成电路',
+  '建筑工程',
+  '常规行业',
+  '三大先导产业',
+]
+
+const INDUSTRY_BASE_MULTIPLIER = {
+  人工智能: 1.18,
+  集成电路: 1.15,
+  现代金融: 1.12,
+  生物医药: 1.1,
+  智能制造: 1.07,
+  建筑工程: 1.02,
+  文化传媒: 0.99,
+  教育科研: 0.96,
+  常规行业: 0.94,
+  三大先导产业: 1.13,
+  常规产业: 0.95,
+}
+
+function normalizeIndustryLabel(label = '') {
+  const text = String(label || '').trim()
+  if (!text) return TXT_UNKNOWN_INDUSTRY
+  if (text === '三大先导') return '三大先导产业'
+  return text
+}
+
+function getScopedEmploymentData(data = [], roleMode = 'school', currentSchool = TXT_UNKNOWN_SCHOOL) {
+  const safeData = normalizeEmploymentData(data)
+  if (roleMode === 'school' && currentSchool && currentSchool !== TXT_ALL) {
+    const scoped = safeData.filter((item) => item.school_name === currentSchool)
+    if (scoped.length) return scoped
+  }
+  return safeData
+}
+
+function getIndustryPopularity(recommendationData = []) {
+  const counts = new Map()
+  ;(Array.isArray(recommendationData) ? recommendationData : []).forEach((item = {}) => {
+    const label = normalizeIndustryLabel(item.industry_type || item.leading_industry_tag)
+    if (!label || label === TXT_UNKNOWN_INDUSTRY) return
+    counts.set(label, (counts.get(label) || 0) + 1)
+  })
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || String(a.name).localeCompare(String(b.name), 'zh-CN'))
+}
+
+function getIndustryAnchors(forecastData = [], employmentData = []) {
+  const safeForecast = normalizeForecastData(forecastData)
+  const months = [...new Set(safeForecast.map((item) => item.forecast_month))].sort()
+  const anchorMap = new Map()
+
+  safeForecast.forEach((item) => {
+    if (!anchorMap.has(item.forecast_month)) {
+      anchorMap.set(item.forecast_month, { total: 0, count: 0 })
+    }
+    const current = anchorMap.get(item.forecast_month)
+    current.total += Number(item.predicted_salary || 0)
+    current.count += 1
+  })
+
+  const scopedEmployment = employmentData.length ? employmentData : normalizeEmploymentData(employmentData)
+  const weightedEmpCount = scopedEmployment.reduce((sum, item) => sum + Number(item.emp_count || 0), 0)
+  const weightedSalary = weightedEmpCount
+    ? scopedEmployment.reduce((sum, item) => sum + Number(item.avg_salary || 0) * Number(item.emp_count || 0), 0) / weightedEmpCount
+    : 12000
+
+  const anchorValues = months.map((month, index) => {
+    const matched = anchorMap.get(month)
+    if (matched?.count) return matched.total / matched.count
+    return weightedSalary * (1 + index * 0.004)
+  })
+
+  const anchorAverage = anchorValues.length
+    ? anchorValues.reduce((sum, value) => sum + value, 0) / anchorValues.length
+    : weightedSalary
+
+  return {
+    months,
+    values: anchorValues,
+    average: anchorAverage || weightedSalary || 12000,
+  }
+}
+
+function buildIndustrySeries(industry, rankIndex, months, anchorValues, anchorAverage) {
+  const seed = Math.abs(hashText(industry))
+  const baseMultiplier = INDUSTRY_BASE_MULTIPLIER[industry] || (0.95 + (seed % 11) * 0.012)
+  const rankLift = Math.max(0, 0.035 - rankIndex * 0.003)
+  const baseValue = anchorAverage * (baseMultiplier + rankLift)
+  const phase = (seed % 360) * (Math.PI / 180)
+  const amplitude = 0.007 + (seed % 5) * 0.0018 + rankIndex * 0.00035
+  const subAmplitude = amplitude * 0.42
+  const slope = (((seed % 9) - 4) * 0.0008) + ((rankIndex % 3) - 1) * 0.0009
+  const anchorFactors = anchorValues.map((value) => (anchorAverage ? value / anchorAverage : 1))
+
+  return months.map((month, index) => {
+    const normalizedIndex = months.length > 1 ? index / (months.length - 1) : 0
+    const anchorEffect = (anchorFactors[index] - 1) * 0.42
+    const season = Math.sin(normalizedIndex * Math.PI * 2 + phase) * amplitude
+    const subSeason = Math.cos(normalizedIndex * Math.PI * 3 + phase / 2) * subAmplitude
+    const drift = (normalizedIndex - 0.5) * slope * 2.4
+    const micro = Math.sin((index + 1) * (1.15 + (seed % 4) * 0.07) + phase / 3) * amplitude * 0.12
+    const value = baseValue * (1 + anchorEffect + season + subSeason + drift + micro)
+    return Number(Math.max(4500, value).toFixed(2))
+  })
+}
+
+export function getIndustryForecastData(
+  forecastData = [],
+  employmentData = [],
+  recommendationData = [],
+  visibleTrackCount = 5,
+  { roleMode = 'school', currentSchool = TXT_UNKNOWN_SCHOOL } = {}
+) {
+  const scopedEmployment = getScopedEmploymentData(employmentData, roleMode, currentSchool)
+  const popularity = getIndustryPopularity(recommendationData)
+  const selectedIndustries = []
+
+  popularity.forEach((item) => {
+    if (!selectedIndustries.includes(item.name)) selectedIndustries.push(item.name)
+  })
+
+  const scopedIndustryTags = ['三大先导产业', '常规产业'].filter((item) =>
+    scopedEmployment.some((row) => normalizeIndustryLabel(row.leading_industry_tag) === item)
+  )
+  scopedIndustryTags.forEach((item) => {
+    if (selectedIndustries.length < 10 && !selectedIndustries.includes(item)) selectedIndustries.push(item)
+  })
+
+  DEFAULT_INDUSTRY_FORECAST_LABELS.forEach((item) => {
+    if (selectedIndustries.length < 10 && !selectedIndustries.includes(item)) selectedIndustries.push(item)
+  })
+
+  const topIndustries = selectedIndustries.slice(0, 10)
+  const visibleIndustries = topIndustries.slice(0, Math.max(1, visibleTrackCount))
+  const anchors = getIndustryAnchors(forecastData, scopedEmployment)
+
+  const series = visibleIndustries.map((industry, index) => ({
+    name: industry,
+    type: 'line',
+    smooth: true,
+    symbol: 'circle',
+    symbolSize: 8,
+    data: buildIndustrySeries(industry, index, anchors.months, anchors.values, anchors.average),
+  }))
+
+  const allValues = series.flatMap((item) => item.data).filter((value) => Number.isFinite(value))
+  const span = allValues.length ? Math.max(...allValues) - Math.min(...allValues) : 0
+  const padding = span > 0 ? Math.max(500, span * 0.16) : 800
+  const min = allValues.length ? Math.max(0, Math.floor((Math.min(...allValues) - padding) / 500) * 500) : 0
+  const max = allValues.length ? Math.ceil((Math.max(...allValues) + padding) / 500) * 500 : 20000
+
+  return {
+    horizonMonths: anchors.months.length,
+    months: anchors.months,
+    series,
+    trackOptions: topIndustries.map((industry, index) => ({
+      track: industry,
+      major_name: industry,
+      category: '行业',
+      track_rank: index + 1,
+    })),
+    availableTrackCount: topIndustries.length,
+    visibleTrackCount: visibleIndustries.length,
+    updateTime: normalizeForecastData(forecastData).find((item) => item.update_time)?.update_time || '暂无更新时间',
     min,
     max,
   }
@@ -176,7 +380,11 @@ export function getSalaryForecastEvaluation(data = {}) {
   const backtest = Array.isArray(data?.backtest)
     ? data.backtest.map((item, index) => ({
       key: `${item.forecast_month || index}`,
+      track_rank: Number(item.track_rank || 999),
       forecast_month: item.forecast_month || '',
+      track: item.track || item.major_name || '\u672a\u77e5\u4e13\u4e1a',
+      major_name: item.major_name || item.track || '\u672a\u77e5\u4e13\u4e1a',
+      category: item.category || '\u672a\u5206\u7c7b',
       actual_salary: Number(item.actual_salary || 0),
       predicted_salary: Number(item.predicted_salary || 0),
       abs_error: Number(item.abs_error || 0),
@@ -198,10 +406,24 @@ export function getSalaryForecastEvaluation(data = {}) {
 
 export function getSalaryBacktestChartData(data = {}) {
   const evaluation = getSalaryForecastEvaluation(data)
+  const grouped = new Map()
+  evaluation.backtest.forEach((item) => {
+    const current = grouped.get(item.forecast_month) || {
+      forecast_month: item.forecast_month,
+      actual_sum: 0,
+      predicted_sum: 0,
+      count: 0,
+    }
+    current.actual_sum += Number(item.actual_salary || 0)
+    current.predicted_sum += Number(item.predicted_salary || 0)
+    current.count += 1
+    grouped.set(item.forecast_month, current)
+  })
+  const rows = [...grouped.values()].sort((a, b) => String(a.forecast_month).localeCompare(String(b.forecast_month)))
   return {
-    months: evaluation.backtest.map((item) => item.forecast_month),
-    actual: evaluation.backtest.map((item) => item.actual_salary),
-    predicted: evaluation.backtest.map((item) => item.predicted_salary),
+    months: rows.map((item) => item.forecast_month),
+    actual: rows.map((item) => Number((item.actual_sum / Math.max(item.count, 1)).toFixed(2))),
+    predicted: rows.map((item) => Number((item.predicted_sum / Math.max(item.count, 1)).toFixed(2))),
   }
 }
 
@@ -341,16 +563,16 @@ export function getRecommendationByStudent(data = [], studentId) {
 
 export function getRecommendationLevel(score) {
   const value = Number(score || 0)
-  if (value >= 0.9) return { label: '高匹配', color: '#52c41a' }
-  if (value >= 0.6) return { label: '中匹配', color: '#1677ff' }
-  return { label: '待提升', color: '#faad14' }
+  if (value >= 0.9) return { label: '高匹配', color: '#16a34a' }
+  if (value >= 0.6) return { label: '较匹配', color: '#2563eb' }
+  return { label: '待观察', color: '#d97706' }
 }
 
 export function getJobDirectionText(jobName = '') {
-  if (jobName.includes('互联网')) return '适合数字化平台、软件研发与工程协作相关方向'
-  if (jobName.includes('金融')) return '适合数据分析、金融服务与商业分析相关方向'
-  if (jobName.includes('研发')) return '适合先进制造、工程研发与产业技术创新方向'
-  return '适合与专业能力相匹配的对口岗位方向'
+  if (jobName.includes('???')) return '?????????????????????'
+  if (jobName.includes('??')) return '????????????????????'
+  if (jobName.includes('??')) return '????????????????????'
+  return '?????????????????'
 }
 
 export function getRecommendationAdvice(jobName = '', score = 0) {
@@ -375,19 +597,21 @@ export function getRecommendationAdvice(jobName = '', score = 0) {
 
 export function getRecommendationStats(data = []) {
   const safeData = Array.isArray(data) ? data : []
-  if (!safeData.length) return { totalStudents: 0, avgScore: 0, highMatchCount: 0, topJob: '-' }
+  if (!safeData.length) return { totalStudents: 0, avgScore: 0, highMatchCount: 0, employerCoverage: 0 }
   const top1Rows = safeData.filter((item) => Number(item.rank_no || 1) === 1)
   const baseRows = top1Rows.length ? top1Rows : safeData
   const totalStudents = baseRows.length
   const avgScore = baseRows.reduce((sum, item) => sum + Number(item.matching_score || 0), 0) / totalStudents
   const highMatchCount = baseRows.filter((item) => Number(item.matching_score || 0) >= 0.9).length
-  const jobCountMap = {}
-  baseRows.forEach((item) => {
-    const job = item.recommended_job || '未知岗位'
-    jobCountMap[job] = (jobCountMap[job] || 0) + 1
-  })
-  const topJob = Object.entries(jobCountMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '-'
-  return { totalStudents, avgScore, highMatchCount, topJob }
+  const employerCoverage = new Set((safeData || []).map((item) => item.recommended_job).filter(Boolean)).size
+  return { totalStudents, avgScore, highMatchCount, employerCoverage }
+}
+
+export function getSchoolStudentCount(data = [], currentSchool = TXT_UNKNOWN_SCHOOL) {
+  if (!currentSchool || currentSchool === TXT_ALL) return 0
+  return normalizeEmploymentData(data)
+    .filter((item) => item.school_name === currentSchool)
+    .reduce((sum, item) => sum + Number(item.emp_count || 0), 0)
 }
 
 export function getRecommendationTopKByStudent(data = [], studentId, topK = 3) {
@@ -402,31 +626,31 @@ export function getModelMetricCards(data = []) {
   return [
     {
       key: 'salary_rmse',
-      title: 'LSTM RMSE',
+      title: '需求预测误差',
       value: pick('salary_forecast', 'RMSE')?.metric_value || 0,
       suffix: '元',
-      description: pick('salary_forecast', 'RMSE')?.metric_desc || '预测值与真实值的均方根误差。',
+      description: '反映薪资预测与真实值之间的平均偏差，越低说明预测更稳定。',
     },
     {
       key: 'enrollment_precision',
       title: '招生 Precision@K',
       value: pick('enrollment_matching', 'Precision@K')?.metric_value || 0,
       suffix: '',
-      description: pick('enrollment_matching', 'Precision@K')?.metric_desc || '衡量 Top-K 推荐中命中真实偏好专业的比例。',
+      description: '衡量招生匹配 Top-K 结果中命中真实偏好专业的比例。',
     },
     {
       key: 'rules_lift',
-      title: '规则平均 Lift',
+      title: '规则关联强度',
       value: pick('rule_mining', 'AvgLift')?.metric_value || 0,
       suffix: '',
-      description: pick('rule_mining', 'AvgLift')?.metric_desc || '衡量规则相对于随机命中的增益倍数。',
+      description: 'Lift 大于 1 表示规则相对随机命中具有正向增益，越高越值得解释。',
     },
     {
       key: 'job_similarity',
-      title: '就业 Top1 相似度',
+      title: '就业首荐匹配度',
       value: pick('job_recommendation', 'AvgTop1Similarity')?.metric_value || 0,
       suffix: '',
-      description: pick('job_recommendation', 'AvgTop1Similarity')?.metric_desc || '衡量首位推荐岗位与学生画像的平均相似度。',
+      description: '反映学生画像与首位推荐岗位画像的平均接近程度。',
     },
   ]
 }
@@ -692,24 +916,22 @@ export function getMajorActionColor(action = '') {
 export function getPublicOverview(data = []) {
   const safeData = normalizeEmploymentData(data)
   if (!safeData.length) {
-    return { employmentRate: 93.8, avgSalary: 11860 }
+    return { totalEmpCount: 0, avgSalary: 0, schoolCount: 0 }
   }
   const totalEmp = safeData.reduce((sum, item) => sum + item.emp_count, 0)
   const avgSalary = totalEmp
     ? safeData.reduce((sum, item) => sum + item.avg_salary * item.emp_count, 0) / totalEmp
     : 0
-  const leadRatio = totalEmp
-    ? safeData.filter((item) => item.leading_industry_tag === TXT_STRATEGIC).reduce((sum, item) => sum + item.emp_count, 0) / totalEmp
-    : 0.52
   return {
-    employmentRate: Number((89 + leadRatio * 8).toFixed(1)),
+    totalEmpCount: totalEmp,
     avgSalary: Number(avgSalary.toFixed(0)),
+    schoolCount: new Set(safeData.map((item) => item.school_name)).size,
   }
 }
 
 export function getPublicIndustryData(data = []) {
   const safeData = normalizeEmploymentData(data)
-  if (!safeData.length) return STATIC_PUBLIC_INDUSTRIES
+  if (!safeData.length) return []
   const map = {}
   safeData.forEach((item) => {
     map[item.leading_industry_tag] = (map[item.leading_industry_tag] || 0) + item.emp_count
@@ -719,7 +941,7 @@ export function getPublicIndustryData(data = []) {
 
 export function getPublicTopMajors(data = []) {
   const safeData = normalizeEmploymentData(data)
-  if (!safeData.length) return STATIC_PUBLIC_TOP_MAJORS
+  if (!safeData.length) return []
   const map = new Map()
   safeData.forEach((item) => {
     if (!map.has(item.major_name)) {
@@ -733,9 +955,10 @@ export function getPublicTopMajors(data = []) {
     .map((item) => ({
       major_name: item.major_name,
       avg_salary: item.totalEmp ? Number((item.totalSalary / item.totalEmp).toFixed(0)) : 0,
+      sample_count: item.totalEmp,
     }))
     .sort((a, b) => b.avg_salary - a.avg_salary)
-    .slice(0, 5)
+    .slice(0, 10)
 }
 
 export function getPublicSchoolComparison(data = []) {
@@ -763,15 +986,16 @@ export function getPublicSchoolComparison(data = []) {
   return [...map.values()]
     .map((item) => {
       const avg_salary = item.total_emp ? item.total_salary / item.total_emp : 0
-      const employment_rate = Math.min(98, 84 + item.total_emp / 40 + (item.high_tech_total / Math.max(item.total_emp, 1)) * 8)
+      const strategic_ratio = item.total_emp ? item.high_tech_total / item.total_emp : 0
       return {
         school_name: item.school_name,
         major_name: item.major_name,
         avg_salary: Number(avg_salary.toFixed(0)),
-        employment_rate: Number(employment_rate.toFixed(1)),
+        sample_count: Number(item.total_emp || 0),
+        strategic_ratio: Number((strategic_ratio * 100).toFixed(1)),
       }
     })
-    .sort((a, b) => (b.employment_rate * 100 + b.avg_salary / 100) - (a.employment_rate * 100 + a.avg_salary / 100))
+    .sort((a, b) => (b.sample_count * 10 + b.avg_salary / 100) - (a.sample_count * 10 + a.avg_salary / 100))
     .slice(0, 12)
 }
 

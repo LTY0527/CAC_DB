@@ -105,12 +105,15 @@ def get_employment_summary():
 def get_salary_forecast():
     sql = """
         SELECT
+            track_rank AS track_rank,
             forecast_month AS forecast_month,
+            track AS track,
+            major_name AS major_name,
+            category AS category,
             predicted_salary AS predicted_salary,
             DATE_FORMAT(NOW(), '%Y-%m-%d %H:%i:%s') AS update_time
         FROM ads_salary_forecast
-        ORDER BY forecast_month
-        LIMIT 12
+        ORDER BY track_rank, forecast_month
     """
     return success_response(fetch_rows(sql))
 
@@ -138,13 +141,17 @@ def get_salary_forecast_evaluation():
     """
     backtest_sql = """
         SELECT
+            track_rank,
             forecast_month,
+            track,
+            major_name,
+            category,
             actual_salary,
             predicted_salary,
             abs_error,
             dataset_split
         FROM ads_salary_forecast_backtest
-        ORDER BY forecast_month
+        ORDER BY track_rank, forecast_month
     """
     return success_response(
         {

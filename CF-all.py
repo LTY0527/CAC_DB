@@ -11,7 +11,7 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler
 from pyspark.ml.functions import vector_to_array
 from pyspark.ml.recommendation import ALS
 from pyspark.sql import Window
-from pyspark.sql.functions import avg, col, collect_set, concat, count, dense_rank, explode, lit, round as spark_round, sqrt, when
+from pyspark.sql.functions import abs as spark_abs, avg, col, collect_set, concat, count, dense_rank, explode, hash as spark_hash, lit, round as spark_round, sqrt, when
 
 from config import DB_URL
 from spark_common import create_spark_session, load_joined_dataset
@@ -260,11 +260,23 @@ def build_cosine_job_matching(df):
     student_df = VectorAssembler(
         inputCols=["edu_score", "school_score", "major_score", "skill_score"],
         outputCol="student_features",
-    ).transform(student_df)
+    ).transform(student_df).select(
+        "student_id",
+        "student_name",
+        "major_name",
+        "industry_type",
+        "leading_industry_tag",
+        "student_features",
+    )
+
+    employer_stats = df.groupBy("employer_name").agg(count("*").alias("historical_count")).cache()
+    max_historical_count = employer_stats.agg({"historical_count": "max"}).collect()[0][0] or 1
+    employer_major_stats = df.groupBy("employer_name", "major_name").agg(count("*").alias("major_match_count"))
 
     job_df = (
         df.select("employer_name", "industry_type", "leading_industry_tag", "company_scale")
         .dropDuplicates(["employer_name"])
+        .join(employer_stats, "employer_name", "left")
         .withColumn(
             "job_edu_score",
             when(col("leading_industry_tag") == TXT_STRATEGIC, 2.3).when(col("company_scale") == TXT_LARGE, 2.0).otherwise(1.3),
@@ -289,13 +301,18 @@ def build_cosine_job_matching(df):
     candidate_pairs = student_df.select(
         "student_id",
         "student_name",
+        "major_name",
         "industry_type",
         "leading_industry_tag",
         "student_features",
     ).join(
-        job_df.select("employer_name", "industry_type", "leading_industry_tag", "company_scale", "job_features"),
+        job_df.select("employer_name", "industry_type", "leading_industry_tag", "company_scale", "historical_count", "job_features"),
         on=["industry_type", "leading_industry_tag"],
         how="inner",
+    ).join(
+        employer_major_stats,
+        on=["employer_name", "major_name"],
+        how="left",
     )
 
     scored = (
@@ -311,6 +328,12 @@ def build_cosine_job_matching(df):
         .withColumn("student_norm", sqrt(col("s1") * col("s1") + col("s2") * col("s2") + col("s4") * col("s4")))
         .withColumn("job_norm", sqrt(col("j1") * col("j1") + col("j2") * col("j2") + col("j3") * col("j3")))
         .withColumn("cosine_similarity", spark_round(col("dot_product") / (col("student_norm") * col("job_norm")), 6))
+        .withColumn("major_match_count", when(col("major_match_count").isNull(), lit(0)).otherwise(col("major_match_count")))
+        .withColumn("major_affinity", col("major_match_count") / col("historical_count"))
+        .withColumn("popularity_penalty", (col("historical_count") / lit(float(max_historical_count))) * lit(0.18))
+        .withColumn("major_bonus", col("major_affinity") * lit(0.12))
+        .withColumn("diversity_jitter", (spark_abs(spark_hash(col("student_id"), col("employer_name"))) % lit(1000)) / lit(1000.0) * lit(0.03))
+        .withColumn("ranking_score", spark_round(col("cosine_similarity") + col("major_bonus") - col("popularity_penalty") + col("diversity_jitter"), 6))
         .withColumn(
             "recommend_reason",
             concat(
@@ -320,12 +343,12 @@ def build_cosine_job_matching(df):
                 col("leading_industry_tag"),
                 lit("，企业规模为"),
                 col("company_scale"),
-                lit("，因此在向量空间中获得较高相似度。"),
+                lit("，并结合该专业历史去向与热门企业分布做了排序修正。"),
             ),
         )
     )
 
-    ranking = Window.partitionBy("student_id").orderBy(col("cosine_similarity").desc(), col("employer_name"))
+    ranking = Window.partitionBy("student_id").orderBy(col("ranking_score").desc(), col("cosine_similarity").desc(), col("employer_name"))
     return (
         scored.withColumn("rank_no", dense_rank().over(ranking))
         .filter(col("rank_no") <= TOP_K)
@@ -337,6 +360,7 @@ def build_cosine_job_matching(df):
             "leading_industry_tag",
             "company_scale",
             "cosine_similarity",
+            "ranking_score",
             "recommend_reason",
             "rank_no",
         )

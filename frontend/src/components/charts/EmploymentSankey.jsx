@@ -97,5 +97,3 @@ export default function EmploymentSankey({ data = [], style }) {
 
   return <ReactECharts option={buildSankeyOption(data)} style={style || { height: '100%', minHeight: 420 }} />
 }
-
-export { buildSankeyOption }

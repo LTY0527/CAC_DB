@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { getDefaultPathByRole } from '../config/roleConfig.jsx'
 
 const TEXT = {
-  platformTag: '基于大数据高校“需求-招生一培养一就业一监测”一体化平台',
+  platformTag: '高校人才培养与就业大数据平台',
   loginTitle: '进入平台',
   loginDesc: '使用演示账号登录，系统会根据角色自动加载对应视图与菜单。',
   username: '账号',
@@ -37,26 +37,10 @@ const panelStyle = {
   width: 'min(980px, 100%)',
   borderRadius: 28,
   overflow: 'hidden',
-  border: '1px solid rgba(117, 159, 198, 0.16)',
-  boxShadow: '0 26px 60px rgba(0, 0, 0, 0.28)',
+  border: '1px solid rgba(125, 159, 197, 0.18)',
+  boxShadow: '0 28px 70px rgba(0, 0, 0, 0.34)',
   background:
-    'linear-gradient(135deg, rgba(7, 20, 36, 0.96) 0%, rgba(9, 25, 42, 0.98) 52%, rgba(9, 19, 34, 0.98) 100%)',
-}
-
-const loginCardStyle = {
-  background:
-    'linear-gradient(180deg, rgba(11, 32, 56, 0.96) 0%, rgba(9, 24, 42, 0.96) 100%)',
-  border: '1px solid rgba(117, 159, 198, 0.15)',
-  borderRadius: 24,
-}
-
-const accountCardStyle = {
-  minHeight: 156,
-  borderRadius: 18,
-  background:
-    'linear-gradient(180deg, rgba(8, 24, 42, 0.92) 0%, rgba(7, 19, 32, 0.95) 100%)',
-  border: '1px solid rgba(117, 159, 198, 0.12)',
-  cursor: 'pointer',
+    'linear-gradient(135deg, rgba(7, 20, 36, 0.98) 0%, rgba(9, 25, 42, 0.99) 52%, rgba(8, 18, 32, 0.99) 100%)',
 }
 
 export default function LoginPage() {
@@ -86,60 +70,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={shellStyle}>
-      <div style={panelStyle}>
+    <div style={shellStyle} className="login-shell">
+      <div style={panelStyle} className="login-surface">
         <div style={{ padding: '34px 36px 10px' }}>
-          <Tag color="processing" style={{ borderRadius: 999, paddingInline: 12, marginBottom: 14 }}>
+          <Tag
+            color="processing"
+            style={{
+              borderRadius: 999,
+              paddingInline: 12,
+              marginBottom: 14,
+              fontWeight: 600,
+              background: 'rgba(22, 119, 255, 0.14)',
+              borderColor: 'rgba(103, 180, 255, 0.34)',
+              color: '#e6f4ff',
+            }}
+          >
             {TEXT.platformTag}
           </Tag>
         </div>
 
         <Row gutter={[24, 24]} style={{ padding: '0 36px 36px' }}>
           <Col xs={24} xl={10}>
-            <Card bordered={false} style={loginCardStyle}>
-              <div style={{ color: '#f0f6ff', fontSize: 28, fontWeight: 700 }}>{TEXT.loginTitle}</div>
-              <div style={{ marginTop: 8, color: 'rgba(214, 231, 249, 0.66)', lineHeight: 1.8 }}>
+            <Card bordered={false} className="login-panel-card">
+              <div style={{ color: '#f8fbff', fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em' }}>
+                {TEXT.loginTitle}
+              </div>
+              <div style={{ marginTop: 10, color: 'rgba(225, 236, 248, 0.88)', lineHeight: 1.85, fontSize: 14 }}>
                 {TEXT.loginDesc}
               </div>
 
-              <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 22 }}>
+              <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 24 }}>
                 <div>
-                  <div style={{ color: '#d7ebff', marginBottom: 8, fontSize: 13 }}>{TEXT.username}</div>
+                  <div style={{ color: '#edf6ff', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
+                    {TEXT.username}
+                  </div>
                   <Input
-                    prefix={<UserOutlined style={{ color: '#7cb8de' }} />}
+                    prefix={<UserOutlined style={{ color: '#64748b' }} />}
                     size="large"
                     value={username}
                     onChange={(event) => setUsername(event.target.value)}
                     placeholder={TEXT.usernamePlaceholder}
+                    className="login-input"
                   />
                 </div>
 
                 <div>
-                  <div style={{ color: '#d7ebff', marginBottom: 8, fontSize: 13 }}>{TEXT.password}</div>
+                  <div style={{ color: '#edf6ff', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
+                    {TEXT.password}
+                  </div>
                   <Input.Password
-                    prefix={<LockOutlined style={{ color: '#7cb8de' }} />}
+                    prefix={<LockOutlined style={{ color: '#64748b' }} />}
                     size="large"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     onPressEnter={handleLogin}
                     placeholder={TEXT.passwordPlaceholder}
+                    className="login-input"
                   />
                 </div>
 
-                <Button
-                  type="primary"
-                  size="large"
-                  onClick={handleLogin}
-                  style={{
-                    height: 46,
-                    marginTop: 8,
-                    borderRadius: 14,
-                    fontWeight: 700,
-                    background:
-                      'linear-gradient(90deg, rgba(35, 113, 255, 1) 0%, rgba(49, 202, 255, 1) 100%)',
-                    border: 'none',
-                  }}
-                >
+                <Button type="primary" size="large" onClick={handleLogin} className="login-submit-btn">
                   {TEXT.loginBtn}
                 </Button>
               </Space>
@@ -148,34 +138,34 @@ export default function LoginPage() {
 
           <Col xs={24} xl={14}>
             <Row gutter={[16, 16]}>
-              {accounts.map((account) => (
-                <Col xs={24} md={12} xl={8} key={account.id}>
-                  <Card
-                    bordered={false}
-                    hoverable
-                    onClick={() => fillAccount(account)}
-                    style={{
-                      ...accountCardStyle,
-                      outline:
-                        activeAccount === account.id
-                          ? '1px solid rgba(70, 194, 255, 0.7)'
-                          : 'none',
-                    }}
-                  >
-                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                      <Space wrap>
-                        <Tag color={ROLE_COLORS[account.role]}>{account.roleLabel}</Tag>
-                        {account.school ? <Tag color="geekblue">{account.school}</Tag> : null}
+              {accounts.map((account) => {
+                const selected = activeAccount === account.id
+                return (
+                  <Col xs={24} md={12} xl={8} key={account.id}>
+                    <Card
+                      bordered={false}
+                      hoverable
+                      onClick={() => fillAccount(account)}
+                      className={`login-account-card${selected ? ' is-selected' : ''}`}
+                    >
+                      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                        <Space wrap>
+                          <Tag color={ROLE_COLORS[account.role]}>{account.roleLabel}</Tag>
+                          {account.school ? <Tag color="geekblue">{account.school}</Tag> : null}
+                          {selected ? <Tag color="processing">当前选中</Tag> : null}
+                        </Space>
+                        <div style={{ color: '#f5f9ff', fontSize: 20, fontWeight: 700 }}>{account.name}</div>
+                        <div style={{ color: 'rgba(223, 236, 248, 0.92)', fontSize: 13 }}>
+                          账号：{account.username}
+                        </div>
+                        <div style={{ color: 'rgba(214, 231, 249, 0.82)', lineHeight: 1.75, fontSize: 13 }}>
+                          {account.description}
+                        </div>
                       </Space>
-                      <div style={{ color: '#f0f6ff', fontSize: 20, fontWeight: 700 }}>{account.name}</div>
-                      <div style={{ color: 'rgba(214, 231, 249, 0.74)' }}>账号：{account.username}</div>
-                      <div style={{ color: 'rgba(214, 231, 249, 0.64)', lineHeight: 1.8 }}>
-                        {account.description}
-                      </div>
-                    </Space>
-                  </Card>
-                </Col>
-              ))}
+                    </Card>
+                  </Col>
+                )
+              })}
             </Row>
           </Col>
         </Row>
