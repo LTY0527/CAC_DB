@@ -1002,3 +1002,164 @@ export function getPublicSchoolComparison(data = []) {
 export function getAdminStatus() {
   return STATIC_ADMIN_STATUS
 }
+
+export function normalizeRegionalWarningsData(data = {}) {
+  const items = Array.isArray(data?.items)
+    ? data.items.map((item = {}, index) => ({
+        key: item.key || `${item.warning_type || 'warning'}-${index}`,
+        warning_type: item.warning_type || '区域预警',
+        warning_title: item.warning_title || '风险信号',
+        warning_level: item.warning_level || '低',
+        target_scope: item.target_scope || '对象',
+        target_name: item.target_name || '-',
+        trigger_reason: item.trigger_reason || '',
+        metric_value: item.metric_value || '',
+        metric_change: item.metric_change || '',
+        updated_at: item.updated_at || '',
+      }))
+    : []
+
+  const summary = {
+    high: Number(data?.summary?.high || 0),
+    medium: Number(data?.summary?.medium || 0),
+    low: Number(data?.summary?.low || 0),
+    total: Number(data?.summary?.total || items.length),
+    updated_at: data?.summary?.updated_at || items[0]?.updated_at || '',
+  }
+
+  return { items, summary }
+}
+
+export function getRegionalWarningsOverview(data = {}, topN = 6) {
+  const normalized = normalizeRegionalWarningsData(data)
+  const severityRank = { 高: 3, 中: 2, 低: 1 }
+  const items = [...normalized.items]
+    .sort((a, b) => {
+      const rankDiff = (severityRank[b.warning_level] || 0) - (severityRank[a.warning_level] || 0)
+      if (rankDiff !== 0) return rankDiff
+      return String(a.warning_type).localeCompare(String(b.warning_type), 'zh-CN')
+    })
+    .slice(0, topN)
+
+  return {
+    items,
+    summary: normalized.summary,
+  }
+}
+
+export function normalizeMajorStructureAdviceData(data = {}) {
+  const items = Array.isArray(data?.items)
+    ? data.items.map((item = {}, index) => ({
+      key:
+        item.key ||
+        `${item.scope_type || 'school_major'}-${item.school_name || TXT_UNKNOWN_SCHOOL}-${item.major_name || item.industry_name || index}-${index}`,
+      scope_type: item.scope_type || 'school_major',
+      suggestion_type: item.suggestion_type || '建议持续观察',
+      suggestion_level: item.suggestion_level || '中',
+      school_name: item.school_name || TXT_UNKNOWN_SCHOOL,
+      major_name: item.major_name || '',
+      industry_name: item.industry_name || TXT_UNKNOWN_INDUSTRY,
+      discipline_category: item.discipline_category || TXT_UNKNOWN_DISCIPLINE,
+      target_name: item.target_name || '-',
+      trigger_reason: item.trigger_reason || '',
+      metric_summary: item.metric_summary || '',
+      supporting_signals: Array.isArray(item.supporting_signals) ? item.supporting_signals : [],
+      explanation: item.explanation || '',
+      employment_rate: Number(item.employment_rate || 0),
+      avg_salary: Number(item.avg_salary || 0),
+      avg_match_score: Number(item.avg_match_score || 0),
+      forecast_growth_pct: item.forecast_growth_pct == null ? null : Number(item.forecast_growth_pct || 0),
+      rule_lift: Number(item.rule_lift || 0),
+      strategic_ratio: Number(item.strategic_ratio || 0),
+      sample_size: Number(item.sample_size || 0),
+      priority_score: Number(item.priority_score || 0),
+      evidence_summary: item.evidence_summary || '',
+    }))
+    : []
+
+  return {
+    items,
+    summary: {
+      total: Number(data?.summary?.total || items.length),
+      type_summary: data?.summary?.type_summary || {},
+      salary_median: Number(data?.summary?.salary_median || 0),
+      employment_median: Number(data?.summary?.employment_median || 0),
+      match_median: Number(data?.summary?.match_median || 0),
+      updated_at: data?.summary?.updated_at || '',
+    },
+  }
+}
+
+export function getMajorStructureAdviceRows(
+  data = {},
+  {
+    currentSchool = TXT_UNKNOWN_SCHOOL,
+    roleMode = 'school',
+    selectedSchool = TXT_ALL,
+    selectedType = TXT_ALL,
+  } = {}
+) {
+  const normalized = normalizeMajorStructureAdviceData(data)
+  const schoolScope = roleMode === 'gov' ? selectedSchool : currentSchool
+  let rows = normalized.items
+  if (schoolScope && schoolScope !== TXT_ALL) {
+    rows = rows.filter((item) => item.school_name === schoolScope)
+  }
+  if (selectedType && selectedType !== TXT_ALL) {
+    rows = rows.filter((item) => item.suggestion_type === selectedType)
+  }
+  return [...rows].sort((a, b) => {
+    const levelRank = { 高: 3, 中: 2, 低: 1 }
+    return (
+      (levelRank[b.suggestion_level] || 0) - (levelRank[a.suggestion_level] || 0) ||
+      b.priority_score - a.priority_score ||
+      b.avg_salary - a.avg_salary
+    )
+  })
+}
+
+export function getMajorStructureAdviceFilterOptions(data = {}) {
+  const normalized = normalizeMajorStructureAdviceData(data)
+  const sortText = (arr) => [...new Set(arr.filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'zh-CN'))
+  return {
+    schools: sortText(normalized.items.map((item) => item.school_name)),
+    suggestionTypes: sortText(normalized.items.map((item) => item.suggestion_type)),
+  }
+}
+
+export function getMajorStructureAdviceOverview(rows = [], summary = {}) {
+  const typeSummary = summary?.type_summary || {}
+  return {
+    total: rows.length,
+    expandCount: Number(typeSummary['建议扩招'] || rows.filter((item) => item.suggestion_type === '建议扩招').length),
+    maintainCount: Number(typeSummary['建议稳招'] || rows.filter((item) => item.suggestion_type === '建议稳招').length),
+    shrinkCount: Number(typeSummary['建议缩招'] || rows.filter((item) => item.suggestion_type === '建议缩招').length),
+    practiceCount: Number(
+      typeSummary['建议加强实践培养'] || rows.filter((item) => item.suggestion_type === '建议加强实践培养').length
+    ),
+    supportCount: Number(
+      typeSummary['建议重点扶持方向'] || rows.filter((item) => item.suggestion_type === '建议重点扶持方向').length
+    ),
+  }
+}
+
+export function getStructureSuggestionColor(type = '') {
+  if (type === '建议扩招') return 'green'
+  if (type === '建议稳招') return 'blue'
+  if (type === '建议缩招') return 'red'
+  if (type === '建议加强实践培养') return 'gold'
+  if (type === '建议重点扶持方向') return 'purple'
+  return 'default'
+}
+
+export function getSuggestionLevelColor(level = '') {
+  if (level === '高') return 'red'
+  if (level === '中') return 'gold'
+  return 'blue'
+}
+
+export function getRegionalWarningTagColor(level = '') {
+  if (level === '高') return 'red'
+  if (level === '中') return 'gold'
+  return 'blue'
+}

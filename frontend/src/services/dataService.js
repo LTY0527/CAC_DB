@@ -70,6 +70,11 @@ export async function fetchTrainingProgramOptimization() {
   return ensurePayload(response)
 }
 
+export async function fetchMajorStructureAdvice() {
+  const response = await api.get('/major-structure-advice')
+  return response?.data?.data || {}
+}
+
 export async function fetchJobRecommendation() {
   const response = await api.get('/job-recommendation')
   return ensurePayload(response)
@@ -83,6 +88,37 @@ export async function fetchJobRecommendationEvaluation() {
 export async function fetchModelMetrics() {
   const response = await api.get('/model-metrics')
   return ensurePayload(response)
+}
+
+export async function fetchRegionalWarnings() {
+  const response = await api.get('/regional-warnings')
+  return response?.data?.data || {}
+}
+
+export async function fetchGovSchoolDetail(schoolName) {
+  const response = await api.get('/gov/school-detail', {
+    params: { school_name: schoolName },
+  })
+  return response?.data?.data || {}
+}
+
+export async function fetchGovMajorDetail(schoolName, majorName) {
+  const response = await api.get('/gov/major-detail', {
+    params: { school_name: schoolName, major_name: majorName },
+  })
+  return response?.data?.data || {}
+}
+
+export async function fetchGovSchoolBenchmarkOverview() {
+  const response = await api.get('/gov/school-benchmark-overview')
+  return response?.data?.data || {}
+}
+
+export async function fetchGovSchoolBenchmarkMajor(majorName) {
+  const response = await api.get('/gov/school-benchmark-major', {
+    params: { major_name: majorName },
+  })
+  return response?.data?.data || {}
 }
 
 export const generateEmploymentInsight = (payload) => api.post('/llm/employment-insight', payload)

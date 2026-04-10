@@ -1,20 +1,25 @@
+import { useMemo } from 'react'
 import { Card, Col, Row, Statistic, Table, Tag } from 'antd'
 import ReactECharts from 'echarts-for-react'
+import { useSearchParams } from 'react-router-dom'
+import GovernmentDrillBoard from '../components/GovernmentDrillBoard'
+import RegionalWarningBoard from '../components/RegionalWarningBoard'
+import SchoolBenchmarkBoard from '../components/SchoolBenchmarkBoard'
 import {
   formatNumber,
   getDisciplineDistribution,
   getForecastData,
   getGovDashboardSummary,
   getSchoolDashboardSummary,
-  getTieredRules,
   getTopSchoolsByEmployment,
+  getTieredRules,
 } from '../utils/dataAdapter'
 import {
   axisLabelStyle,
   axisLineStyle,
   chartPalette,
-  designTokens,
   darkTooltip,
+  designTokens,
   legendTextStyle,
   metaLabelStyle,
   metaValueStyle,
@@ -97,15 +102,28 @@ function buildRulesLiftOption(rules) {
 function buildGovTopSchoolOption(topSchools) {
   return {
     backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis', ...darkTooltip },
+    tooltip: {
+      trigger: 'axis',
+      ...darkTooltip,
+      formatter(params) {
+        const row = params?.[0]
+        return row ? `${row.axisValue}<br/>就业样本：${formatNumber(row.value)}` : ''
+      },
+    },
     grid: { left: '8%', right: '4%', bottom: '10%', top: '14%', containLabel: true },
-    xAxis: { type: 'category', data: topSchools.map((item) => item.school), axisLabel: { ...axisLabelStyle, interval: 0 }, axisLine: axisLineStyle },
+    xAxis: {
+      type: 'category',
+      data: topSchools.map((item) => item.school),
+      axisLabel: { ...axisLabelStyle, interval: 0 },
+      axisLine: axisLineStyle,
+    },
     yAxis: { type: 'value', axisLabel: axisLabelStyle, splitLine: splitLineStyle },
     series: [
       {
+        name: '就业样本',
         type: 'bar',
         barWidth: 24,
-        data: topSchools.map((item) => item.value),
+        data: topSchools.map((item) => ({ value: item.value, school: item.school })),
         itemStyle: { color: designTokens.accent, borderRadius: [6, 6, 0, 0] },
       },
     ],
@@ -117,7 +135,15 @@ function buildDisciplineOption(disciplineData) {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'item', ...darkTooltip },
     legend: { bottom: 0, textStyle: legendTextStyle },
-    series: [{ type: 'pie', radius: ['38%', '68%'], center: ['50%', '45%'], data: disciplineData, label: { color: designTokens.textSecondary, formatter: '{b}' } }],
+    series: [
+      {
+        type: 'pie',
+        radius: ['38%', '68%'],
+        center: ['50%', '45%'],
+        data: disciplineData,
+        label: { color: designTokens.textSecondary, formatter: '{b}' },
+      },
+    ],
   }
 }
 
@@ -127,12 +153,32 @@ export default function Dashboard({
   employmentData = [],
   forecastData = [],
   rulesData = [],
+  regionalWarningsData = {},
   dataLoadedAt = '',
   loading,
   error,
   roleMode = 'school',
   currentSchool = '上海大学',
 }) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedSchool = roleMode === 'gov' ? searchParams.get('school') || '' : ''
+  const selectedMajor = roleMode === 'gov' ? searchParams.get('major') || '' : ''
+  const inGovDrill = roleMode === 'gov' && Boolean(selectedSchool)
+
+  const schoolChartEvents = useMemo(
+    () =>
+      roleMode === 'gov'
+        ? {
+            click: (params) => {
+              const school = params?.data?.school || params?.name
+              if (!school) return
+              setSearchParams({ school })
+            },
+          }
+        : undefined,
+    [roleMode, setSearchParams]
+  )
+
   if (loading) return <div style={{ color: designTokens.textSecondary }}>数据加载中...</div>
   if (error && !employmentData.length) return <div style={{ color: designTokens.danger }}>{error}</div>
 
@@ -140,7 +186,7 @@ export default function Dashboard({
   const govSummary = getGovDashboardSummary(employmentData)
   const forecast = getForecastData(forecastData)
   const rules = getTieredRules(rulesData, 10)
-  const topSchools = getTopSchoolsByEmployment(employmentData, 5)
+  const topSchools = getTopSchoolsByEmployment(employmentData, 6)
   const disciplineData = getDisciplineDistribution(employmentData)
 
   const summaryCards =
@@ -148,15 +194,19 @@ export default function Dashboard({
       ? [
           { title: '覆盖高校数', value: formatNumber(govSummary.schoolCount), style: statValuePrimary },
           { title: '全市就业样本', value: formatNumber(govSummary.totalEmp), style: statValueBlue },
-          { title: '全市平均薪资', value: `${formatNumber(govSummary.weightedSalary, 0)} 元`, style: statValueCyan },
+          { title: '全市平均薪资', value: formatNumber(govSummary.weightedSalary, 0), suffix: '元', style: statValueCyan },
           { title: '先导产业吸纳人数', value: formatNumber(govSummary.topIndustryEmp), style: statValuePurple },
         ]
       : [
           { title: '本校就业样本', value: formatNumber(schoolSummary.totalEmp), style: statValuePrimary },
-          { title: '本校平均薪资', value: `${formatNumber(schoolSummary.weightedSalary, 0)} 元`, style: statValueBlue },
+          { title: '本校平均薪资', value: formatNumber(schoolSummary.weightedSalary, 0), suffix: '元', style: statValueBlue },
           { title: '先导产业吸纳人数', value: formatNumber(schoolSummary.topIndustryEmp), style: statValueCyan },
           { title: '覆盖专业数', value: formatNumber(schoolSummary.majorCount), style: statValuePurple },
         ]
+
+  const goBackToCity = () => setSearchParams({})
+  const handleSelectSchool = (school) => setSearchParams({ school })
+  const handleSelectMajor = (major) => setSearchParams({ school: selectedSchool, major })
 
   return (
     <Row gutter={[16, 16]}>
@@ -184,46 +234,84 @@ export default function Dashboard({
       {summaryCards.map((item) => (
         <Col xs={24} sm={12} xl={6} key={item.title}>
           <Card style={panelStyle}>
-            <Statistic title={item.title} value={item.value} styles={{ title: statTitleStyle, content: item.style }} />
+            <Statistic title={item.title} value={item.value} suffix={item.suffix} styles={{ title: statTitleStyle, content: item.style }} />
           </Card>
         </Col>
       ))}
 
-      <Col xs={24} xl={14}>
-        <Card title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '区域需求预测趋势' : '薪资需求预测趋势'}</span>} style={panelStyle}>
-          <ReactECharts option={buildForecastOverviewOption(forecast)} style={{ height: 380 }} />
-        </Card>
-      </Col>
-
-      <Col xs={24} xl={10}>
-        <Card title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '高校就业规模对比' : '高价值规则证据'}</span>} style={panelStyle}>
-          <ReactECharts option={roleMode === 'gov' ? buildGovTopSchoolOption(topSchools) : buildRulesLiftOption(rules)} style={{ height: 380 }} />
-        </Card>
-      </Col>
-
       {roleMode === 'gov' ? (
         <Col span={24}>
-          <Card title={<span style={sectionTitleStyle}>区域学科结构分布</span>} style={panelStyle}>
-            <ReactECharts option={buildDisciplineOption(disciplineData)} style={{ height: 400 }} />
-          </Card>
+          <RegionalWarningBoard data={regionalWarningsData} />
+        </Col>
+      ) : null}
+
+      {roleMode === 'gov' && !inGovDrill ? (
+        <Col span={24}>
+          <SchoolBenchmarkBoard />
+        </Col>
+      ) : null}
+
+      {inGovDrill ? (
+        <Col span={24}>
+          <GovernmentDrillBoard
+            schoolName={selectedSchool}
+            majorName={selectedMajor}
+            onBackToCity={goBackToCity}
+            onSelectSchool={handleSelectSchool}
+            onSelectMajor={handleSelectMajor}
+          />
         </Col>
       ) : (
-        <Col span={24}>
-          <Card title={<span style={sectionTitleStyle}>高价值规则摘要</span>} style={panelStyle}>
-            <Table
-              rowKey="key"
-              pagination={false}
-              dataSource={rules}
-              columns={[
-                { title: '前项条件', dataIndex: 'antecedent', render: (value) => cleanRuleLabel(value) },
-                { title: '结果项', dataIndex: 'consequent', render: (value) => cleanRuleLabel(value) },
-                { title: '支持度', dataIndex: 'support', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },
-                { title: '置信度', dataIndex: 'confidence', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },
-                { title: '提升度', dataIndex: 'lift', render: (value) => Number(value || 0).toFixed(2) },
-              ]}
-            />
-          </Card>
-        </Col>
+        <>
+          <Col xs={24} xl={14}>
+            <Card title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '区域需求预测趋势' : '薪资需求预测趋势'}</span>} style={panelStyle}>
+              <ReactECharts option={buildForecastOverviewOption(forecast)} style={{ height: 380 }} />
+            </Card>
+          </Col>
+
+          <Col xs={24} xl={10}>
+            <Card
+              title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '高校就业规模对比' : '高价值规则证据'}</span>}
+              extra={
+                roleMode === 'gov' ? (
+                  <span style={{ color: designTokens.textMuted, fontSize: 12 }}>点击柱体查看学校层详情</span>
+                ) : null
+              }
+              style={panelStyle}
+            >
+              <ReactECharts
+                option={roleMode === 'gov' ? buildGovTopSchoolOption(topSchools) : buildRulesLiftOption(rules)}
+                style={{ height: 380 }}
+                onEvents={schoolChartEvents}
+              />
+            </Card>
+          </Col>
+
+          {roleMode === 'gov' ? (
+            <Col span={24}>
+              <Card title={<span style={sectionTitleStyle}>区域学科结构分布</span>} style={panelStyle}>
+                <ReactECharts option={buildDisciplineOption(disciplineData)} style={{ height: 400 }} />
+              </Card>
+            </Col>
+          ) : (
+            <Col span={24}>
+              <Card title={<span style={sectionTitleStyle}>高价值规则摘要</span>} style={panelStyle}>
+                <Table
+                  rowKey="key"
+                  pagination={false}
+                  dataSource={rules}
+                  columns={[
+                    { title: '前项条件', dataIndex: 'antecedent', render: (value) => cleanRuleLabel(value) },
+                    { title: '结果项', dataIndex: 'consequent', render: (value) => cleanRuleLabel(value) },
+                    { title: '支持度', dataIndex: 'support', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },
+                    { title: '置信度', dataIndex: 'confidence', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },
+                    { title: '提升度', dataIndex: 'lift', render: (value) => Number(value || 0).toFixed(2) },
+                  ]}
+                />
+              </Card>
+            </Col>
+          )}
+        </>
       )}
     </Row>
   )

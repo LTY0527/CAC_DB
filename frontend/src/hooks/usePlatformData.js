@@ -5,8 +5,10 @@ import {
   fetchEnrollmentMatchingEvaluation,
   fetchJobRecommendation,
   fetchJobRecommendationEvaluation,
+  fetchMajorStructureAdvice,
   fetchMajorMatchingRules,
   fetchModelMetrics,
+  fetchRegionalWarnings,
   fetchSalaryForecast,
   fetchSalaryForecastEvaluation,
   fetchTrainingProgramOptimization,
@@ -23,10 +25,12 @@ export default function usePlatformData() {
   const [rulesData, setRulesData] = useState([])
   const [recommendationData, setRecommendationData] = useState([])
   const [trainingProgramData, setTrainingProgramData] = useState([])
+  const [majorStructureAdviceData, setMajorStructureAdviceData] = useState({})
   const [forecastEvalData, setForecastEvalData] = useState({})
   const [enrollmentEvalData, setEnrollmentEvalData] = useState([])
   const [jobRecommendationEvalData, setJobRecommendationEvalData] = useState([])
   const [modelMetricsData, setModelMetricsData] = useState([])
+  const [regionalWarningsData, setRegionalWarningsData] = useState({})
   const [dataLoadedAt, setDataLoadedAt] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -48,7 +52,9 @@ export default function usePlatformData() {
         fetchJobRecommendation(),
         fetchJobRecommendationEvaluation(),
         fetchTrainingProgramOptimization(),
+        fetchMajorStructureAdvice(),
         fetchModelMetrics(),
+        fetchRegionalWarnings(),
       ])
 
       if (!alive) return
@@ -63,7 +69,9 @@ export default function usePlatformData() {
         recommendationRes,
         recommendationEvalRes,
         trainingProgramRes,
+        majorStructureAdviceRes,
         modelMetricsRes,
+        regionalWarningsRes,
       ] = results
 
       setEmploymentData(ensureList(employmentRes.status === 'fulfilled' ? employmentRes.value : []))
@@ -81,8 +89,14 @@ export default function usePlatformData() {
       setTrainingProgramData(
         ensureList(trainingProgramRes.status === 'fulfilled' ? trainingProgramRes.value : [])
       )
+      setMajorStructureAdviceData(
+        majorStructureAdviceRes.status === 'fulfilled' ? (majorStructureAdviceRes.value || {}) : {}
+      )
       setModelMetricsData(
         ensureList(modelMetricsRes.status === 'fulfilled' ? modelMetricsRes.value : [])
+      )
+      setRegionalWarningsData(
+        regionalWarningsRes.status === 'fulfilled' ? (regionalWarningsRes.value || {}) : {}
       )
       setDataLoadedAt(
         new Date().toLocaleString('zh-CN', {
@@ -115,7 +129,9 @@ export default function usePlatformData() {
     recommendationData,
     jobRecommendationEvalData,
     trainingProgramData,
+    majorStructureAdviceData,
     modelMetricsData,
+    regionalWarningsData,
     dataLoadedAt,
     loading,
     error,
