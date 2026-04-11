@@ -1,56 +1,37 @@
-﻿export const AUTH_STORAGE_KEY = 'cac_platform_session_v1'
+export const AUTH_STORAGE_KEY = 'cac_platform_session_v2'
 
-const MOCK_ACCOUNTS = [
+const DEMO_ACCOUNTS = [
   {
     id: 'teacher-shu',
     username: 'teacher_shu',
-    password: '123456',
-    name: '\u5f20\u8001\u5e08',
+    name: '张老师',
     role: 'teacher',
-    roleLabel: '\u5b66\u6821\u8001\u5e08',
-    school: '\u4e0a\u6d77\u5927\u5b66',
-    description: '\u9762\u5411\u672c\u6821\u4e13\u4e1a\u5efa\u8bbe\u3001\u57f9\u517b\u4f18\u5316\u548c\u62db\u751f\u8c03\u63a7\u7684\u6821\u5185\u89c6\u89d2\u3002',
+    roleLabel: '学校教师',
+    school: '上海大学',
+    description: '面向本校专业建设、培养优化和招生调控的校内视角。',
   },
   {
     id: 'gov-sh',
     username: 'gov_sh',
-    password: '123456',
-    name: '\u5e02\u6559\u59d4\u4e13\u5458',
-    role: 'gov',
-    roleLabel: '\u653f\u5e9c\u4eba\u5458',
+    name: '市教委专员',
+    role: 'government',
+    roleLabel: '政府人员',
     school: '',
-    description: '\u67e5\u770b\u5168\u5e02\u9ad8\u6821\u4e13\u4e1a\u5e03\u5c40\u3001\u4ea7\u4e1a\u5339\u914d\u548c\u7ed3\u6784\u8c03\u6574\u5efa\u8bae\u3002',
+    description: '查看全市高校专业布局、产业匹配和结构调整建议。',
   },
   {
     id: 'public-guest',
     username: 'guest',
-    password: '123456',
-    name: '\u793e\u4f1a\u516c\u4f17',
+    name: '社会公众',
     role: 'public',
-    roleLabel: '\u793e\u4f1a\u516c\u4f17',
+    roleLabel: '社会公众',
     school: '',
-    description: '\u67e5\u770b\u9ad8\u6821\u4e13\u4e1a\u516c\u5f00\u4fe1\u606f\u3001\u5c31\u4e1a\u7ed3\u679c\u548c\u884c\u4e1a\u8d8b\u52bf\u3002',
+    description: '查看高校专业公开信息、就业结果和行业趋势。',
   },
 ]
 
-export function getMockAccounts() {
-  return MOCK_ACCOUNTS.map((account) => {
-    const session = { ...account }
-    delete session.password
-    return session
-  })
-}
-
-export function loginWithMockAccount(username, password) {
-  const account = MOCK_ACCOUNTS.find(
-    (item) => item.username === String(username).trim() && item.password === String(password)
-  )
-
-  if (!account) return null
-
-  const session = { ...account }
-  delete session.password
-  return session
+export function getDemoAccounts() {
+  return DEMO_ACCOUNTS
 }
 
 export function getStoredSession() {

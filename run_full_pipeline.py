@@ -144,15 +144,21 @@ PIPELINE_STAGES = (
     ),
     PipelineStage(
         key="import_base_data",
-        description="阶段 3/7 导入基础数据到 MySQL",
+        description="阶段 3/8 导入基础数据到 MySQL",
         script="PutData.py",
         requires_files=CSV_FILES,
         requires_tables=BASE_TABLES,
         produces_tables=BASE_TABLES_WITH_DATA,
     ),
     PipelineStage(
+        key="init_security",
+        description="阶段 4/8 初始化系统账号与审计表",
+        script="init_security.py",
+        requires_tables=BASE_TABLES_WITH_DATA,
+    ),
+    PipelineStage(
         key="feature_engineering",
-        description="阶段 4/7 特征加工与 ADS 聚合",
+        description="阶段 5/8 特征加工与 ADS 聚合",
         script="Spark-all.py",
         env={"MATCHING_DATA_SOURCE": "jdbc"},
         requires_tables=BASE_TABLES_WITH_DATA,
@@ -160,7 +166,7 @@ PIPELINE_STAGES = (
     ),
     PipelineStage(
         key="lstm_forecast",
-        description="阶段 5/7 LSTM 需求预测",
+        description="阶段 6/8 LSTM 需求预测",
         script="LSTM-all.py",
         requires_tables=(TableCheck("fact_employment"),),
         produces_tables=(
@@ -171,7 +177,7 @@ PIPELINE_STAGES = (
     ),
     PipelineStage(
         key="matching",
-        description="阶段 6/7 协同过滤招生匹配与余弦相似度就业推荐",
+        description="阶段 7/8 协同过滤招生匹配与余弦相似度就业推荐",
         script="CF-all.py",
         env={
             "MATCHING_DATA_SOURCE": "jdbc",
@@ -187,7 +193,7 @@ PIPELINE_STAGES = (
     ),
     PipelineStage(
         key="rule_mining",
-        description="阶段 7/7 关联规则挖掘",
+        description="阶段 8/8 关联规则挖掘",
         script="FPgrowth-all.py",
         env={"MATCHING_DATA_SOURCE": "jdbc"},
         requires_tables=BASE_TABLES_WITH_DATA,

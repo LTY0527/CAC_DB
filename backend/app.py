@@ -1,13 +1,15 @@
 from pathlib import Path
 import sys
+from functools import wraps
 from datetime import date, datetime
 from decimal import Decimal
 import math
 from statistics import median
-from flask import Flask, jsonify, request
+from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import check_password_hash
 
 BACKEND_DIR = Path(__file__).resolve().parent
 ROOT_DIR = BACKEND_DIR.parent
@@ -18,13 +20,26 @@ for path in (str(BACKEND_DIR), str(ROOT_DIR)):
 from config import DB_URL  # noqa: E402
 from prompt_builder import build_report_prompt  # noqa: E402
 from llm_client import call_llm  # noqa: E402
+from security import (  # noqa: E402
+    MAX_FAILED_ATTEMPTS,
+    bootstrap_security,
+    extract_client_ip,
+    get_lock_deadline,
+    is_account_locked,
+    issue_auth_token,
+    record_audit_log,
+    sanitize_log_text,
+    verify_auth_token,
+)
 
 
 app = Flask(__name__)
 CORS(app)
 
 DB_ENGINE = create_engine(DB_URL, pool_pre_ping=True)
+bootstrap_security(DB_ENGINE)
 TXT_STRATEGIC = "\u4e09\u5927\u5148\u5bfc"
+ROLE_ALIASES = {"teacher": "teacher", "government": "gov", "public": "public"}
 
 
 def serialize_value(value):
@@ -48,6 +63,141 @@ def success_response(data):
     return jsonify({"success": True, "data": data})
 
 
+def get_db_user_by_username(username: str):
+    rows = fetch_rows(
+        """
+        SELECT
+            u.user_id,
+            u.username,
+            u.password_hash,
+            u.hash_algo,
+            u.hash_version,
+            u.role,
+            u.school_id,
+            u.display_name,
+            u.account_status,
+            u.failed_attempts,
+            u.lock_until,
+            u.last_login_at,
+            u.password_updated_at,
+            s.school_name
+        FROM sys_user_account u
+        LEFT JOIN sys_school_ref s ON u.school_id = s.school_id
+        WHERE u.username = :username
+        LIMIT 1
+        """,
+        {"username": username},
+    )
+    return rows[0] if rows else None
+
+
+def build_frontend_session(user_row: dict) -> dict:
+    frontend_role = ROLE_ALIASES.get(user_row.get("role"), user_row.get("role"))
+    payload = {
+        "user_id": user_row.get("user_id"),
+        "username": user_row.get("username"),
+        "role": frontend_role,
+        "role_db": user_row.get("role"),
+        "name": user_row.get("display_name"),
+        "school_id": user_row.get("school_id"),
+        "school": user_row.get("school_name") or "",
+    }
+    token = issue_auth_token(payload)
+    return {**payload, "token": token}
+
+
+def get_current_user(optional: bool = True):
+    header_value = request.headers.get("Authorization", "")
+    token = header_value.replace("Bearer ", "", 1).strip() if header_value.startswith("Bearer ") else ""
+    user = verify_auth_token(token)
+    if not user and optional:
+        return None
+    return user
+
+
+def audit_event(
+    *,
+    action_type: str,
+    module_name: str,
+    result_status: str,
+    user: dict | None = None,
+    target_type: str | None = None,
+    target_id: str | None = None,
+    message: str | None = None,
+) -> None:
+    try:
+        record_audit_log(
+            DB_ENGINE,
+            user_id=user.get("user_id") if user else None,
+            username=user.get("username") if user else None,
+            role=user.get("role_db") if user else None,
+            school_id=user.get("school_id") if user else None,
+            action_type=action_type,
+            module_name=module_name,
+            target_type=target_type,
+            target_id=target_id,
+            request_path=request.path,
+            request_method=request.method,
+            result_status=result_status,
+            message=message,
+            ip_address=extract_client_ip(request),
+            user_agent=request.headers.get("User-Agent"),
+        )
+    except Exception:
+        # 审计日志失败不应影响主业务流程
+        return
+
+
+def require_auth(roles: tuple[str, ...] | None = None):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            user = get_current_user(optional=True)
+            if not user:
+                audit_event(
+                    action_type="ACCESS_DENY",
+                    module_name=request.path,
+                    result_status="DENY",
+                    target_type="API",
+                    target_id=request.path,
+                    message="missing_or_invalid_token",
+                )
+                return jsonify({"success": False, "message": "认证已失效，请重新登录"}), 401
+
+            if roles and user.get("role_db") not in roles:
+                audit_event(
+                    action_type="ACCESS_DENY",
+                    module_name=request.path,
+                    result_status="DENY",
+                    user=user,
+                    target_type="API",
+                    target_id=request.path,
+                    message="role_not_allowed",
+                )
+                return jsonify({"success": False, "message": "当前账号无权访问该资源"}), 403
+
+            g.current_user = user
+            return view_func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def log_query_access(module_name: str, target_type: str, target_id: str | None = None, message: str | None = None):
+    user = getattr(g, "current_user", None)
+    if user:
+        audit_event(
+            action_type="QUERY_DETAIL",
+            module_name=module_name,
+            result_status="SUCCESS",
+            user=user,
+            target_type=target_type,
+            target_id=target_id,
+            message=message,
+        )
+
+
 def severity_weight(level: str) -> int:
     return {"高": 3, "中": 2, "低": 1}.get(level, 0)
 
@@ -60,6 +210,93 @@ def build_warning_summary(items):
         "total": len(items),
         "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
+
+
+def _fmt_percent(value):
+    number = float(value or 0)
+    return f"{number:.1f}%"
+
+
+def _fmt_money(value):
+    number = float(value or 0)
+    return f"{number:,.0f} 元"
+
+
+def build_fallback_report(summary=None, filters=None, modules=None):
+    summary = summary or {}
+    filters = filters or {}
+    modules = modules or []
+
+    employment_summary = summary.get("employmentSummary") or {}
+    salary_forecast = summary.get("salaryForecast") or {}
+    top_rules = summary.get("topRules") or []
+    enrollment_sample = summary.get("enrollmentSample") or []
+    recommendation_sample = summary.get("recommendationSample") or []
+
+    total_emp = int(employment_summary.get("totalEmpCount") or 0)
+    avg_salary = float(employment_summary.get("avgSalaryWeighted") or 0)
+    lead_emp = int(employment_summary.get("leadEmpCount") or 0)
+    lead_ratio = (lead_emp / total_emp * 100) if total_emp else 0
+
+    series = salary_forecast.get("series") or []
+    months = salary_forecast.get("months") or []
+    leading_track = series[0] if series else {}
+    leading_track_name = leading_track.get("name") or "重点专业"
+    leading_track_values = leading_track.get("data") or []
+    forecast_growth = 0
+    if len(leading_track_values) >= 2 and leading_track_values[0]:
+        forecast_growth = (leading_track_values[-1] - leading_track_values[0]) / leading_track_values[0] * 100
+
+    top_rule = top_rules[0] if top_rules else {}
+    top_rule_text = ""
+    if top_rule:
+        top_rule_text = (
+            f"{top_rule.get('antecedent', '-')} → {top_rule.get('consequent', '-')}，"
+            f"置信度 {float(top_rule.get('confidence') or 0):.2f}，提升度 {float(top_rule.get('lift') or 0):.2f}"
+        )
+
+    enrollment_text = "暂无招生匹配样本。"
+    if enrollment_sample:
+        sample = enrollment_sample[0]
+        enrollment_text = (
+            f"{sample.get('target_major', '-')} 当前高匹配画像为 {sample.get('top_potential_student_id', '-')}，"
+            f"匹配分 {float(sample.get('matching_score') or 0):.2f}。"
+        )
+
+    recommendation_text = "暂无就业推荐样本。"
+    if recommendation_sample:
+        sample = recommendation_sample[0]
+        recommendation_text = (
+            f"学生 {sample.get('student_name', '-')} 的首位推荐为 {sample.get('recommended_job', '-')}，"
+            f"匹配分 {float(sample.get('matching_score') or 0):.3f}。"
+        )
+
+    included_modules = "、".join(modules) if modules else "动态监测、需求预测、招生匹配、规则分析、就业推荐"
+    region = filters.get("region") or "上海"
+    report_lines = [
+        f"{region}高校人才培养与就业分析专报（系统自动生成）",
+        "",
+        "一、总体情况",
+        f"当前纳入分析的就业样本共 {total_emp:,} 人，加权平均薪资约 {_fmt_money(avg_salary)}，高质量就业占比约 {_fmt_percent(lead_ratio)}。",
+        "",
+        "二、主要发现",
+        f"1. 本次专报覆盖模块包括：{included_modules}。",
+        f"2. 需求预测中，{leading_track_name} 在未来 {len(months)} 个月的预测薪资变化约为 {_fmt_percent(forecast_growth)}。",
+        f"3. 招生匹配方面，{enrollment_text}",
+        f"4. 就业推荐样本显示，{recommendation_text}",
+        "",
+        "三、规则与结构信号",
+        top_rule_text or "当前暂无可用的规则挖掘结果。",
+        "",
+        "四、管理建议",
+        "1. 对需求增长较快、就业结果较好的专业方向，建议结合学校承载能力稳步优化资源配置。",
+        "2. 对匹配分较高但就业转化一般的专业，建议重点跟进培养方案与实践教学环节。",
+        "3. 对规则提升度高且与重点行业方向关联明显的专业，可优先纳入结构调整和扶持范围。",
+        "",
+        "五、说明",
+        "本专报由系统在当前可用数据基础上自动汇总生成；如部分模块样本不足，结论应结合业务判断持续观察。",
+    ]
+    return "\n".join(line for line in report_lines if line)
 
 
 def build_regional_warnings():
@@ -995,7 +1232,250 @@ def health():
         )
 
 
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    payload = request.get_json() or {}
+    username = sanitize_log_text(payload.get("username"), 64)
+    password = str(payload.get("password") or "")
+    generic_message = "账号或密码错误，或账户暂时不可用，请稍后重试。"
+
+    user_row = get_db_user_by_username(username)
+    if not user_row:
+        audit_event(
+            action_type="LOGIN_FAILURE",
+            module_name="auth",
+            result_status="FAIL",
+            target_type="ACCOUNT",
+            target_id=username,
+            message="invalid_credentials",
+        )
+        return jsonify({"success": False, "message": generic_message}), 401
+
+    if user_row.get("account_status") == "disabled":
+        audit_event(
+            action_type="LOGIN_FAILURE",
+            module_name="auth",
+            result_status="DENY",
+            target_type="ACCOUNT",
+            target_id=username,
+            message="account_disabled",
+            user={"user_id": user_row["user_id"], "username": user_row["username"], "role_db": user_row["role"], "school_id": user_row.get("school_id")},
+        )
+        return jsonify({"success": False, "message": generic_message}), 401
+
+    if user_row.get("account_status") == "locked" and not is_account_locked(user_row):
+        with DB_ENGINE.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    UPDATE sys_user_account
+                    SET account_status = 'active', failed_attempts = 0, lock_until = NULL
+                    WHERE user_id = :user_id
+                    """
+                ),
+                {"user_id": user_row["user_id"]},
+            )
+        user_row = get_db_user_by_username(username)
+
+    if is_account_locked(user_row):
+        audit_event(
+            action_type="LOGIN_FAILURE",
+            module_name="auth",
+            result_status="DENY",
+            target_type="ACCOUNT",
+            target_id=username,
+            message="account_temporarily_locked",
+            user={"user_id": user_row["user_id"], "username": user_row["username"], "role_db": user_row["role"], "school_id": user_row.get("school_id")},
+        )
+        return jsonify({"success": False, "message": generic_message}), 401
+
+    if not check_password_hash(user_row.get("password_hash") or "", password):
+        next_failed_attempts = int(user_row.get("failed_attempts") or 0) + 1
+        should_lock = next_failed_attempts >= MAX_FAILED_ATTEMPTS
+        with DB_ENGINE.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    UPDATE sys_user_account
+                    SET failed_attempts = :failed_attempts,
+                        account_status = :account_status,
+                        lock_until = :lock_until
+                    WHERE user_id = :user_id
+                    """
+                ),
+                {
+                    "failed_attempts": next_failed_attempts,
+                    "account_status": "locked" if should_lock else "active",
+                    "lock_until": get_lock_deadline() if should_lock else None,
+                    "user_id": user_row["user_id"],
+                },
+            )
+        audit_event(
+            action_type="LOGIN_FAILURE",
+            module_name="auth",
+            result_status="FAIL",
+            target_type="ACCOUNT",
+            target_id=username,
+            message="account_locked" if should_lock else "invalid_credentials",
+            user={"user_id": user_row["user_id"], "username": user_row["username"], "role_db": user_row["role"], "school_id": user_row.get("school_id")},
+        )
+        return jsonify({"success": False, "message": generic_message}), 401
+
+    with DB_ENGINE.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE sys_user_account
+                SET failed_attempts = 0,
+                    account_status = 'active',
+                    lock_until = NULL,
+                    last_login_at = CURRENT_TIMESTAMP
+                WHERE user_id = :user_id
+                """
+            ),
+            {"user_id": user_row["user_id"]},
+        )
+
+    refreshed_user = get_db_user_by_username(username)
+    session = build_frontend_session(refreshed_user)
+    audit_event(
+        action_type="LOGIN_SUCCESS",
+        module_name="auth",
+        result_status="SUCCESS",
+        user=session,
+        target_type="ACCOUNT",
+        target_id=username,
+        message="login_success",
+    )
+    return success_response(session)
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+@require_auth()
+def auth_logout():
+    user = g.current_user
+    audit_event(
+        action_type="LOGOUT",
+        module_name="auth",
+        result_status="SUCCESS",
+        user=user,
+        target_type="ACCOUNT",
+        target_id=user.get("username"),
+        message="logout_success",
+    )
+    return success_response({"ok": True})
+
+
+@app.route("/api/auth/me", methods=["GET"])
+@require_auth()
+def auth_me():
+    user = g.current_user
+    header_value = request.headers.get("Authorization", "")
+    token = header_value.replace("Bearer ", "", 1).strip() if header_value.startswith("Bearer ") else ""
+    return success_response({**user, "token": token})
+
+
+@app.route("/api/auth/access-log", methods=["POST"])
+@require_auth()
+def auth_access_log():
+    payload = request.get_json() or {}
+    user = g.current_user
+    module_name = sanitize_log_text(payload.get("module_name") or request.path, 64)
+    target_type = sanitize_log_text(payload.get("target_type") or "ROUTE", 64)
+    target_id = sanitize_log_text(payload.get("target_id") or module_name, 128)
+    message = sanitize_log_text(payload.get("message") or "view_module", 255)
+    audit_event(
+        action_type="VIEW_MODULE",
+        module_name=module_name,
+        result_status="SUCCESS",
+        user=user,
+        target_type=target_type,
+        target_id=target_id,
+        message=message,
+    )
+    return success_response({"ok": True})
+
+
+@app.route("/api/audit-logs", methods=["GET"])
+@require_auth(roles=("government",))
+def get_audit_logs():
+    page = max(1, request.args.get("page", default=1, type=int))
+    page_size = min(100, max(1, request.args.get("page_size", default=20, type=int)))
+    username = sanitize_log_text(request.args.get("username"), 64)
+    role = sanitize_log_text(request.args.get("role"), 32)
+    action_type = sanitize_log_text(request.args.get("action_type"), 64)
+    start_at = sanitize_log_text(request.args.get("start_at"), 32)
+    end_at = sanitize_log_text(request.args.get("end_at"), 32)
+
+    filters = []
+    params = {}
+    if username:
+      filters.append("username = :username")
+      params["username"] = username
+    if role:
+      filters.append("role = :role")
+      params["role"] = role
+    if action_type:
+      filters.append("action_type = :action_type")
+      params["action_type"] = action_type
+    if start_at:
+      filters.append("created_at >= :start_at")
+      params["start_at"] = start_at
+    if end_at:
+      filters.append("created_at <= :end_at")
+      params["end_at"] = end_at
+
+    where_sql = f"WHERE {' AND '.join(filters)}" if filters else ""
+    count_sql = f"SELECT COUNT(*) AS total FROM sys_audit_log {where_sql}"
+    data_sql = f"""
+        SELECT
+            audit_id,
+            user_id,
+            username,
+            role,
+            school_id,
+            action_type,
+            module_name,
+            target_type,
+            target_id,
+            request_path,
+            request_method,
+            result_status,
+            message,
+            ip_address,
+            user_agent,
+            created_at
+        FROM sys_audit_log
+        {where_sql}
+        ORDER BY created_at DESC, audit_id DESC
+        LIMIT :limit OFFSET :offset
+    """
+    params["limit"] = page_size
+    params["offset"] = (page - 1) * page_size
+
+    total = fetch_rows(count_sql, {k: v for k, v in params.items() if k not in {"limit", "offset"}})[0]["total"]
+    rows = fetch_rows(data_sql, params)
+    audit_event(
+        action_type="QUERY_AUDIT_LOG",
+        module_name="audit_log",
+        result_status="SUCCESS",
+        user=g.current_user,
+        target_type="AUDIT_LOG",
+        target_id=f"page:{page}",
+        message=f"page_size={page_size}",
+    )
+    return success_response(
+        {
+            "items": rows,
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+        }
+    )
+
+
 @app.route("/api/employment-summary", methods=["GET"])
+@require_auth(roles=("teacher", "government", "public"))
 def get_employment_summary():
     sql = """
         SELECT
@@ -1023,10 +1503,12 @@ def get_employment_summary():
         ORDER BY avg_salary DESC, emp_count DESC
     """
     data = fetch_rows(sql, {"strategic_tag": TXT_STRATEGIC})
+    log_query_access("employment_summary", "MODULE", "employment-summary", "summary_query")
     return success_response(data)
 
 
 @app.route("/api/salary-forecast", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_salary_forecast():
     sql = """
         SELECT
@@ -1040,10 +1522,13 @@ def get_salary_forecast():
         FROM ads_salary_forecast
         ORDER BY track_rank, forecast_month
     """
-    return success_response(fetch_rows(sql))
+    rows = fetch_rows(sql)
+    log_query_access("salary_forecast", "MODULE", "salary-forecast", "forecast_query")
+    return success_response(rows)
 
 
 @app.route("/api/salary-forecast-evaluation", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_salary_forecast_evaluation():
     metrics_sql = """
         SELECT
@@ -1078,6 +1563,7 @@ def get_salary_forecast_evaluation():
         FROM ads_salary_forecast_backtest
         ORDER BY track_rank, forecast_month
     """
+    log_query_access("salary_forecast_eval", "MODULE", "salary-forecast-evaluation", "forecast_eval_query")
     return success_response(
         {
             "metrics": fetch_rows(metrics_sql),
@@ -1087,6 +1573,7 @@ def get_salary_forecast_evaluation():
 
 
 @app.route("/api/enrollment-matching", methods=["GET"])
+@require_auth(roles=("teacher",))
 def get_enrollment_matching():
     sql = """
         SELECT
@@ -1097,10 +1584,13 @@ def get_enrollment_matching():
         FROM ads_enrollment_matching
         ORDER BY major_name, matching_score DESC
     """
-    return success_response(fetch_rows(sql))
+    rows = fetch_rows(sql)
+    log_query_access("enrollment_matching", "MODULE", "enrollment-matching", "matching_query")
+    return success_response(rows)
 
 
 @app.route("/api/enrollment-matching-evaluation", methods=["GET"])
+@require_auth(roles=("teacher",))
 def get_enrollment_matching_evaluation():
     sql = """
         SELECT
@@ -1120,10 +1610,13 @@ def get_enrollment_matching_evaluation():
                 ELSE 99
             END
     """
-    return success_response(fetch_rows(sql))
+    rows = fetch_rows(sql)
+    log_query_access("enrollment_matching_eval", "MODULE", "enrollment-matching-evaluation", "matching_eval_query")
+    return success_response(rows)
 
 
 @app.route("/api/major-matching-rules", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_major_matching_rules():
     sql = """
         SELECT
@@ -1135,10 +1628,13 @@ def get_major_matching_rules():
         FROM ads_major_matching_rules
         ORDER BY lift DESC, confidence DESC
     """
-    return success_response(fetch_rows(sql))
+    rows = fetch_rows(sql)
+    log_query_access("major_matching_rules", "MODULE", "major-matching-rules", "rules_query")
+    return success_response(rows)
 
 
 @app.route("/api/training-program-optimization", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_training_program_optimization():
     sql = """
         SELECT
@@ -1170,10 +1666,13 @@ def get_training_program_optimization():
         FROM ads_training_program_suggestions
         ORDER BY priority_score DESC, top_rule_lift DESC, avg_salary DESC
     """
-    return success_response(fetch_rows(sql))
+    rows = fetch_rows(sql)
+    log_query_access("training_program_optimization", "MODULE", "training-program-optimization", "optimization_query")
+    return success_response(rows)
 
 
 @app.route("/api/job-recommendation", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_job_recommendation():
     student_id = request.args.get("student_id", type=str)
     sql = """
@@ -1191,10 +1690,13 @@ def get_job_recommendation():
         WHERE (:student_id IS NULL OR student_id = :student_id)
         ORDER BY student_id, rank_no
     """
-    return success_response(fetch_rows(sql, {"student_id": student_id if student_id else None}))
+    rows = fetch_rows(sql, {"student_id": student_id if student_id else None})
+    log_query_access("job_recommendation", "STUDENT" if student_id else "MODULE", student_id or "job-recommendation", "job_query")
+    return success_response(rows)
 
 
 @app.route("/api/job-recommendation-evaluation", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_job_recommendation_evaluation():
     sql = """
         SELECT
@@ -1213,10 +1715,13 @@ def get_job_recommendation_evaluation():
                 ELSE 99
             END
     """
-    return success_response(fetch_rows(sql))
+    rows = fetch_rows(sql)
+    log_query_access("job_recommendation_eval", "MODULE", "job-recommendation-evaluation", "job_eval_query")
+    return success_response(rows)
 
 
 @app.route("/api/model-metrics", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_model_metrics():
     salary_metrics = fetch_rows(
         """
@@ -1278,15 +1783,21 @@ def get_model_metrics():
         FROM ads_job_recommendation_eval
         """
     )
-    return success_response(salary_metrics + enrollment_metrics + rule_metrics + job_metrics)
+    rows = salary_metrics + enrollment_metrics + rule_metrics + job_metrics
+    log_query_access("model_metrics", "MODULE", "model-metrics", "model_metric_query")
+    return success_response(rows)
 
 
 @app.route("/api/regional-warnings", methods=["GET"])
+@require_auth(roles=("government",))
 def get_regional_warnings():
-    return success_response(build_regional_warnings())
+    data = build_regional_warnings()
+    log_query_access("regional_warnings", "MODULE", "regional-warnings", "warning_query")
+    return success_response(data)
 
 
 @app.route("/api/gov/school-detail", methods=["GET"])
+@require_auth(roles=("government",))
 def get_gov_school_detail():
     school_name = request.args.get("school_name", type=str)
     if not school_name:
@@ -1294,10 +1805,12 @@ def get_gov_school_detail():
     data = build_gov_school_detail(school_name)
     if not data:
         return jsonify({"success": False, "message": "school not found"}), 404
+    log_query_access("gov_school_detail", "SCHOOL", school_name, "school_detail_query")
     return success_response(data)
 
 
 @app.route("/api/gov/major-detail", methods=["GET"])
+@require_auth(roles=("government",))
 def get_gov_major_detail():
     school_name = request.args.get("school_name", type=str)
     major_name = request.args.get("major_name", type=str)
@@ -1309,30 +1822,42 @@ def get_gov_major_detail():
     data = build_gov_major_detail(school_name, major_name)
     if not data:
         return jsonify({"success": False, "message": "major not found"}), 404
+    log_query_access("gov_major_detail", "MAJOR", f"{school_name}/{major_name}", "major_detail_query")
     return success_response(data)
 
 
 @app.route("/api/gov/school-benchmark-overview", methods=["GET"])
+@require_auth(roles=("government",))
 def get_gov_school_benchmark_overview():
-    return success_response(build_gov_school_benchmark_overview())
+    data = build_gov_school_benchmark_overview()
+    log_query_access("gov_school_benchmark", "MODULE", "school-benchmark-overview", "school_benchmark_query")
+    return success_response(data)
 
 
 @app.route("/api/gov/school-benchmark-major", methods=["GET"])
+@require_auth(roles=("government",))
 def get_gov_school_benchmark_major():
     major_name = request.args.get("major_name", type=str)
     if not major_name:
         return jsonify({"success": False, "message": "major_name is required"}), 400
-    return success_response(build_gov_major_benchmark(major_name))
+    data = build_gov_major_benchmark(major_name)
+    log_query_access("gov_school_benchmark_major", "MAJOR", major_name, "major_benchmark_query")
+    return success_response(data)
 
 
 @app.route("/api/major-structure-advice", methods=["GET"])
+@require_auth(roles=("teacher", "government"))
 def get_major_structure_advice():
-    return success_response(build_major_structure_advice())
+    data = build_major_structure_advice()
+    log_query_access("major_structure_advice", "MODULE", "major-structure-advice", "structure_advice_query")
+    return success_response(data)
 
 
 @app.route("/api/report/generate", methods=["POST"])
+@require_auth(roles=("teacher", "government"))
 def generate_report():
     try:
+        user = g.current_user
         data = request.get_json() or {}
 
         prompt = data.get("prompt", "")
@@ -1356,10 +1881,41 @@ def generate_report():
             modules=modules,
         )
 
-        report = call_llm(prompt_text)
+        fallback_used = False
+        fallback_reason = ""
+        try:
+            report = call_llm(prompt_text)
+        except Exception as llm_exc:
+            fallback_used = True
+            fallback_reason = sanitize_log_text(llm_exc, 255)
+            report = build_fallback_report(summary=summary, filters=filters, modules=modules)
 
-        return jsonify({"success": True, "report": report})
+        audit_event(
+            action_type="EXPORT_REPORT",
+            module_name="report",
+            result_status="SUCCESS",
+            user=user,
+            target_type="REPORT",
+            target_id=sanitize_log_text(report_type, 64),
+            message=(
+                f"page={filters.get('currentPage', 'report')};fallback={int(fallback_used)}"
+                + (f";reason={fallback_reason}" if fallback_reason else "")
+            ),
+        )
+
+        return jsonify({"success": True, "report": report, "fallback": fallback_used})
     except Exception as exc:
+        user = getattr(g, "current_user", None)
+        if user:
+            audit_event(
+                action_type="EXPORT_REPORT",
+                module_name="report",
+                result_status="FAIL",
+                user=user,
+                target_type="REPORT",
+                target_id="report",
+                message=sanitize_log_text(exc, 255),
+            )
         return jsonify({"success": False, "message": str(exc)}), 500
 
 

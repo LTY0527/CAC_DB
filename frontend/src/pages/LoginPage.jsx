@@ -8,18 +8,18 @@ import { getDefaultPathByRole } from '../config/roleConfig.jsx'
 const TEXT = {
   platformTag: '高校人才培养与就业大数据平台',
   loginTitle: '进入平台',
-  loginDesc: '使用演示账号登录，系统会根据角色自动加载对应视图与菜单。',
+  loginDesc: '使用数据库中的演示账号登录，系统会根据角色自动加载对应视图与菜单。',
   username: '账号',
   password: '密码',
   usernamePlaceholder: '请输入账号',
   passwordPlaceholder: '请输入密码',
   loginBtn: '登录并进入系统',
-  loginError: '账号或密码不正确，请使用下方演示账号登录。',
+  loginError: '账号或密码错误，或账户暂时不可用，请稍后重试。',
 }
 
 const ROLE_COLORS = {
   teacher: 'blue',
-  gov: 'cyan',
+  government: 'cyan',
   public: 'green',
 }
 
@@ -48,24 +48,32 @@ export default function LoginPage() {
   const location = useLocation()
   const { accounts, login } = useAuth()
   const [username, setUsername] = useState(accounts[0]?.username || '')
-  const [password, setPassword] = useState('123456')
+  const [password, setPassword] = useState('')
   const [activeAccount, setActiveAccount] = useState(accounts[0]?.id || '')
+  const [submitting, setSubmitting] = useState(false)
 
   const redirectPath = location.state?.from
 
-  const handleLogin = () => {
-    const session = login(username, password)
-    if (!session) {
-      message.error(TEXT.loginError)
-      return
-    }
+  const handleLogin = async () => {
+    setSubmitting(true)
+    try {
+      const session = await login(username, password)
+      if (!session) {
+        message.error(TEXT.loginError)
+        return
+      }
 
-    navigate(redirectPath || getDefaultPathByRole(session.role), { replace: true })
+      navigate(redirectPath || getDefaultPathByRole(session.role), { replace: true })
+    } catch (error) {
+      message.error(error?.response?.data?.message || TEXT.loginError)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const fillAccount = (account) => {
     setUsername(account.username)
-    setPassword('123456')
+    setPassword('')
     setActiveAccount(account.id)
   }
 
@@ -129,7 +137,13 @@ export default function LoginPage() {
                   />
                 </div>
 
-                <Button type="primary" size="large" onClick={handleLogin} className="login-submit-btn">
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={handleLogin}
+                  className="login-submit-btn"
+                  loading={submitting}
+                >
                   {TEXT.loginBtn}
                 </Button>
               </Space>
@@ -155,9 +169,7 @@ export default function LoginPage() {
                           {selected ? <Tag color="processing">当前选中</Tag> : null}
                         </Space>
                         <div style={{ color: '#f5f9ff', fontSize: 20, fontWeight: 700 }}>{account.name}</div>
-                        <div style={{ color: 'rgba(223, 236, 248, 0.92)', fontSize: 13 }}>
-                          账号：{account.username}
-                        </div>
+                        <div style={{ color: 'rgba(223, 236, 248, 0.92)', fontSize: 13 }}>账号：{account.username}</div>
                         <div style={{ color: 'rgba(214, 231, 249, 0.82)', lineHeight: 1.75, fontSize: 13 }}>
                           {account.description}
                         </div>

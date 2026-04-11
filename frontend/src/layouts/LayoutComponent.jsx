@@ -1,9 +1,11 @@
+import { useEffect } from 'react'
 import { Button, Layout, Menu, Space, Tag } from 'antd'
 import { LogoutOutlined, UserOutlined } from '@ant-design/icons'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ROLE_CONFIGS } from '../config/roleConfig.jsx'
 import { useAuth } from '../context/AuthContext'
 import usePlatformData from '../hooks/usePlatformData'
+import { logModuleAccess } from '../services/dataService'
 import { designTokens } from '../utils/uiTheme'
 
 const { Header, Sider, Content } = Layout
@@ -32,6 +34,18 @@ export default function LayoutComponent() {
     currentSchool,
     roleMode: session?.role === 'teacher' ? 'school' : session?.role === 'gov' ? 'gov' : 'public',
   }
+
+  useEffect(() => {
+    if (!session?.token) return
+    logModuleAccess({
+      module_name: location.pathname,
+      target_type: 'ROUTE',
+      target_id: location.pathname,
+      message: `view:${location.pathname}`,
+    }).catch(() => {
+      // access log should not block page rendering
+    })
+  }, [location.pathname, session?.token])
 
   return (
     <Layout style={{ minHeight: '100vh', background: 'transparent' }}>
@@ -115,8 +129,8 @@ export default function LayoutComponent() {
             </Tag>
             <Button
               icon={<LogoutOutlined />}
-              onClick={() => {
-                logout()
+              onClick={async () => {
+                await logout()
                 navigate('/login', { replace: true })
               }}
             >

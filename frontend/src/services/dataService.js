@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { message } from 'antd'
+import { clearStoredSession, getStoredSession } from '../utils/mockAuth'
 
 const ERROR_DEBOUNCE_MS = 1800
 let lastErrorAt = 0
@@ -16,9 +17,22 @@ export const api = axios.create({
   timeout: 120000,
 })
 
+api.interceptors.request.use((config) => {
+  const session = getStoredSession()
+  if (session?.token) {
+    config.headers = config.headers || {}
+    config.headers.Authorization = `Bearer ${session.token}`
+  }
+  return config
+})
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error?.response?.status === 401) {
+      clearStoredSession()
+    }
+
     if (error?.response?.status >= 500) {
       showGlobalError('后端服务异常，请检查 Flask 服务或数据库连接。')
     } else if (error?.code === 'ECONNABORTED') {
@@ -33,6 +47,30 @@ api.interceptors.response.use(
 
 function ensurePayload(response) {
   return response?.data?.data || []
+}
+
+export async function login(payload) {
+  const response = await api.post('/auth/login', payload)
+  return response?.data?.data || null
+}
+
+export async function logout() {
+  await api.post('/auth/logout')
+}
+
+export async function fetchAuthMe() {
+  const response = await api.get('/auth/me')
+  return response?.data?.data || null
+}
+
+export async function logModuleAccess(payload) {
+  const response = await api.post('/auth/access-log', payload)
+  return response?.data?.data || null
+}
+
+export async function fetchAuditLogs(params = {}) {
+  const response = await api.get('/audit-logs', { params })
+  return response?.data?.data || {}
 }
 
 export async function fetchEmploymentSummary() {
