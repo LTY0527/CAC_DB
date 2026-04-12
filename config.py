@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote_plus
 
 # ==========================================
 # 0. 基础路径配置 (确保 JAR 包精准定位)
@@ -11,16 +12,30 @@ JAR_PATH = os.path.join(BASE_DIR, "libs", "mysql-connector-java-8.0.11.jar")
 # 1. MySQL 数据库配置
 # ==========================================
 DB_SETTINGS = {
-    "host": "localhost",
-    "port": 3306,
-    "user": "root",
-    "password": "123456", # 确认密码已修改
-    "database": "bigdata",
-    "driver": "com.mysql.cj.jdbc.Driver"
+    "host": os.getenv("DB_HOST", "localhost"),
+    "port": int(os.getenv("DB_PORT", "3306")),
+    "user": os.getenv("DB_USER", "root"),
+    "password": os.getenv("DB_PASSWORD", "123456"),
+    "database": os.getenv("DB_NAME", "bigdata"),
+    "charset": os.getenv("DB_CHARSET", "utf8mb4"),
+    "driver": os.getenv("DB_JDBC_DRIVER", "com.mysql.cj.jdbc.Driver"),
 }
 
-# 构造 SQLAlchemy 连接字符串 (用于 data_factory.py)
-DB_URL = f"mysql+mysqlconnector://{DB_SETTINGS['user']}:{DB_SETTINGS['password']}@{DB_SETTINGS['host']}:{DB_SETTINGS['port']}/{DB_SETTINGS['database']}"
+
+def build_sqlalchemy_url(driver="mysqlconnector"):
+    encoded_password = quote_plus(DB_SETTINGS["password"])
+    base_url = (
+        f"mysql+{driver}://{DB_SETTINGS['user']}:{encoded_password}"
+        f"@{DB_SETTINGS['host']}:{DB_SETTINGS['port']}/{DB_SETTINGS['database']}"
+    )
+    if driver == "pymysql":
+        return f"{base_url}?charset={DB_SETTINGS['charset']}"
+    return base_url
+
+
+# 构造 SQLAlchemy 连接字符串 (用于 backend / algorithm scripts)
+DB_URL = build_sqlalchemy_url("mysqlconnector")
+DB_URL_PYMYSQL = build_sqlalchemy_url("pymysql")
 
 # 构造 Spark JDBC 连接 URL (用于 Spark_FP_Growth.py)
 # 增加 serverTimezone 以避免 8.0 系列驱动常见的时区报错

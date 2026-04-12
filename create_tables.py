@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 import os
 import sys
+from config import DB_SETTINGS, DB_URL_PYMYSQL
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # ================================================================
@@ -26,19 +27,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ================================================================
-# 数据库配置
-# ================================================================
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 3306,
-    'user': 'root',
-    'password': '123456',
-    'database': 'bigdata',
-    'charset': 'utf8mb4'
-}
-
-DB_CONNECTION_STRING = f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}?charset={DB_CONFIG['charset']}"
+DB_CONNECTION_STRING = DB_URL_PYMYSQL
 
 def get_db_engine():
     """创建数据库连接引擎"""
@@ -194,9 +183,9 @@ def verify_tables(engine):
             result = conn.execute(text("""
                 SELECT TABLE_NAME 
                 FROM INFORMATION_SCHEMA.TABLES 
-                WHERE TABLE_SCHEMA = 'bigdata' 
+                WHERE TABLE_SCHEMA = :database_name
                 AND TABLE_NAME IN ('dim_student', 'dim_company', 'fact_academic', 'fact_employment')
-            """))
+            """), {"database_name": DB_SETTINGS["database"]})
             tables = [row[0] for row in result]
             
             if len(tables) == 4:

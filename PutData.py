@@ -6,6 +6,7 @@ import os
 import sys
 from datetime import datetime
 import io
+from config import DB_URL_PYMYSQL
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 # ================================================================
 # 日志配置
@@ -21,19 +22,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ================================================================
-# 数据库配置 (使用 pymysql 驱动获得最高稳定性)
-# ================================================================
-DB_CONFIG = {
-    'host': 'localhost',
-    'port': 3306,
-    'user': 'root',
-    'password': '123456',
-    'database': 'bigdata',
-    'charset': 'utf8mb4'
-}
-
-DB_CONNECTION_STRING = f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}?charset={DB_CONFIG['charset']}"
+DB_CONNECTION_STRING = DB_URL_PYMYSQL
 
 # ================================================================
 # 四张表配置 (维度表 + 事实表)
