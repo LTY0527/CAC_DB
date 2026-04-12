@@ -4,6 +4,7 @@ import ReactECharts from 'echarts-for-react'
 import { useSearchParams } from 'react-router-dom'
 import GovernmentDrillBoard from '../components/GovernmentDrillBoard'
 import RegionalWarningBoard from '../components/RegionalWarningBoard'
+import SchoolMapExplorer from '../components/SchoolMapExplorer'
 import SchoolBenchmarkBoard from '../components/SchoolBenchmarkBoard'
 import {
   formatNumber,
@@ -238,6 +239,17 @@ export default function Dashboard({
           </Card>
         </Col>
       ))}
+
+      {roleMode === 'gov' && !inGovDrill ? (
+        <Col span={24}>
+          <SchoolMapExplorer
+            employmentData={employmentData}
+            roleMode="gov"
+            actionLabel="进入学校治理详情"
+            onAction={handleSelectSchool}
+          />
+        </Col>
+      ) : null}
 
       {roleMode === 'gov' ? (
         <Col span={24}>

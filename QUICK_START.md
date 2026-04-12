@@ -176,3 +176,48 @@ python create_tables.py
 ---
 
 **祝导入顺利！**
+
+---
+
+## 2026-04-12 更新说明（按当前代码为准）
+
+本文前面的数据库配置步骤仍保留作历史参考，但当前代码已不再推荐直接修改 `PutData.py` 和 `create_tables.py` 中的连接信息。
+
+### 当前推荐做法
+
+统一在 [config.py](/e:/Code/CAC/config.py) 中收口数据库配置，并优先通过环境变量覆盖：
+
+```powershell
+$env:DB_HOST="localhost"
+$env:DB_PORT="3306"
+$env:DB_USER="root"
+$env:DB_PASSWORD="你的数据库密码"
+$env:DB_NAME="bigdata"
+```
+
+然后直接运行一键流水线：
+
+```powershell
+python run_full_pipeline.py
+```
+
+当前流水线不仅会导入基础数据，还会继续执行：
+
+- `init_security.py`
+- `Spark-all.py`
+- `LSTM-all.py`
+- `CF-all.py`
+- `FPgrowth-all.py`
+
+### 当前需要重点检查的结果表
+
+```sql
+USE bigdata;
+
+SELECT COUNT(*) FROM ads_salary_forecast;
+SELECT COUNT(*) FROM ads_enrollment_matching;
+SELECT COUNT(*) FROM ads_major_matching_rules;
+SELECT COUNT(*) FROM ads_job_recommendation;
+```
+
+如果页面仍显示“数据异常”，优先检查上述 `ads_*` 表是否存在且有数据。

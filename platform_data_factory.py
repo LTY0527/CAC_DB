@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import random
 import json
 from datetime import datetime, timedelta

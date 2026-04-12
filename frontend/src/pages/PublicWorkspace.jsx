@@ -1,6 +1,7 @@
-import { Card, Col, Empty, List, Row, Statistic } from 'antd'
+﻿import { Card, Col, Empty, List, Row, Statistic } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import { useLocation } from 'react-router-dom'
+import SchoolMapExplorer from '../components/SchoolMapExplorer'
 import {
   formatNumber,
   getPublicOverview,
@@ -224,7 +225,7 @@ function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
                         {index + 1}. {item.major_name}
                       </div>
                       <div style={{ color: designTokens.textMuted, fontSize: 12, marginTop: 4 }}>
-                        样本量 {formatNumber(item.sample_count, 0)}
+                        样本量：{formatNumber(item.sample_count, 0)}
                       </div>
                     </div>
                     <div style={{ color: designTokens.accent, fontWeight: 700 }}>
@@ -251,9 +252,20 @@ function PublicSchoolCompare({ employmentData = [], dataLoadedAt = '' }) {
   }
 
   return (
-    <Card title={<span style={sectionTitleStyle}>院校对比</span>} extra={<span style={{ color: designTokens.textMuted }}>{dataLoadedAt || '当前会话未记录'}</span>} style={panelStyle}>
-      <ReactECharts option={buildSchoolCompareOption(schoolComparison)} style={{ height: 460 }} />
-    </Card>
+    <Row gutter={[16, 16]}>
+      <Col span={24}>
+        <SchoolMapExplorer employmentData={employmentData} roleMode="public" />
+      </Col>
+      <Col span={24}>
+        <Card
+          title={<span style={sectionTitleStyle}>院校对比</span>}
+          extra={<span style={{ color: designTokens.textMuted }}>{dataLoadedAt || '当前会话未记录'}</span>}
+          style={panelStyle}
+        >
+          <ReactECharts option={buildSchoolCompareOption(schoolComparison)} style={{ height: 460 }} />
+        </Card>
+      </Col>
+    </Row>
   )
 }
 

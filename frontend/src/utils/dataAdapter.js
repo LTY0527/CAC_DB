@@ -713,6 +713,57 @@ export function getTopSchoolsByEmployment(data = [], topN = 5) {
   return Object.entries(map).map(([school, value]) => ({ school, value })).sort((a, b) => b.value - a.value).slice(0, topN)
 }
 
+export function getSchoolMapStats(data = []) {
+  const schoolMap = new Map()
+
+  normalizeEmploymentData(data).forEach((item) => {
+    if (!schoolMap.has(item.school_name)) {
+      schoolMap.set(item.school_name, {
+        school_name: item.school_name,
+        school_level: item.school_level,
+        total_emp: 0,
+        total_salary: 0,
+        major_set: new Set(),
+        top_major_map: new Map(),
+        industry_map: new Map(),
+        strategic_emp: 0,
+      })
+    }
+
+    const current = schoolMap.get(item.school_name)
+    current.total_emp += item.emp_count
+    current.total_salary += item.avg_salary * item.emp_count
+    current.major_set.add(item.major_name)
+    current.top_major_map.set(item.major_name, (current.top_major_map.get(item.major_name) || 0) + item.emp_count)
+    current.industry_map.set(item.leading_industry_tag, (current.industry_map.get(item.leading_industry_tag) || 0) + item.emp_count)
+    if (item.leading_industry_tag === TXT_STRATEGIC) {
+      current.strategic_emp += item.emp_count
+    }
+  })
+
+  return [...schoolMap.values()]
+    .map((item) => {
+      const topMajors = [...item.top_major_map.entries()]
+        .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), 'zh-CN'))
+        .slice(0, 3)
+        .map(([major]) => major)
+      const topIndustry = [...item.industry_map.entries()]
+        .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), 'zh-CN'))[0]?.[0] || TXT_UNKNOWN_INDUSTRY
+
+      return {
+        school_name: item.school_name,
+        school_level: item.school_level,
+        total_emp: item.total_emp,
+        avg_salary: item.total_emp ? item.total_salary / item.total_emp : 0,
+        major_count: item.major_set.size,
+        top_majors: topMajors,
+        top_industry: topIndustry,
+        strategic_ratio: item.total_emp ? (item.strategic_emp / item.total_emp) * 100 : 0,
+      }
+    })
+    .sort((a, b) => b.total_emp - a.total_emp || String(a.school_name).localeCompare(String(b.school_name), 'zh-CN'))
+}
+
 export function getDisciplineDistribution(data = []) {
   const map = {}
   normalizeEmploymentData(data).forEach((item) => {

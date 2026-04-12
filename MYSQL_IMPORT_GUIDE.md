@@ -313,3 +313,106 @@ DB_CONFIG = {
 ---
 
 **最后更新：2026-04-08**
+
+---
+
+## 2026-04-12 更新说明（按当前代码为准）
+
+以下内容为补充说明，优先级高于本文前面提到的“直接修改 `PutData.py` / `create_tables.py` 数据库配置”的旧做法。
+
+### 1. 数据库配置已统一收口到 `config.py`
+
+当前数据库连接配置统一从 [config.py](/e:/Code/CAC/config.py) 读取，`create_tables.py`、`PutData.py`、`backend/app.py`、`CF-all.py`、`FPgrowth-all.py`、`LSTM-all.py` 等脚本都会直接或间接使用这里的配置。
+
+当前支持的环境变量如下：
+
+```powershell
+DB_HOST
+DB_PORT
+DB_USER
+DB_PASSWORD
+DB_NAME
+DB_CHARSET
+DB_JDBC_DRIVER
+```
+
+推荐在 PowerShell 中先设置当前会话变量，再执行脚本：
+
+```powershell
+$env:DB_HOST="localhost"
+$env:DB_PORT="3306"
+$env:DB_USER="root"
+$env:DB_PASSWORD="你的数据库密码"
+$env:DB_NAME="bigdata"
+```
+
+验证当前脚本读取到的数据库配置：
+
+```powershell
+python -c "from config import DB_SETTINGS; print(DB_SETTINGS)"
+```
+
+说明：
+- 如果没有设置环境变量，`config.py` 会回退到默认值。
+- 如果密码中包含 `@`、空格、`:` 等特殊字符，当前代码已在 `config.py` 中统一做 URL 编码处理，不需要再手动改连接串。
+
+### 2. 当前推荐的一键导入方式
+
+当前项目已经提供完整流水线脚本 [run_full_pipeline.py](/e:/Code/CAC/run_full_pipeline.py)。
+
+执行命令：
+
+```powershell
+python run_full_pipeline.py
+```
+
+该脚本当前会依次执行：
+
+1. `platform_data_factory.py`
+2. `create_tables.py`
+3. `PutData.py`
+4. `init_security.py`
+5. `Spark-all.py`
+6. `LSTM-all.py`
+7. `CF-all.py`
+8. `FPgrowth-all.py`
+
+也就是说，它不仅会导入基础表，还会初始化系统账号表，并生成 `ads_*` 分析结果表。
+
+### 3. 运行前需要额外确认的环境
+
+除 Python 依赖外，还需要确认以下本地环境：
+
+- MySQL 服务已启动，且 `bigdata` 数据库可访问
+- Spark / Java 环境可用
+- MySQL JDBC jar 已存在于 `libs` 目录
+
+当前默认 jar 路径：
+
+```text
+E:\Code\CAC\libs\mysql-connector-java-8.0.11.jar
+```
+
+如果文件名不同，需要同步修改 [config.py](/e:/Code/CAC/config.py) 中的 `JAR_PATH`。
+
+### 4. 当前需要验证的核心结果表
+
+基础表：
+
+```sql
+SELECT COUNT(*) FROM dim_student;
+SELECT COUNT(*) FROM dim_company;
+SELECT COUNT(*) FROM fact_academic;
+SELECT COUNT(*) FROM fact_employment;
+```
+
+分析结果表：
+
+```sql
+SELECT COUNT(*) FROM ads_salary_forecast;
+SELECT COUNT(*) FROM ads_enrollment_matching;
+SELECT COUNT(*) FROM ads_major_matching_rules;
+SELECT COUNT(*) FROM ads_job_recommendation;
+```
+
+如果前端页面出现“数据异常”，优先检查以上 `ads_*` 表是否存在且有数据。
