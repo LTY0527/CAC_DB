@@ -5,6 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 import math
 from statistics import median
+from typing import Optional, Tuple
 from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 from sqlalchemy import create_engine, text
@@ -120,10 +121,10 @@ def audit_event(
     action_type: str,
     module_name: str,
     result_status: str,
-    user: dict | None = None,
-    target_type: str | None = None,
-    target_id: str | None = None,
-    message: str | None = None,
+    user: Optional[dict] = None,
+    target_type: Optional[str] = None,
+    target_id: Optional[str] = None,
+    message: Optional[str] = None,
 ) -> None:
     try:
         record_audit_log(
@@ -148,7 +149,7 @@ def audit_event(
         return
 
 
-def require_auth(roles: tuple[str, ...] | None = None):
+def require_auth(roles: Optional[Tuple[str, ...]] = None):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(*args, **kwargs):
@@ -184,7 +185,12 @@ def require_auth(roles: tuple[str, ...] | None = None):
     return decorator
 
 
-def log_query_access(module_name: str, target_type: str, target_id: str | None = None, message: str | None = None):
+def log_query_access(
+    module_name: str,
+    target_type: str,
+    target_id: Optional[str] = None,
+    message: Optional[str] = None,
+):
     user = getattr(g, "current_user", None)
     if user:
         audit_event(
@@ -817,7 +823,7 @@ def build_gov_major_detail(school_name: str, major_name: str):
     }
 
 
-def build_school_top_industry_map(scope_major_name: str | None = None):
+def build_school_top_industry_map(scope_major_name: Optional[str] = None):
     sql = """
         SELECT
             s.school_name,
