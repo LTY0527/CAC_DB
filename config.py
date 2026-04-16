@@ -1,10 +1,18 @@
 import os
 from urllib.parse import quote_plus
 
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    load_dotenv = None
+
 # ==========================================
 # 0. 基础路径配置 (确保 JAR 包精准定位)
 # ==========================================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if load_dotenv:
+    load_dotenv(os.path.join(BASE_DIR, ".env"))
+    load_dotenv(os.path.join(BASE_DIR, "backend", ".env"))
 # 修正：确保此处文件名与你 libs 文件夹下的文件名完全一致
 JAR_PATH = os.path.join(BASE_DIR, "libs", "mysql-connector-java-8.0.11.jar")
 

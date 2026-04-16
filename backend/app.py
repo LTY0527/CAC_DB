@@ -18,7 +18,7 @@ for path in (str(BACKEND_DIR), str(ROOT_DIR)):
     if path not in sys.path:
         sys.path.insert(0, path)
 
-from config import DB_URL  # noqa: E402
+from config import DB_SETTINGS, DB_URL  # noqa: E402
 from prompt_builder import build_report_prompt  # noqa: E402
 from llm_client import call_llm  # noqa: E402
 from security import (  # noqa: E402
@@ -38,7 +38,20 @@ app = Flask(__name__)
 CORS(app)
 
 DB_ENGINE = create_engine(DB_URL, pool_pre_ping=True)
-bootstrap_security(DB_ENGINE)
+try:
+    bootstrap_security(DB_ENGINE)
+except SQLAlchemyError as exc:
+    db_target = (
+        f"{DB_SETTINGS.get('user')}@{DB_SETTINGS.get('host')}:"
+        f"{DB_SETTINGS.get('port')}/{DB_SETTINGS.get('database')}"
+    )
+    raise SystemExit(
+        "数据库连接或初始化失败，app.py 无法启动。\n"
+        f"当前连接目标: {db_target}\n"
+        "请在 backend/.env 或系统环境变量中设置正确的 DB_HOST、DB_PORT、"
+        "DB_USER、DB_PASSWORD、DB_NAME 后重试。\n"
+        f"原始错误: {exc}"
+    ) from exc
 TXT_STRATEGIC = "\u4e09\u5927\u5148\u5bfc"
 ROLE_ALIASES = {"teacher": "teacher", "government": "gov", "public": "public"}
 
