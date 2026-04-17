@@ -25,7 +25,6 @@ import {
   designTokens,
   legendTextStyle,
   metaLabelStyle,
-  metaValueStyle,
   panelStyle,
   sectionTitleStyle,
   splitLineStyle,
@@ -333,15 +332,11 @@ export default function SchoolBenchmarkBoard() {
     <Card style={panelStyle}>
       <Space direction="vertical" size={18} style={{ width: '100%' }}>
         <Row gutter={[16, 16]} align="middle">
-          <Col xs={24} xl={16}>
+          <Col span={24}>
             <div style={sectionTitleStyle}>学校对标分析</div>
             <div style={{ color: designTokens.textSecondary, marginTop: 10 }}>
               从就业率、平均薪资、高质量就业占比和热门行业去向四个维度，对不同高校和同一专业进行横向比较。
             </div>
-          </Col>
-          <Col xs={24} xl={8}>
-            <div style={metaLabelStyle}>对标数据更新时间</div>
-            <div style={metaValueStyle}>{updatedAt || '当前会话未记录'}</div>
           </Col>
         </Row>
 

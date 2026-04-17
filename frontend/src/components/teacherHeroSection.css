@@ -1,7 +1,5 @@
 .teacher-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: block;
 }
 
 .teacher-hero__main {
@@ -114,46 +112,6 @@
   color: rgba(255, 255, 255, 0.82);
 }
 
-.teacher-hero__coverage {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 18px;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.96);
-}
-
-.teacher-hero__coverage-title {
-  flex: 0 0 auto;
-  color: #334155;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 2;
-}
-
-.teacher-hero__coverage-list {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.teacher-hero__coverage-tag {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid #dbe4ef;
-  border-radius: 999px;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
 @media (max-width: 1200px) {
   .teacher-hero__main {
     grid-template-columns: 1fr;
@@ -175,13 +133,5 @@
 
   .teacher-hero__summary {
     grid-template-columns: 1fr;
-  }
-
-  .teacher-hero__coverage {
-    flex-direction: column;
-  }
-
-  .teacher-hero__coverage-list {
-    justify-content: flex-start;
   }
 }

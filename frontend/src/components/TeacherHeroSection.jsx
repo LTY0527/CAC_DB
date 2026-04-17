@@ -2,12 +2,6 @@ import { Button } from 'antd'
 import { primaryButtonStyle } from '../utils/uiTheme'
 import './teacherHeroSection.css'
 
-const defaultCoverageGroups = [
-  '学校 / 学历 / 专业 / 生源地',
-  '学科门类 / 技能等级 / 课程方向',
-  '行业 / 岗位 / 起薪 / 社保状态',
-]
-
 export default function TeacherHeroSection({
   schoolName = '上海大学',
   title = '本校培养与就业分析工作台',
@@ -17,7 +11,6 @@ export default function TeacherHeroSection({
   image = '/assets/上海大学图书馆2.jpg',
   imageAlt = '校园场景',
   summaryItems = [],
-  coverageGroups = defaultCoverageGroups,
 }) {
   return (
     <section className="teacher-hero">
@@ -45,17 +38,6 @@ export default function TeacherHeroSection({
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      <div className="teacher-hero__coverage">
-        <div className="teacher-hero__coverage-title">数据覆盖能力</div>
-        <div className="teacher-hero__coverage-list">
-          {coverageGroups.map((item) => (
-            <span key={item} className="teacher-hero__coverage-tag">
-              {item}
-            </span>
-          ))}
         </div>
       </div>
     </section>

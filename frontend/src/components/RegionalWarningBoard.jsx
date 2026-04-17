@@ -4,8 +4,6 @@ import {
   getRegionalWarningTagColor,
 } from '../utils/dataAdapter'
 import {
-  metaLabelStyle,
-  metaValueStyle,
   panelStyle,
   sectionTitleStyle,
   designTokens,
@@ -17,12 +15,8 @@ export default function RegionalWarningBoard({ data = {} }) {
   return (
     <Card style={panelStyle}>
       <Row gutter={[16, 16]} align="middle" style={{ marginBottom: 4 }}>
-        <Col xs={24} xl={16}>
+        <Col span={24}>
           <div style={sectionTitleStyle}>区域预警看板</div>
-        </Col>
-        <Col xs={24} xl={8}>
-          <div style={metaLabelStyle}>最近更新时间</div>
-          <div style={metaValueStyle}>{summary.updated_at || '当前会话未记录'}</div>
         </Col>
       </Row>
 

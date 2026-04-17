@@ -160,7 +160,10 @@
 }
 
 .hero-info-strip__item {
-  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 22px;
   min-height: 92px;
   border-right: 1px solid #e8eef5;
 }
@@ -171,14 +174,14 @@
 
 .hero-info-strip__label {
   color: #64748b;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .hero-info-strip__value {
   margin-top: 6px;
   color: #0f172a;
-  font-size: 15px;
+  font-size: 17px;
   line-height: 1.7;
   font-weight: 600;
 }
@@ -186,7 +189,7 @@
 .hero-info-strip__text {
   margin-top: 6px;
   color: #334155;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.8;
 }
 

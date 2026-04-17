@@ -187,15 +187,11 @@ function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
       <Col span={24} id="public-data-overview">
         <Card style={panelStyle}>
           <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} xl={16}>
+            <Col span={24}>
               <div style={sectionTitleStyle}>社会公众端</div>
               <div style={{ marginTop: 8, color: designTokens.textSecondary, lineHeight: 1.8 }}>
                 面向社会公众展示上海高校专业建设、公开就业结果与院校对比信息。
               </div>
-            </Col>
-            <Col xs={24} xl={8}>
-              <div style={metaLabelStyle}>页面载入时间</div>
-              <div style={metaValueStyle}>{dataLoadedAt || '当前会话未记录'}</div>
             </Col>
           </Row>
         </Card>

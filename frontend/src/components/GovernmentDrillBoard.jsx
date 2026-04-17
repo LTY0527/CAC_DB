@@ -26,7 +26,6 @@ import {
   designTokens,
   legendTextStyle,
   metaLabelStyle,
-  metaValueStyle,
   panelStyle,
   sectionTitleStyle,
   splitLineStyle,
@@ -270,10 +269,6 @@ export default function GovernmentDrillBoard({
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginTop: 10, flexWrap: 'wrap' }}>
             <div style={{ color: designTokens.textSecondary }}>
               {isMajorLevel ? '查看专业层的招生、培养、就业和薪资细分信息。' : '查看学校层的学生规模、专业分布、就业与行业流向。'}
-            </div>
-            <div>
-              <div style={metaLabelStyle}>详情更新时间</div>
-              <div style={metaValueStyle}>{majorDetail?.updated_at || schoolDetail?.updated_at || '当前会话未记录'}</div>
             </div>
           </div>
         </div>

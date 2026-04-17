@@ -2,19 +2,23 @@
 import { Card, Col, Row, Statistic, Table, Tag } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import { useSearchParams } from 'react-router-dom'
+import DataCapabilityBand from '../components/DataCapabilityBand'
 import GovernmentDrillBoard from '../components/GovernmentDrillBoard'
+import GovernmentHeroSection from '../components/GovernmentHeroSection'
 import InfoTrigger from '../components/InfoTrigger'
 import MetricInsightDrawer from '../components/MetricInsightDrawer'
 import RegionalWarningBoard from '../components/RegionalWarningBoard'
 import SchoolMapExplorer from '../components/SchoolMapExplorer'
 import SchoolBenchmarkBoard from '../components/SchoolBenchmarkBoard'
 import TeacherHeroSection from '../components/TeacherHeroSection'
+import { governmentDataCapabilityConfig, teacherDataCapabilityConfig } from '../config/dataCapabilityConfig'
 import { getMetricInsight } from '../config/metricInsightMap'
 import {
   formatNumber,
   getDisciplineDistribution,
   getForecastData,
   getGovDashboardSummary,
+  getRegionalWarningsOverview,
   getSchoolDashboardSummary,
   getTopSchoolsByEmployment,
   getTieredRules,
@@ -26,8 +30,6 @@ import {
   darkTooltip,
   designTokens,
   legendTextStyle,
-  metaLabelStyle,
-  metaValueStyle,
   panelStyle,
   sectionTitleStyle,
   splitLineStyle,
@@ -191,6 +193,13 @@ export default function Dashboard({
   const rules = getTieredRules(rulesData, 10)
   const topSchools = getTopSchoolsByEmployment(employmentData, 6)
   const disciplineData = getDisciplineDistribution(employmentData)
+  const regionalWarningOverview = getRegionalWarningsOverview(regionalWarningsData, 20)
+  const priorityWarningMajorCount = new Set(
+    (regionalWarningOverview.items || [])
+      .filter((item) => item.warning_level !== '低' && item.target_name && item.target_name !== '-')
+      .map((item) => item.target_name)
+  ).size
+  const strategicTrendRatio = govSummary.totalEmp ? ((govSummary.topIndustryEmp / govSummary.totalEmp) * 100).toFixed(1) : '0.0'
 
   const summaryCards =
     roleMode === 'gov'
@@ -222,12 +231,39 @@ export default function Dashboard({
   const scrollToMain = () => {
     document.getElementById('dashboard-main-overview')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
+  const scrollToGovWarnings = () => {
+    document.getElementById('gov-warning-board')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   if (loading) return <div style={{ color: designTokens.textSecondary }}>数据加载中...</div>
   if (error && !employmentData.length) return <div style={{ color: designTokens.danger }}>{error}</div>
 
   return (
     <Row gutter={[16, 16]}>
+      {roleMode === 'gov' ? (
+        <Col span={24}>
+          <GovernmentHeroSection
+            onAction={scrollToGovWarnings}
+            summaryItems={[
+              { label: '覆盖高校数', value: `${formatNumber(govSummary.schoolCount)} 所`, hint: '当前纳入区域监测与对比的院校范围' },
+              { label: '重点预警专业数', value: `${formatNumber(priorityWarningMajorCount)} 个`, hint: '优先关注中高风险信号对应的专业对象' },
+              { label: '先导产业吸纳趋势', value: `${strategicTrendRatio}%`, hint: '当前样本进入先导产业的占比水平' },
+            ]}
+          />
+        </Col>
+      ) : null}
+
+      {roleMode === 'gov' ? (
+        <Col span={24} id="dashboard-main-overview">
+          <DataCapabilityBand
+            title={governmentDataCapabilityConfig.title}
+            items={governmentDataCapabilityConfig.items}
+            flowItems={chainItems}
+            loadedAt={dataLoadedAt}
+          />
+        </Col>
+      ) : null}
+
       {roleMode !== 'gov' ? (
         <Col span={24}>
           <TeacherHeroSection
@@ -242,26 +278,16 @@ export default function Dashboard({
         </Col>
       ) : null}
 
-      <Col span={24}>
-        <Card id="dashboard-main-overview" style={panelStyle}>
-          <Row gutter={[16, 16]} align="middle">
-            <Col xs={24} xl={16}>
-              <div style={sectionTitleStyle}>平台主链路总览</div>
-              <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {chainItems.map((item, index) => (
-                  <Tag key={item} color={index % 2 === 0 ? 'processing' : 'cyan'}>
-                    {index + 1}. {item}
-                  </Tag>
-                ))}
-              </div>
-            </Col>
-            <Col xs={24} xl={8}>
-              <div style={metaLabelStyle}>数据载入时间</div>
-              <div style={metaValueStyle}>{dataLoadedAt || '当前会话未记录'}</div>
-            </Col>
-          </Row>
-        </Card>
-      </Col>
+      {roleMode !== 'gov' ? (
+        <Col span={24} id="dashboard-main-overview">
+          <DataCapabilityBand
+            title={teacherDataCapabilityConfig.title}
+            items={teacherDataCapabilityConfig.items}
+            flowItems={chainItems}
+            loadedAt={dataLoadedAt}
+          />
+        </Col>
+      ) : null}
 
       {summaryCards.map((item) => (
         <Col xs={24} sm={12} xl={6} key={item.metricKey}>
@@ -293,7 +319,7 @@ export default function Dashboard({
       ) : null}
 
       {roleMode === 'gov' ? (
-        <Col span={24}>
+        <Col span={24} id="gov-warning-board">
           <RegionalWarningBoard data={regionalWarningsData} />
         </Col>
       ) : null}
