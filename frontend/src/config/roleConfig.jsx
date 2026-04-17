@@ -25,7 +25,7 @@ export const ROLE_CONFIGS = {
       { key: '/rules', icon: <ThunderboltOutlined />, label: '规则证据库' },
       { key: '/major-optimization', icon: <TeamOutlined />, label: '培养方案优化' },
       { key: '/job-recommendation', icon: <ThunderboltOutlined />, label: '就业推荐' },
-      { key: '/report', icon: <FileTextOutlined />, label: '分析专报' },
+      { key: '/report', icon: <FileTextOutlined />, label: '治理专报' },
     ],
   },
   gov: {
