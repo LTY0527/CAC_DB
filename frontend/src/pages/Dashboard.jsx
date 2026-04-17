@@ -1,11 +1,14 @@
-import { useMemo } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { Card, Col, Row, Statistic, Table, Tag } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import { useSearchParams } from 'react-router-dom'
 import GovernmentDrillBoard from '../components/GovernmentDrillBoard'
+import InfoTrigger from '../components/InfoTrigger'
+import MetricInsightDrawer from '../components/MetricInsightDrawer'
 import RegionalWarningBoard from '../components/RegionalWarningBoard'
 import SchoolMapExplorer from '../components/SchoolMapExplorer'
 import SchoolBenchmarkBoard from '../components/SchoolBenchmarkBoard'
+import { getMetricInsight } from '../config/metricInsightMap'
 import {
   formatNumber,
   getDisciplineDistribution,
@@ -35,7 +38,7 @@ import {
 } from '../utils/uiTheme'
 
 function cleanRuleLabel(text = '') {
-  return String(text).replace(/[[\]"]/g, '').replace(/,/g, ' / ').replace(/\s+/g, ' ').trim()
+  return String(text).replace(/[\[\]"]/g, '').replace(/,/g, ' / ').replace(/\s+/g, ' ').trim()
 }
 
 function compactRuleLabel(text = '') {
@@ -162,6 +165,7 @@ export default function Dashboard({
   currentSchool = '上海大学',
 }) {
   const [searchParams, setSearchParams] = useSearchParams()
+  const [activeMetricKey, setActiveMetricKey] = useState('')
   const selectedSchool = roleMode === 'gov' ? searchParams.get('school') || '' : ''
   const selectedMajor = roleMode === 'gov' ? searchParams.get('major') || '' : ''
   const inGovDrill = roleMode === 'gov' && Boolean(selectedSchool)
@@ -180,9 +184,6 @@ export default function Dashboard({
     [roleMode, setSearchParams]
   )
 
-  if (loading) return <div style={{ color: designTokens.textSecondary }}>数据加载中...</div>
-  if (error && !employmentData.length) return <div style={{ color: designTokens.danger }}>{error}</div>
-
   const schoolSummary = getSchoolDashboardSummary(employmentData, currentSchool)
   const govSummary = getGovDashboardSummary(employmentData)
   const forecast = getForecastData(forecastData)
@@ -193,21 +194,33 @@ export default function Dashboard({
   const summaryCards =
     roleMode === 'gov'
       ? [
-          { title: '覆盖高校数', value: formatNumber(govSummary.schoolCount), style: statValuePrimary },
-          { title: '全市就业样本', value: formatNumber(govSummary.totalEmp), style: statValueBlue },
-          { title: '全市平均薪资', value: formatNumber(govSummary.weightedSalary, 0), suffix: '元', style: statValueCyan },
-          { title: '先导产业吸纳人数', value: formatNumber(govSummary.topIndustryEmp), style: statValuePurple },
+          { title: '覆盖高校数', value: formatNumber(govSummary.schoolCount), style: statValuePrimary, metricKey: 'gov_school_coverage' },
+          { title: '全市就业样本', value: formatNumber(govSummary.totalEmp), style: statValueBlue, metricKey: 'gov_employment_samples' },
+          { title: '全市平均薪资', value: formatNumber(govSummary.weightedSalary, 0), suffix: '元', style: statValueCyan, metricKey: 'gov_avg_salary' },
+          { title: '先导产业吸纳人数', value: formatNumber(govSummary.topIndustryEmp), style: statValuePurple, metricKey: 'gov_lead_industry_employment' },
         ]
       : [
-          { title: '本校就业样本', value: formatNumber(schoolSummary.totalEmp), style: statValuePrimary },
-          { title: '本校平均薪资', value: formatNumber(schoolSummary.weightedSalary, 0), suffix: '元', style: statValueBlue },
-          { title: '先导产业吸纳人数', value: formatNumber(schoolSummary.topIndustryEmp), style: statValueCyan },
-          { title: '覆盖专业数', value: formatNumber(schoolSummary.majorCount), style: statValuePurple },
+          { title: '本校就业样本', value: formatNumber(schoolSummary.totalEmp), style: statValuePrimary, metricKey: 'school_employment_samples' },
+          { title: '本校平均薪资', value: formatNumber(schoolSummary.weightedSalary, 0), suffix: '元', style: statValueBlue, metricKey: 'school_avg_salary' },
+          { title: '先导产业吸纳人数', value: formatNumber(schoolSummary.topIndustryEmp), style: statValueCyan, metricKey: 'school_lead_industry_employment' },
+          { title: '覆盖专业数', value: formatNumber(schoolSummary.majorCount), style: statValuePurple, metricKey: 'school_major_coverage' },
         ]
+
+  const activeMetricInsight = useMemo(
+    () =>
+      getMetricInsight(roleMode, activeMetricKey, {
+        dataLoadedAt,
+        currentSchool,
+      }),
+    [activeMetricKey, currentSchool, dataLoadedAt, roleMode]
+  )
 
   const goBackToCity = () => setSearchParams({})
   const handleSelectSchool = (school) => setSearchParams({ school })
   const handleSelectMajor = (major) => setSearchParams({ school: selectedSchool, major })
+
+  if (loading) return <div style={{ color: designTokens.textSecondary }}>数据加载中...</div>
+  if (error && !employmentData.length) return <div style={{ color: designTokens.danger }}>{error}</div>
 
   return (
     <Row gutter={[16, 16]}>
@@ -233,9 +246,19 @@ export default function Dashboard({
       </Col>
 
       {summaryCards.map((item) => (
-        <Col xs={24} sm={12} xl={6} key={item.title}>
+        <Col xs={24} sm={12} xl={6} key={item.metricKey}>
           <Card style={panelStyle}>
-            <Statistic title={item.title} value={item.value} suffix={item.suffix} styles={{ title: statTitleStyle, content: item.style }} />
+            <Statistic
+              title={
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span>{item.title}</span>
+                  <InfoTrigger onClick={() => setActiveMetricKey(item.metricKey)} />
+                </div>
+              }
+              value={item.value}
+              suffix={item.suffix}
+              styles={{ title: statTitleStyle, content: item.style }}
+            />
           </Card>
         </Col>
       ))}
@@ -285,9 +308,7 @@ export default function Dashboard({
             <Card
               title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '高校就业规模对比' : '高价值规则证据'}</span>}
               extra={
-                roleMode === 'gov' ? (
-                  <span style={{ color: designTokens.textMuted, fontSize: 12 }}>点击柱体查看学校层详情</span>
-                ) : null
+                roleMode === 'gov' ? <span style={{ color: designTokens.textMuted, fontSize: 12 }}>点击柱体查看学校层详情</span> : null
               }
               style={panelStyle}
             >
@@ -325,6 +346,13 @@ export default function Dashboard({
           )}
         </>
       )}
+
+      <MetricInsightDrawer
+        open={Boolean(activeMetricInsight)}
+        insight={activeMetricInsight}
+        roleMode={roleMode}
+        onClose={() => setActiveMetricKey('')}
+      />
     </Row>
   )
 }
