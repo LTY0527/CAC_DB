@@ -1,0 +1,231 @@
+﻿.portal-home {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.portal-home__hero-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+  padding: 14px 14px 18px;
+}
+
+.portal-home__hero-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.portal-home__hero-tag {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.portal-home__hero-caption,
+.portal-home__section-desc,
+.portal-home__loaded-at {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.portal-home__hero-clock {
+  color: #0f172a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+.portal-home__hero-track,
+.portal-home__school-track {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.portal-home__hero-track::-webkit-scrollbar,
+.portal-home__school-track::-webkit-scrollbar {
+  display: none;
+}
+
+.portal-home__hero-slide {
+  position: relative;
+  flex: 0 0 100%;
+  min-height: 420px;
+  border-radius: 8px;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.portal-home__hero-image,
+.portal-home__school-image {
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.portal-home__hero-overlay,
+.portal-home__school-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0) 50%);
+}
+
+.portal-home__hero-content {
+  position: relative;
+  z-index: 1;
+  min-height: 420px;
+  display: flex;
+  align-items: flex-end;
+  padding: 32px;
+}
+
+.portal-home__hero-inner {
+  max-width: 520px;
+  color: #ffffff;
+}
+
+.portal-home__hero-title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.portal-home__hero-description {
+  margin: 12px 0 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 14px;
+  line-height: 1.9;
+}
+
+.portal-home__hero-controls,
+.portal-home__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.portal-home__hero-controls {
+  margin-top: 14px;
+}
+
+.portal-home__dots {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portal-home__dot {
+  width: 8px;
+  height: 8px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.portal-home__dot.is-active {
+  width: 20px;
+  background: #0f172a;
+}
+
+.portal-home__nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portal-home__nav-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.portal-home__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.portal-home__school-card {
+  position: relative;
+  flex: 0 0 320px;
+  min-height: 240px;
+  border-radius: 8px;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.portal-home__school-image {
+  transition: transform 240ms ease;
+}
+
+.portal-home__school-card:hover .portal-home__school-image {
+  transform: scale(1.05);
+}
+
+.portal-home__school-content {
+  position: relative;
+  z-index: 1;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 20px;
+  color: #ffffff;
+}
+
+.portal-home__school-name {
+  font-size: 22px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.portal-home__school-desc {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+@media (max-width: 900px) {
+  .portal-home__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-home__hero-title {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-home__hero-content {
+    padding: 24px;
+  }
+
+  .portal-home__hero-toolbar,
+  .portal-home__hero-controls,
+  .portal-home__section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

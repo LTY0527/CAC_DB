@@ -1,7 +1,9 @@
 ﻿import { Card, Col, Empty, List, Row, Statistic } from 'antd'
 import ReactECharts from 'echarts-for-react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
+import PublicHeroBanner from '../components/PublicHeroBanner'
 import SchoolMapExplorer from '../components/SchoolMapExplorer'
+import UniversitySlider from '../components/UniversitySlider'
 import {
   formatNumber,
   getPublicOverview,
@@ -158,6 +160,7 @@ function PublicEmptyState({ dataLoadedAt = '' }) {
 }
 
 function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
+  const navigate = useNavigate()
   const overview = getPublicOverview(employmentData)
   const topMajors = getPublicTopMajors(employmentData)
   const hasOverview = overview.schoolCount > 0 && overview.avgSalary > 0
@@ -166,13 +169,29 @@ function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
     return <PublicEmptyState dataLoadedAt={dataLoadedAt} />
   }
 
+  const handleHeroAction = (actionType) => {
+    if (actionType === 'navigate-compare') {
+      navigate('/school-compare')
+      return
+    }
+
+    const targetId = actionType === 'scroll-gallery' ? 'public-school-gallery' : 'public-data-overview'
+    const targetNode = typeof document !== 'undefined' ? document.getElementById(targetId) : null
+    if (targetNode) {
+      targetNode.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   return (
     <Row gutter={[16, 16]}>
-      <Col span={24}>
+      <Col span={24} id="public-data-overview">
         <Card style={panelStyle}>
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} xl={16}>
               <div style={sectionTitleStyle}>社会公众端</div>
+              <div style={{ marginTop: 8, color: designTokens.textSecondary, lineHeight: 1.8 }}>
+                面向社会公众展示上海高校专业建设、公开就业结果与院校对比信息。
+              </div>
             </Col>
             <Col xs={24} xl={8}>
               <div style={metaLabelStyle}>页面载入时间</div>
@@ -180,6 +199,14 @@ function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
             </Col>
           </Row>
         </Card>
+      </Col>
+
+      <Col span={24}>
+        <PublicHeroBanner onAction={handleHeroAction} />
+      </Col>
+
+      <Col span={24} id="public-school-gallery">
+        <UniversitySlider />
       </Col>
 
       <Col xs={24} md={12}>

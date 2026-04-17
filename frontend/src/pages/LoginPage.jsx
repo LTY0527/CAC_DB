@@ -1,46 +1,66 @@
-import { useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Button, Card, Col, Input, Row, Space, Tag, message } from 'antd'
+import { Button, Input, message } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useAuth } from '../context/AuthContext'
 import { getDefaultPathByRole } from '../config/roleConfig.jsx'
+import './loginPage.css'
 
 const TEXT = {
   platformTag: '高校人才培养与就业大数据平台',
   loginTitle: '进入平台',
-  loginDesc: '使用数据库中的演示账号登录，系统会根据角色自动加载对应视图与菜单。',
+  loginDesc: '使用演示账号登录，系统将根据角色自动进入对应工作界面。',
   username: '账号',
   password: '密码',
   usernamePlaceholder: '请输入账号',
   passwordPlaceholder: '请输入密码',
   loginBtn: '登录并进入系统',
-  loginError: '账号或密码错误，或账户暂时不可用，请稍后重试。',
+  loginError: '账号或密码错误，或当前账号暂不可用，请稍后重试。',
 }
 
-const ROLE_COLORS = {
-  teacher: 'blue',
-  government: 'cyan',
-  public: 'green',
+const ROLE_ACCENT = {
+  teacher: '#8f1d22',
+  government: '#1677ff',
+  public: '#0f766e',
 }
 
-const shellStyle = {
-  minHeight: '100vh',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: '32px 20px',
-  background:
-    'radial-gradient(circle at top left, rgba(56, 123, 255, 0.18), transparent 28%), radial-gradient(circle at right, rgba(44, 205, 255, 0.14), transparent 24%), linear-gradient(180deg, #07111d 0%, #091827 100%)',
+const ROLE_LABEL = {
+  teacher: '学校教师',
+  government: '政府专员',
+  public: '社会公众',
 }
 
-const panelStyle = {
-  width: 'min(980px, 100%)',
-  borderRadius: 28,
-  overflow: 'hidden',
-  border: '1px solid rgba(125, 159, 197, 0.18)',
-  boxShadow: '0 28px 70px rgba(0, 0, 0, 0.34)',
-  background:
-    'linear-gradient(135deg, rgba(7, 20, 36, 0.98) 0%, rgba(9, 25, 42, 0.99) 52%, rgba(8, 18, 32, 0.99) 100%)',
+function AccountCard({ account, selected, onSelect }) {
+  const accent = ROLE_ACCENT[account.role] || '#1677ff'
+
+  return (
+    <button
+      type="button"
+      className={`login-role-card${selected ? ' is-active' : ''}`}
+      style={{
+        '--card-accent': accent,
+        '--card-bg': selected ? `${accent}0d` : '#ffffff',
+      }}
+      onClick={() => onSelect(account)}
+    >
+      <div className="login-role-card__body">
+        <div className="login-role-card__top">
+          <div className="login-role-card__role">{ROLE_LABEL[account.role] || account.roleLabel}</div>
+          <div className="login-role-card__name">{account.name}</div>
+          <div className="login-role-card__account">演示账号：{account.username}</div>
+        </div>
+
+        <div className="login-role-card__desc">{account.description}</div>
+
+        <div className="login-role-card__footer">
+          <div className="login-role-card__meta">
+            <span className="login-role-card__meta-label">适用范围</span>
+            <span className="login-role-card__meta-value">{account.school || '市级公开视角'}</span>
+          </div>
+        </div>
+      </div>
+    </button>
+  )
 }
 
 export default function LoginPage() {
@@ -53,6 +73,10 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   const redirectPath = location.state?.from
+  const selectedAccount = useMemo(
+    () => accounts.find((item) => item.id === activeAccount) || accounts[0],
+    [accounts, activeAccount]
+  )
 
   const handleLogin = async () => {
     setSubmitting(true)
@@ -78,109 +102,67 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={shellStyle} className="login-shell">
-      <div style={panelStyle} className="login-surface">
-        <div style={{ padding: '34px 36px 10px' }}>
-          <Tag
-            color="processing"
-            style={{
-              borderRadius: 999,
-              paddingInline: 12,
-              marginBottom: 14,
-              fontWeight: 600,
-              background: 'rgba(22, 119, 255, 0.14)',
-              borderColor: 'rgba(103, 180, 255, 0.34)',
-              color: '#e6f4ff',
-            }}
-          >
-            {TEXT.platformTag}
-          </Tag>
-        </div>
+    <div className="login-page">
+      <div className="login-page__shell">
+        <section className="login-page__panel">
+          <div className="login-page__intro">
+            <div className="login-page__tag">{TEXT.platformTag}</div>
+            <h1 className="login-page__title">{TEXT.loginTitle}</h1>
+            <p className="login-page__desc">{TEXT.loginDesc}</p>
+          </div>
 
-        <Row gutter={[24, 24]} style={{ padding: '0 36px 36px' }}>
-          <Col xs={24} xl={10}>
-            <Card bordered={false} className="login-panel-card">
-              <div style={{ color: '#f8fbff', fontSize: 30, fontWeight: 700, letterSpacing: '-0.02em' }}>
-                {TEXT.loginTitle}
-              </div>
-              <div style={{ marginTop: 10, color: 'rgba(225, 236, 248, 0.88)', lineHeight: 1.85, fontSize: 14 }}>
-                {TEXT.loginDesc}
+          <div className="login-page__grid">
+            <div className="login-page__form">
+              <div className="login-page__section-title">账号登录</div>
+              <div className="login-page__section-note">
+                当前已选择：
+                <span className="login-page__selected-name">{selectedAccount?.name || '-'}</span>
               </div>
 
-              <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 24 }}>
-                <div>
-                  <div style={{ color: '#edf6ff', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
-                    {TEXT.username}
-                  </div>
-                  <Input
-                    prefix={<UserOutlined style={{ color: '#64748b' }} />}
-                    size="large"
-                    value={username}
-                    onChange={(event) => setUsername(event.target.value)}
-                    placeholder={TEXT.usernamePlaceholder}
-                    className="login-input"
-                  />
-                </div>
-
-                <div>
-                  <div style={{ color: '#edf6ff', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
-                    {TEXT.password}
-                  </div>
-                  <Input.Password
-                    prefix={<LockOutlined style={{ color: '#64748b' }} />}
-                    size="large"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    onPressEnter={handleLogin}
-                    placeholder={TEXT.passwordPlaceholder}
-                    className="login-input"
-                  />
-                </div>
-
-                <Button
-                  type="primary"
+              <div className="login-page__field">
+                <label className="login-page__label">{TEXT.username}</label>
+                <Input
+                  prefix={<UserOutlined style={{ color: '#64748b' }} />}
                   size="large"
-                  onClick={handleLogin}
-                  className="login-submit-btn"
-                  loading={submitting}
-                >
-                  {TEXT.loginBtn}
-                </Button>
-              </Space>
-            </Card>
-          </Col>
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder={TEXT.usernamePlaceholder}
+                  className="login-page__input"
+                />
+              </div>
 
-          <Col xs={24} xl={14}>
-            <Row gutter={[16, 16]}>
-              {accounts.map((account) => {
-                const selected = activeAccount === account.id
-                return (
-                  <Col xs={24} md={12} xl={8} key={account.id}>
-                    <Card
-                      bordered={false}
-                      hoverable
-                      onClick={() => fillAccount(account)}
-                      className={`login-account-card${selected ? ' is-selected' : ''}`}
-                    >
-                      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                        <Space wrap>
-                          <Tag color={ROLE_COLORS[account.role]}>{account.roleLabel}</Tag>
-                          {account.school ? <Tag color="geekblue">{account.school}</Tag> : null}
-                          {selected ? <Tag color="processing">当前选中</Tag> : null}
-                        </Space>
-                        <div style={{ color: '#f5f9ff', fontSize: 20, fontWeight: 700 }}>{account.name}</div>
-                        <div style={{ color: 'rgba(223, 236, 248, 0.92)', fontSize: 13 }}>账号：{account.username}</div>
-                        <div style={{ color: 'rgba(214, 231, 249, 0.82)', lineHeight: 1.75, fontSize: 13 }}>
-                          {account.description}
-                        </div>
-                      </Space>
-                    </Card>
-                  </Col>
-                )
-              })}
-            </Row>
-          </Col>
-        </Row>
+              <div className="login-page__field">
+                <label className="login-page__label">{TEXT.password}</label>
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: '#64748b' }} />}
+                  size="large"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  onPressEnter={handleLogin}
+                  placeholder={TEXT.passwordPlaceholder}
+                  className="login-page__input"
+                />
+              </div>
+
+              <Button type="primary" size="large" loading={submitting} onClick={handleLogin} className="login-page__submit">
+                {TEXT.loginBtn}
+              </Button>
+            </div>
+
+            <div className="login-page__accounts">
+              <div className="login-page__section-title">角色选择</div>
+              <div className="login-page__section-note">选择角色后自动填入对应演示账号，右侧卡片按统一网格严格对齐。</div>
+
+              <div className="login-page__cards-grid">
+                {accounts.map((account) => (
+                  <div key={account.id} className="login-page__card-cell">
+                    <AccountCard account={account} selected={activeAccount === account.id} onSelect={fillAccount} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )
