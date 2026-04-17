@@ -8,6 +8,7 @@ import MetricInsightDrawer from '../components/MetricInsightDrawer'
 import RegionalWarningBoard from '../components/RegionalWarningBoard'
 import SchoolMapExplorer from '../components/SchoolMapExplorer'
 import SchoolBenchmarkBoard from '../components/SchoolBenchmarkBoard'
+import TeacherHeroSection from '../components/TeacherHeroSection'
 import { getMetricInsight } from '../config/metricInsightMap'
 import {
   formatNumber,
@@ -218,14 +219,31 @@ export default function Dashboard({
   const goBackToCity = () => setSearchParams({})
   const handleSelectSchool = (school) => setSearchParams({ school })
   const handleSelectMajor = (major) => setSearchParams({ school: selectedSchool, major })
+  const scrollToMain = () => {
+    document.getElementById('dashboard-main-overview')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   if (loading) return <div style={{ color: designTokens.textSecondary }}>数据加载中...</div>
   if (error && !employmentData.length) return <div style={{ color: designTokens.danger }}>{error}</div>
 
   return (
     <Row gutter={[16, 16]}>
+      {roleMode !== 'gov' ? (
+        <Col span={24}>
+          <TeacherHeroSection
+            schoolName={currentSchool}
+            onAction={scrollToMain}
+            summaryItems={[
+              { label: '本校就业质量', value: `${formatNumber(schoolSummary.weightedSalary, 0)} 元`, hint: '结合去向结构与薪资水平综合观察' },
+              { label: '专业结构优化', value: formatNumber(schoolSummary.majorCount), hint: '当前纳入分析的专业覆盖范围' },
+              { label: '培养方案联动', value: formatNumber(schoolSummary.topIndustryEmp), hint: '重点行业吸纳人数可用于联动课程调整' },
+            ]}
+          />
+        </Col>
+      ) : null}
+
       <Col span={24}>
-        <Card style={panelStyle}>
+        <Card id="dashboard-main-overview" style={panelStyle}>
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} xl={16}>
               <div style={sectionTitleStyle}>平台主链路总览</div>

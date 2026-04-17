@@ -202,7 +202,7 @@ function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
       </Col>
 
       <Col span={24}>
-        <PublicHeroBanner onAction={handleHeroAction} />
+        <PublicHeroBanner onAction={handleHeroAction} dataLoadedAt={dataLoadedAt} schoolCount={overview.schoolCount} />
       </Col>
 
       <Col span={24} id="public-school-gallery">
@@ -305,3 +305,4 @@ export default function PublicWorkspace({ employmentData = [], dataLoadedAt = ''
 
   return <PublicHome employmentData={employmentData} dataLoadedAt={dataLoadedAt} />
 }
+

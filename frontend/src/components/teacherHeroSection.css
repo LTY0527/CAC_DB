@@ -1,0 +1,187 @@
+.teacher-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teacher-hero__main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(380px, 0.85fr);
+  align-items: stretch;
+  gap: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background:
+    linear-gradient(135deg, rgba(239, 246, 255, 0.92) 0%, rgba(255, 255, 255, 0.98) 46%, rgba(248, 250, 252, 0.98) 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.teacher-hero__content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 34px 32px 36px;
+}
+
+.teacher-hero__eyebrow {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.teacher-hero__title {
+  margin: 14px 0 0;
+  color: #0f172a;
+  font-size: 34px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.teacher-hero__subtitle {
+  margin-top: 16px;
+  max-width: 620px;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.teacher-hero__actions {
+  margin-top: 24px;
+}
+
+.teacher-hero__visual {
+  position: relative;
+  min-height: 312px;
+  overflow: hidden;
+  background: #dbeafe;
+}
+
+.teacher-hero__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.teacher-hero__image-mask {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0) 28%),
+    linear-gradient(180deg, rgba(15, 23, 42, 0.06) 0%, rgba(15, 23, 42, 0.52) 100%);
+}
+
+.teacher-hero__summary {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  left: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.teacher-hero__summary-item {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(10px);
+  padding: 14px 14px 12px;
+  color: #ffffff;
+}
+
+.teacher-hero__summary-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.teacher-hero__summary-value {
+  margin-top: 6px;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.teacher-hero__summary-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.teacher-hero__coverage {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.teacher-hero__coverage-title {
+  flex: 0 0 auto;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 2;
+}
+
+.teacher-hero__coverage-list {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.teacher-hero__coverage-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #dbe4ef;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1200px) {
+  .teacher-hero__main {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-hero__visual {
+    min-height: 340px;
+  }
+}
+
+@media (max-width: 768px) {
+  .teacher-hero__content {
+    padding: 28px 22px 24px;
+  }
+
+  .teacher-hero__title {
+    font-size: 28px;
+  }
+
+  .teacher-hero__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-hero__coverage {
+    flex-direction: column;
+  }
+
+  .teacher-hero__coverage-list {
+    justify-content: flex-start;
+  }
+}

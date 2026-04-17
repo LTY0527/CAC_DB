@@ -5,8 +5,8 @@
     description: '集中查看院校概况、专业表现与公开就业数据。',
     actionLabel: '查看数据',
     actionType: 'scroll-overview',
-    image: '/assets/上海2.jpg',
-    imagePosition: 'center center',
+    image: '/assets/上海4.jpg',
+    imagePosition: 'center 38%',
   },
   {
     key: 'compare',
@@ -14,8 +14,8 @@
     description: '结合地图与对比图表，查看上海高校专业结构与就业表现。',
     actionLabel: '查看院校对比',
     actionType: 'navigate-compare',
-    image: '/assets/上海.jpg',
-    imagePosition: 'center center',
+    image: '/assets/上海5.jpg',
+    imagePosition: 'center 30%',
   },
   {
     key: 'major',
@@ -23,8 +23,8 @@
     description: '以正式、清晰、可阅读的方式呈现公开数据。',
     actionLabel: '查看总览',
     actionType: 'scroll-gallery',
-    image: '/assets/上海3.jpg',
-    imagePosition: 'center center',
+    image: '/assets/上海6.jpg',
+    imagePosition: 'center 36%',
   },
 ]
 
