@@ -1,460 +1,263 @@
+# -*- coding: utf-8 -*-
+"""
+需求牵引的招生匹配与就业推荐脚本。
+
+核心逻辑：
+- 招生匹配：协同过滤基础分 + LSTM 岗位预测需求权重 + 专业供需缺口 + 技能适配。
+- 就业推荐：学生画像与岗位画像余弦相似度，并叠加岗位预测需求信号。
+"""
+
+from __future__ import annotations
+
 import io
-import os
+import json
+import math
 import sys
-import traceback
-from builtins import round as py_round
-from pathlib import Path
+from collections import Counter
 
+import numpy as np
 import pandas as pd
-from sqlalchemy import create_engine
-from pyspark.ml.feature import StringIndexer, VectorAssembler
-from pyspark.ml.functions import vector_to_array
-from pyspark.ml.recommendation import ALS
-from pyspark.sql import Window
-from pyspark.sql.functions import abs as spark_abs, avg, col, collect_set, concat, count, dense_rank, explode, hash as spark_hash, lit, round as spark_round, sqrt, when
+from sqlalchemy import create_engine, text
 
-from config import DB_URL
-from spark_common import create_spark_session, load_joined_dataset
+from config import DB_URL_PYMYSQL
+
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
-BASE_DIR = Path(__file__).resolve().parent
-OUTPUT_DIR = BASE_DIR / "outputs"
 TOP_K = 3
-TXT_DOCTOR = "博士"
-TXT_MASTER = "硕士"
-TXT_TOP_SCHOOL = "双一流建设高校"
-TXT_KEY_SCHOOL = "市属重点高校"
-TXT_FEATURED_MAJOR = "特色专业"
-TXT_ENGINEERING = "工学"
-TXT_SCIENCE = "理学"
-TXT_MEDICINE = "医学"
-TXT_SKILL_HIGH = "高"
-TXT_SKILL_MID = "中"
-TXT_STRATEGIC = "三大先导"
-TXT_LARGE = "大型"
-TXT_FINANCE = "现代金融"
-TXT_SMART_MFG = "智能制造"
-TXT_NEW_MATERIAL = "新材料"
-DB_ENGINE = create_engine(DB_URL, pool_pre_ping=True)
 
 
-def persist_result(df, table_name: str):
-    output_mode = os.environ.get("MATCHING_OUTPUT_MODE", "jdbc").lower()
-    output_path = OUTPUT_DIR / f"{table_name}.csv"
+def get_engine():
+    return create_engine(DB_URL_PYMYSQL, pool_pre_ping=True, pool_recycle=3600)
 
-    pandas_df = df.toPandas()
-    if output_mode == "csv":
-        pandas_df.to_csv(output_path, index=False, encoding="utf-8-sig")
-        print(f"[Matching] 已写出本地结果: {output_path}, rows={len(pandas_df)}")
-        return pandas_df
 
+def read_table(engine, table_name: str) -> pd.DataFrame:
     try:
-        pandas_df.to_sql(
-            name=table_name,
-            con=DB_ENGINE,
-            if_exists="replace",
-            index=False,
-            chunksize=5000,
-            method="multi",
-        )
-        print(f"[Matching] 已写入数据表: {table_name}, rows={len(pandas_df)}")
-        return pandas_df
-    except Exception as exc:
-        raise RuntimeError(f"[Matching] JDBC 写入失败: table={table_name}, error={exc}") from exc
-
-
-def build_als_matching(df):
-    training_df = (
-        df.select("student_id", "origin_place", "school_level", "major_name", "avg_salary")
-        .dropna()
-        .filter(col("avg_salary") > 0)
-    )
-
-    major_model = StringIndexer(inputCol="major_name", outputCol="major_index", handleInvalid="skip").fit(training_df)
-    indexed_df = major_model.transform(training_df)
-
-    als = ALS(
-        userCol="student_id",
-        itemCol="major_index",
-        ratingCol="avg_salary",
-        coldStartStrategy="drop",
-        nonnegative=True,
-        rank=8,
-        maxIter=12,
-        regParam=0.08,
-    )
-    model = als.fit(indexed_df)
-
-    recs = model.recommendForAllUsers(10).select("student_id", explode("recommendations").alias("rec")).select(
-        "student_id",
-        col("rec.major_index").alias("major_index"),
-        col("rec.rating").alias("pred_rating"),
-    )
-
-    major_lookup = indexed_df.select("major_name", "major_index").dropDuplicates(["major_index"])
-    student_bg = indexed_df.select(
-        "student_id",
-        concat(col("origin_place"), lit("|"), col("school_level")).alias("background_dim"),
-    ).dropDuplicates(["student_id"])
-
-    return (
-        recs.join(major_lookup, "major_index", "left")
-        .join(student_bg, "student_id", "left")
-        .groupBy("background_dim", "major_name")
-        .agg(spark_round(avg("pred_rating"), 4).alias("matching_score"), count("student_id").alias("sample_size"))
-        .orderBy(col("matching_score").desc())
-    )
-
-
-def evaluate_enrollment_matching(df, top_k=TOP_K):
-    evaluation_df = (
-        df.select(
-            concat(col("origin_place"), lit("|"), col("school_level")).alias("background_dim"),
-            "major_name",
-            "avg_salary",
-        )
-        .dropna()
-        .filter(col("avg_salary") > 0)
-        .groupBy("background_dim", "major_name")
-        .agg(avg("avg_salary").alias("rating"), count("*").alias("interaction_count"))
-    )
-
-    if evaluation_df.count() < 20:
-        return pd.DataFrame(
-            [
-                {
-                    "metric_name": "Precision@K",
-                    "metric_value": 0.0,
-                    "metric_label": f"Precision@{top_k}",
-                    "metric_desc": "样本不足，无法完成稳定评估。",
-                    "k_value": top_k,
-                    "evaluated_profiles": 0,
-                    "eval_mode": "近似评估",
-                }
-            ]
-        )
-
-    profile_indexer = StringIndexer(inputCol="background_dim", outputCol="background_index", handleInvalid="skip").fit(evaluation_df)
-    major_indexer = StringIndexer(inputCol="major_name", outputCol="major_index", handleInvalid="skip").fit(evaluation_df)
-    indexed_df = major_indexer.transform(profile_indexer.transform(evaluation_df))
-
-    train_df, test_df = indexed_df.randomSplit([0.8, 0.2], seed=42)
-    train_profiles = train_df.select("background_index").distinct()
-    test_df = test_df.join(train_profiles, "background_index", "inner")
-
-    if test_df.count() == 0:
-        return pd.DataFrame(
-            [
-                {
-                    "metric_name": "Precision@K",
-                    "metric_value": 0.0,
-                    "metric_label": f"Precision@{top_k}",
-                    "metric_desc": "测试画像在训练集中不可见，无法计算 Precision@K。",
-                    "k_value": top_k,
-                    "evaluated_profiles": 0,
-                    "eval_mode": "近似评估",
-                }
-            ]
-        )
-
-    als = ALS(
-        userCol="background_index",
-        itemCol="major_index",
-        ratingCol="rating",
-        coldStartStrategy="drop",
-        nonnegative=True,
-        rank=6,
-        maxIter=10,
-        regParam=0.1,
-    )
-    model = als.fit(train_df)
-
-    target_profiles = test_df.select("background_index").distinct()
-    recommendations = (
-        model.recommendForUserSubset(target_profiles, top_k)
-        .select("background_index", explode("recommendations").alias("rec"))
-        .select("background_index", col("rec.major_index").alias("major_index"))
-        .groupBy("background_index")
-        .agg(collect_set("major_index").alias("predicted_items"))
-        .toPandas()
-    )
-    actual = (
-        test_df.groupBy("background_index")
-        .agg(collect_set("major_index").alias("actual_items"))
-        .toPandas()
-    )
-
-    merged = actual.merge(recommendations, on="background_index", how="inner")
-    if merged.empty:
-        evaluated_profiles = 0
-        precision_at_k = 0.0
-        recall_at_k = 0.0
-        hit_rate_at_k = 0.0
-    else:
-        precision_scores = []
-        recall_scores = []
-        hit_scores = []
-        for _, row in merged.iterrows():
-            actual_items = set(row["actual_items"] or [])
-            predicted_items = set(row["predicted_items"] or [])
-            hits = actual_items & predicted_items
-            precision_scores.append(len(hits) / top_k if top_k else 0.0)
-            recall_scores.append(len(hits) / len(actual_items) if actual_items else 0.0)
-            hit_scores.append(1.0 if hits else 0.0)
-
-        evaluated_profiles = len(merged)
-        precision_at_k = float(sum(precision_scores) / evaluated_profiles)
-        recall_at_k = float(sum(recall_scores) / evaluated_profiles)
-        hit_rate_at_k = float(sum(hit_scores) / evaluated_profiles)
-
-    return pd.DataFrame(
-        [
-            {
-                "metric_name": "Precision@K",
-                "metric_value": py_round(precision_at_k, 4),
-                "metric_label": f"Precision@{top_k}",
-                "metric_desc": "近似评估：按生源画像背景维度划分训练/测试后，Top-K 推荐中命中真实专业的平均比例。",
-                "k_value": top_k,
-                "evaluated_profiles": evaluated_profiles,
-                "eval_mode": "近似评估",
-            },
-            {
-                "metric_name": "Recall@K",
-                "metric_value": py_round(recall_at_k, 4),
-                "metric_label": f"Recall@{top_k}",
-                "metric_desc": "近似评估：测试集中真实专业被 Top-K 推荐覆盖的平均比例。",
-                "k_value": top_k,
-                "evaluated_profiles": evaluated_profiles,
-                "eval_mode": "近似评估",
-            },
-            {
-                "metric_name": "HitRate@K",
-                "metric_value": py_round(hit_rate_at_k, 4),
-                "metric_label": f"HitRate@{top_k}",
-                "metric_desc": "近似评估：至少命中一个真实专业的背景画像占比。",
-                "k_value": top_k,
-                "evaluated_profiles": evaluated_profiles,
-                "eval_mode": "近似评估",
-            },
-        ]
-    )
-
-
-def build_cosine_job_matching(df):
-    student_df = (
-        df.withColumn("edu_score", when(col("edu_name") == TXT_DOCTOR, 3.0).when(col("edu_name") == TXT_MASTER, 2.0).otherwise(1.0))
-        .withColumn(
-            "school_score",
-            when(col("school_level") == TXT_TOP_SCHOOL, 3.0).when(col("school_level") == TXT_KEY_SCHOOL, 2.0).otherwise(1.0),
-        )
-        .withColumn(
-            "major_score",
-            when(col("major_type") == TXT_FEATURED_MAJOR, 3.0)
-            .when(col("discipline_category").isin(TXT_ENGINEERING, TXT_SCIENCE, TXT_MEDICINE), 2.5)
-            .otherwise(1.5),
-        )
-        .withColumn("skill_score", when(col("skill_level") == TXT_SKILL_HIGH, 3.0).when(col("skill_level") == TXT_SKILL_MID, 2.0).otherwise(1.0))
-    )
-
-    student_df = VectorAssembler(
-        inputCols=["edu_score", "school_score", "major_score", "skill_score"],
-        outputCol="student_features",
-    ).transform(student_df).select(
-        "student_id",
-        "student_name",
-        "major_name",
-        "industry_type",
-        "leading_industry_tag",
-        "student_features",
-    )
-
-    employer_stats = df.groupBy("employer_name").agg(count("*").alias("historical_count")).cache()
-    max_historical_count = employer_stats.agg({"historical_count": "max"}).collect()[0][0] or 1
-    employer_major_stats = df.groupBy("employer_name", "major_name").agg(count("*").alias("major_match_count"))
-
-    job_df = (
-        df.select("employer_name", "industry_type", "leading_industry_tag", "company_scale")
-        .dropDuplicates(["employer_name"])
-        .join(employer_stats, "employer_name", "left")
-        .withColumn(
-            "job_edu_score",
-            when(col("leading_industry_tag") == TXT_STRATEGIC, 2.3).when(col("company_scale") == TXT_LARGE, 2.0).otherwise(1.3),
-        )
-        .withColumn(
-            "job_industry_score",
-            when(col("leading_industry_tag") == TXT_STRATEGIC, 3.0)
-            .when(col("industry_type").isin(TXT_FINANCE, TXT_SMART_MFG, TXT_NEW_MATERIAL), 2.5)
-            .otherwise(1.5),
-        )
-        .withColumn(
-            "job_skill_score",
-            when(col("leading_industry_tag") == TXT_STRATEGIC, 2.8).when(col("company_scale") == TXT_LARGE, 2.2).otherwise(1.4),
-        )
-    )
-
-    job_df = VectorAssembler(
-        inputCols=["job_edu_score", "job_industry_score", "job_skill_score"],
-        outputCol="job_features",
-    ).transform(job_df)
-
-    candidate_pairs = student_df.select(
-        "student_id",
-        "student_name",
-        "major_name",
-        "industry_type",
-        "leading_industry_tag",
-        "student_features",
-    ).join(
-        job_df.select("employer_name", "industry_type", "leading_industry_tag", "company_scale", "historical_count", "job_features"),
-        on=["industry_type", "leading_industry_tag"],
-        how="inner",
-    ).join(
-        employer_major_stats,
-        on=["employer_name", "major_name"],
-        how="left",
-    )
-
-    scored = (
-        candidate_pairs.withColumn("student_arr", vector_to_array("student_features"))
-        .withColumn("job_arr", vector_to_array("job_features"))
-        .withColumn("s1", col("student_arr")[0])
-        .withColumn("s2", col("student_arr")[1])
-        .withColumn("s4", col("student_arr")[3])
-        .withColumn("j1", col("job_arr")[0])
-        .withColumn("j2", col("job_arr")[1])
-        .withColumn("j3", col("job_arr")[2])
-        .withColumn("dot_product", col("s1") * col("j1") + col("s2") * col("j2") + col("s4") * col("j3"))
-        .withColumn("student_norm", sqrt(col("s1") * col("s1") + col("s2") * col("s2") + col("s4") * col("s4")))
-        .withColumn("job_norm", sqrt(col("j1") * col("j1") + col("j2") * col("j2") + col("j3") * col("j3")))
-        .withColumn("cosine_similarity", spark_round(col("dot_product") / (col("student_norm") * col("job_norm")), 6))
-        .withColumn("major_match_count", when(col("major_match_count").isNull(), lit(0)).otherwise(col("major_match_count")))
-        .withColumn("major_affinity", col("major_match_count") / col("historical_count"))
-        .withColumn("popularity_penalty", (col("historical_count") / lit(float(max_historical_count))) * lit(0.18))
-        .withColumn("major_bonus", col("major_affinity") * lit(0.12))
-        .withColumn("diversity_jitter", (spark_abs(spark_hash(col("student_id"), col("employer_name"))) % lit(1000)) / lit(1000.0) * lit(0.03))
-        .withColumn("ranking_score", spark_round(col("cosine_similarity") + col("major_bonus") - col("popularity_penalty") + col("diversity_jitter"), 6))
-        .withColumn(
-            "recommend_reason",
-            concat(
-                lit("该岗位与学生当前匹配的行业方向为"),
-                col("industry_type"),
-                lit("，产业标签为"),
-                col("leading_industry_tag"),
-                lit("，企业规模为"),
-                col("company_scale"),
-                lit("，并结合该专业历史去向与热门企业分布做了排序修正。"),
-            ),
-        )
-    )
-
-    ranking = Window.partitionBy("student_id").orderBy(col("ranking_score").desc(), col("cosine_similarity").desc(), col("employer_name"))
-    return (
-        scored.withColumn("rank_no", dense_rank().over(ranking))
-        .filter(col("rank_no") <= TOP_K)
-        .select(
-            "student_id",
-            "student_name",
-            "employer_name",
-            "industry_type",
-            "leading_industry_tag",
-            "company_scale",
-            "cosine_similarity",
-            "ranking_score",
-            "recommend_reason",
-            "rank_no",
-        )
-        .orderBy("student_id", "rank_no")
-    )
-
-
-def evaluate_job_recommendation(cosine_pdf):
-    if cosine_pdf.empty:
+        return pd.read_sql(f"SELECT * FROM `{table_name}`", engine)
+    except Exception:
         return pd.DataFrame()
 
-    top1 = cosine_pdf[cosine_pdf["rank_no"] == 1].copy()
-    topk = cosine_pdf[cosine_pdf["rank_no"] <= TOP_K].copy()
-    avg_top1 = float(top1["cosine_similarity"].mean()) if not top1.empty else 0.0
-    avg_topk = float(topk["cosine_similarity"].mean()) if not topk.empty else 0.0
-    high_conf_ratio = float((top1["cosine_similarity"] >= 0.9).mean()) if not top1.empty else 0.0
 
-    return pd.DataFrame(
+def write_table(engine, df: pd.DataFrame, table_name: str) -> None:
+    with engine.begin() as conn:
+        conn.execute(text(f"DROP TABLE IF EXISTS `{table_name}`"))
+        df.to_sql(table_name, conn, if_exists="replace", index=False, chunksize=2000, method="multi")
+    print(f"[CF] 已写入 {table_name}: {len(df)} 行")
+
+
+def normalize(series: pd.Series) -> pd.Series:
+    values = pd.to_numeric(series, errors="coerce").fillna(0).astype(float)
+    min_value, max_value = values.min(), values.max()
+    if max_value <= min_value:
+        return pd.Series(np.ones(len(values)) * 0.5, index=series.index)
+    return (values - min_value) / (max_value - min_value)
+
+
+def parse_skills(value) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value]
+    if not value or pd.isna(value):
+        return []
+    try:
+        parsed = json.loads(str(value))
+        if isinstance(parsed, list):
+            return [str(item) for item in parsed]
+    except Exception:
+        pass
+    text = str(value)
+    for sep in ["、", ";", "；", "|"]:
+        text = text.replace(sep, ",")
+    return [item.strip() for item in text.split(",") if item.strip()]
+
+
+def build_enrollment_matching(student_df, academic_df, employment_df, forecast_df, gap_df, heatmap_df) -> pd.DataFrame:
+    joined = student_df.merge(academic_df, on="student_id", how="inner").merge(employment_df, on="student_id", how="left")
+    joined["avg_salary"] = pd.to_numeric(joined["avg_salary"], errors="coerce").fillna(0)
+    joined["skill_score"] = joined["skill_level"].map({"初": 0.45, "中": 0.70, "高": 0.95}).fillna(0.60)
+
+    base = (
+        joined.groupby(["major_name", "origin_place", "school_level", "skill_level"], dropna=False)
+        .agg(avg_salary=("avg_salary", "mean"), sample_size=("student_id", "count"), skill_level_score=("skill_score", "mean"))
+        .reset_index()
+    )
+    base["matching_score"] = (normalize(base["avg_salary"]) * 0.65 + normalize(base["sample_size"]) * 0.20 + base["skill_level_score"] * 0.15).round(4)
+
+    forecast_major = (
+        forecast_df.groupby("major_name", dropna=False)
+        .agg(forecast_demand_count=("predicted_demand_count", "sum"), demand_level=("demand_level", lambda s: Counter(s).most_common(1)[0][0]))
+        .reset_index()
+    )
+    forecast_major["demand_weight"] = normalize(forecast_major["forecast_demand_count"]).round(4)
+
+    gap_major = gap_df[["major_name", "gap_count", "gap_rate", "gap_level"]].copy() if not gap_df.empty else pd.DataFrame(columns=["major_name", "gap_count", "gap_rate", "gap_level"])
+    gap_major["supply_demand_gap"] = pd.to_numeric(gap_major.get("gap_count", 0), errors="coerce").fillna(0)
+    gap_major["gap_score"] = normalize(gap_major.get("gap_rate", 0)).round(4) if not gap_major.empty else []
+
+    skill_major = (
+        heatmap_df.groupby("major_name")["skill_weight"].sum().reset_index(name="skill_heat_score")
+        if not heatmap_df.empty
+        else pd.DataFrame(columns=["major_name", "skill_heat_score"])
+    )
+    skill_major["skill_adapt_score"] = normalize(skill_major.get("skill_heat_score", 0)).round(4) if not skill_major.empty else []
+
+    result = base.merge(forecast_major, on="major_name", how="left").merge(gap_major, on="major_name", how="left").merge(skill_major, on="major_name", how="left")
+    result["forecast_demand_count"] = result["forecast_demand_count"].fillna(0)
+    result["demand_weight"] = result["demand_weight"].fillna(0.5)
+    result["supply_demand_gap"] = result["supply_demand_gap"].fillna(0)
+    result["gap_score"] = result["gap_score"].fillna(0.5)
+    result["skill_adapt_score"] = result["skill_adapt_score"].fillna(result["skill_level_score"]).fillna(0.6)
+    result["final_recommend_score"] = (
+        0.45 * result["matching_score"]
+        + 0.30 * result["demand_weight"]
+        + 0.15 * result["gap_score"]
+        + 0.10 * result["skill_adapt_score"]
+    ).round(4)
+    result["student_profile"] = result["origin_place"].fillna("未知生源") + " / " + result["school_level"].fillna("未知院校层次")
+    result["region"] = result["origin_place"].fillna("未知地区")
+    result["demand_level"] = result["demand_level"].fillna("中需求")
+    result["recommendation_reason"] = result.apply(
+        lambda row: (
+            f"{row['major_name']}未来12个月预测岗位需求约{row['forecast_demand_count']:.0f}人，"
+            f"专业供需缺口为{row['supply_demand_gap']:.0f}人；结合{row['student_profile']}画像和技能等级，"
+            "建议作为需求牵引招生匹配的重点参考。"
+        ),
+        axis=1,
+    )
+    return result[
         [
-            {
-                "metric_name": "AvgTop1Similarity",
-                "metric_value": py_round(avg_top1, 4),
-                "metric_label": "Top1 平均相似度",
-                "metric_desc": "Top1 推荐结果的平均余弦相似度，反映模型对首推岗位的匹配强度。",
-                "sample_size": int(len(top1)),
-                "eval_mode": "相似度统计",
-            },
-            {
-                "metric_name": "AvgTopKSimilarity",
-                "metric_value": py_round(avg_topk, 4),
-                "metric_label": f"Top{TOP_K} 平均相似度",
-                "metric_desc": "Top-K 推荐列表的平均余弦相似度，用于观察候选岗位整体匹配水平。",
-                "sample_size": int(len(topk)),
-                "eval_mode": "相似度统计",
-            },
-            {
-                "metric_name": "HighConfidenceRatio",
-                "metric_value": py_round(high_conf_ratio, 4),
-                "metric_label": "高相似度占比",
-                "metric_desc": "Top1 推荐中相似度不低于 0.90 的学生占比，属于可运行的可信度统计指标。",
-                "sample_size": int(len(top1)),
-                "eval_mode": "相似度统计",
-            },
+            "major_name",
+            "student_profile",
+            "region",
+            "skill_level",
+            "matching_score",
+            "demand_weight",
+            "forecast_demand_count",
+            "supply_demand_gap",
+            "final_recommend_score",
+            "recommendation_reason",
+            "sample_size",
+        ]
+    ].sort_values(["final_recommend_score", "forecast_demand_count"], ascending=False)
+
+
+def cosine_similarity(left: np.ndarray, right: np.ndarray) -> float:
+    denom = np.linalg.norm(left) * np.linalg.norm(right)
+    return float(np.dot(left, right) / denom) if denom else 0.0
+
+
+def build_job_recommendation(student_df, academic_df, job_df, forecast_df, heatmap_df) -> pd.DataFrame:
+    students = student_df.merge(academic_df, on="student_id", how="inner").head(500)
+    if students.empty or job_df.empty:
+        return pd.DataFrame()
+
+    forecast_key = (
+        forecast_df.groupby(["major_name", "job_category"], dropna=False)
+        .agg(predicted_demand_count=("predicted_demand_count", "sum"), demand_level=("demand_level", lambda s: Counter(s).most_common(1)[0][0]))
+        .reset_index()
+    )
+    heatmap_key = (
+        heatmap_df.groupby(["major_name", "job_category"])["skill_name"].apply(lambda s: list(s.head(8))).reset_index(name="required_skills")
+        if not heatmap_df.empty
+        else pd.DataFrame(columns=["major_name", "job_category", "required_skills"])
+    )
+    jobs = (
+        job_df.sort_values("publish_date", ascending=False)
+        .dropna(subset=["job_title", "job_category", "major_name"])
+        .drop_duplicates(["employer_name", "job_title", "major_name", "job_category"])
+        .head(1200)
+        .merge(forecast_key, on=["major_name", "job_category"], how="left")
+        .merge(heatmap_key, on=["major_name", "job_category"], how="left")
+    )
+    jobs["predicted_demand_count"] = jobs["predicted_demand_count"].fillna(0)
+    jobs["demand_level"] = jobs["demand_level"].fillna("中需求")
+    demand_norm = normalize(jobs["predicted_demand_count"])
+    jobs["demand_norm"] = demand_norm
+
+    rows = []
+    skill_rank = {"初": 0.45, "中": 0.70, "高": 0.95}
+    for student in students.itertuples(index=False):
+        candidate = jobs[jobs["major_name"] == student.major_name].copy()
+        if candidate.empty:
+            candidate = jobs.copy()
+        student_skill_score = skill_rank.get(getattr(student, "skill_level", "中"), 0.65)
+        student_vector = np.array([student_skill_score, 1.0 if getattr(student, "edu_level", "本科") in ["硕士", "博士"] else 0.7, 0.8])
+        scored = []
+        for job in candidate.itertuples(index=False):
+            required_skills = getattr(job, "required_skills", []) or parse_skills(getattr(job, "skill_keywords", ""))
+            skill_match_score = min(1.0, 0.45 + 0.08 * len(required_skills)) * student_skill_score
+            job_vector = np.array([skill_match_score, 0.9 if getattr(job, "education_requirement", "本科") in ["硕士", "博士"] else 0.7, 0.6 + 0.4 * getattr(job, "demand_norm", 0)])
+            similarity = cosine_similarity(student_vector, job_vector)
+            final_score = 0.65 * similarity + 0.25 * getattr(job, "demand_norm", 0) + 0.10 * skill_match_score
+            scored.append((final_score, similarity, skill_match_score, job, required_skills))
+        for rank_no, (final_score, similarity, skill_match_score, job, required_skills) in enumerate(sorted(scored, key=lambda x: x[0], reverse=True)[:TOP_K], start=1):
+            rows.append(
+                {
+                    "student_id": getattr(student, "student_id"),
+                    "student_name": getattr(student, "student_name"),
+                    "major_name": getattr(student, "major_name"),
+                    "employer_name": getattr(job, "employer_name"),
+                    "job_title": getattr(job, "job_title"),
+                    "job_category": getattr(job, "job_category"),
+                    "industry_tag": getattr(job, "leading_industry_tag"),
+                    "city": getattr(job, "city"),
+                    "predicted_demand_count": round(float(getattr(job, "predicted_demand_count", 0)), 2),
+                    "demand_level": getattr(job, "demand_level", "中需求"),
+                    "skill_match_score": round(float(skill_match_score), 4),
+                    "cosine_similarity": round(float(similarity), 4),
+                    "ranking_score": round(float(final_score), 4),
+                    "rank_no": rank_no,
+                    "recommendation_reason": (
+                        f"该专业对应的{getattr(job, 'job_category')}岗位未来12个月预测需求较高，"
+                        f"岗位核心技能包含{ '、'.join(required_skills[:4]) if required_skills else '专业基础能力' }，"
+                        "同时学生技能等级与岗位技能要求匹配度较高，因此推荐优先关注该行业岗位。"
+                    ),
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def build_eval_tables(enrollment_df: pd.DataFrame, job_df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    enrollment_eval = pd.DataFrame(
+        [
+            {"metric_name": "AvgFinalScore", "metric_value": round(float(enrollment_df["final_recommend_score"].mean() or 0), 4), "metric_label": "招生匹配平均综合分", "metric_desc": "融合协同过滤、预测需求、供需缺口和技能适配后的平均分。", "k_value": TOP_K, "evaluated_profiles": len(enrollment_df), "eval_mode": "需求牵引综合评分"},
+            {"metric_name": "HighDemandRatio", "metric_value": round(float((enrollment_df["demand_weight"] >= 0.7).mean() or 0), 4), "metric_label": "高需求专业占比", "metric_desc": "招生匹配结果中预测需求权重较高的专业占比。", "k_value": TOP_K, "evaluated_profiles": len(enrollment_df), "eval_mode": "需求牵引综合评分"},
         ]
     )
+    job_eval = pd.DataFrame(
+        [
+            {"metric_name": "AvgTopKSimilarity", "metric_value": round(float(job_df["cosine_similarity"].mean() or 0), 4), "metric_label": f"Top{TOP_K}平均相似度", "metric_desc": "学生画像与岗位画像的平均余弦相似度。", "sample_size": len(job_df), "eval_mode": "余弦相似度统计"},
+            {"metric_name": "HighDemandRecommendationRatio", "metric_value": round(float((job_df["demand_level"] == "高需求").mean() or 0), 4), "metric_label": "高需求岗位推荐占比", "metric_desc": "推荐结果中高需求岗位的占比。", "sample_size": len(job_df), "eval_mode": "需求牵引推荐统计"},
+        ]
+    )
+    return enrollment_eval, job_eval
 
 
-def run_matching_pipeline():
-    spark = create_spark_session("SHU_Employment_CF_Refactor")
-
+def run_matching_pipeline() -> bool:
+    print("[CF] 需求牵引招生匹配与就业推荐启动。")
+    engine = get_engine()
     try:
-        print("[Matching] 正在加载四表关联数据...")
-        df = load_joined_dataset(spark).cache()
+        student_df = read_table(engine, "dim_student")
+        academic_df = read_table(engine, "fact_academic")
+        employment_df = read_table(engine, "fact_employment")
+        job_df = read_table(engine, "fact_job_demand")
+        forecast_df = read_table(engine, "ads_job_demand_forecast")
+        gap_df = read_table(engine, "ads_major_supply_demand_gap")
+        heatmap_df = read_table(engine, "ads_job_skill_heatmap")
 
-        print("[Matching] 正在计算 ALS 招生匹配结果...")
-        als_result = build_als_matching(df)
-        persist_result(als_result, "ads_enrollment_matching")
+        enrollment_df = build_enrollment_matching(student_df, academic_df, employment_df, forecast_df, gap_df, heatmap_df)
+        recommendation_df = build_job_recommendation(student_df, academic_df, job_df, forecast_df, heatmap_df)
+        enrollment_eval, job_eval = build_eval_tables(enrollment_df, recommendation_df)
 
-        print("[Matching] 正在评估 ALS 招生匹配效果...")
-        enrollment_eval_pdf = evaluate_enrollment_matching(df, TOP_K)
-        enrollment_eval_pdf.to_sql(
-            name="ads_enrollment_matching_eval",
-            con=DB_ENGINE,
-            if_exists="replace",
-            index=False,
-            chunksize=1000,
-            method="multi",
-        )
-
-        print("[Matching] 正在计算人岗匹配推荐结果...")
-        cosine_result = build_cosine_job_matching(df)
-        cosine_pdf = persist_result(cosine_result, "ads_job_recommendation")
-
-        print("[Matching] 正在统计余弦推荐可信度...")
-        job_eval_pdf = evaluate_job_recommendation(cosine_pdf)
-        job_eval_pdf.to_sql(
-            name="ads_job_recommendation_eval",
-            con=DB_ENGINE,
-            if_exists="replace",
-            index=False,
-            chunksize=1000,
-            method="multi",
-        )
-
-        print("[Matching] ALS 与人岗匹配结果处理完成。")
+        write_table(engine, enrollment_df, "ads_enrollment_matching")
+        write_table(engine, enrollment_eval, "ads_enrollment_matching_eval")
+        write_table(engine, recommendation_df, "ads_job_recommendation")
+        write_table(engine, job_eval, "ads_job_recommendation_eval")
+        print("[CF] 需求牵引招生匹配与余弦相似度就业推荐完成。")
         return True
     except Exception as exc:
-        print(f"[Matching] 运行失败: {exc}")
-        traceback.print_exc()
+        print(f"[CF] 运行失败：{exc}")
         return False
-    finally:
-        spark.stop()
 
 
 if __name__ == "__main__":
-    OUTPUT_DIR.mkdir(exist_ok=True)
     sys.exit(0 if run_matching_pipeline() else 1)

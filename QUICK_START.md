@@ -1,223 +1,82 @@
-# 快速参考 - MySQL 数据导入
-### 步骤 1：正确配置 MySQL 连接信息
+# QUICK_START
 
-修改 `PutData.py` 第 34-40 行：
-```python
-DB_CONFIG = {
-    'host': 'localhost',      # 改成你的 MySQL 主机
-    'port': 3306,             # 改成你的 MySQL 端口
-    'user': 'root',           # 改成你的 MySQL 用户名
-    'password': '123456',     # 改成你的 MySQL 密码
-    'database': 'bigdata',    # 改成你的数据库名
-    'charset': 'utf8mb4'
-}
+## 1. 配置数据库
+
+在 `.env` 或环境变量中配置：
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=123456
+DB_NAME=bigdata
 ```
 
-**同时修改 `create_tables.py` 中相同位置的配置**
-
-### 步骤 2：运行一键导入脚本（推荐）
+## 2. 一键执行完整链路
 
 ```bash
 python run_full_pipeline.py
 ```
 
-这会自动执行：
-1. 生成 CSV 数据文件
-2. 创建 MySQL 表结构
-3. 导入数据到数据库
+完整链路包含：
 
-**耗时：约 20-30 秒（10 万条数据）**
+1. 数据集团样本数据生成
+2. 初始化数据库表结构
+3. 导入基础数据与岗位需求数据
+4. 初始化账号、权限与审计表
+5. Spark/pandas 特征加工与 ADS 聚合
+6. LSTM 岗位需求人数预测
+7. 协同过滤招生匹配与就业推荐
+8. FP-Growth 关联规则挖掘
+9. 培养方案优化建议生成
+10. 结果校验与链路日志汇总
 
-### 步骤 3：验证数据
+## 3. 分步运行
 
-在 MySQL 中运行：
-```sql
-SELECT COUNT(*) as total FROM dim_student;
-SELECT COUNT(*) as total FROM fact_employment;
-```
-
----
-
-##  单步执行（如需逐步操作）
-
-### 只需生成数据（不导入数据库）
 ```bash
 python platform_data_factory.py
-```
-✅ 输出 4 个 CSV 文件
-
-### 只需创建表结构（不导入数据）
-```bash
 python create_tables.py
-```
-✅ 在 MySQL 中创建 4 张表
-
-### 只导入 CSV 数据到数据库
-```bash
 python PutData.py
-```
-✅ 将 CSV 文件中的数据导入到 MySQL
-
----
-
-##  监控导入过程
-
-导入时会看到实时日志：
-```
-【开始导入】 学生维度表 [dim_student]
-  数据源文件: dim_student.csv
-  → 正在读取 CSV 文件...
-  ✓ 读取完成，耗时 1.23s，共 100000 条记录
-  → 正在清洗数据...
-  → 正在执行批量插入...
-✅【完成】 dim_student - 100000 条记录, 总耗时 15.34s
+python init_security.py
+python Spark-all.py
+python LSTM-job-demand.py
+python CF-all.py
+python FPgrowth-all.py
+python training_program_suggester.py
 ```
 
----
-
-##  出现错误？看这里
-
-| 错误 | 解决方案 |
-|------|---------|
-| `Can't connect to MySQL server` | 检查 MySQL 是否运行，检查 host/port 是否正确 |
-| `Access denied` | 检查用户名和密码是否正确 |
-| `Database 'bigdata' doesn't exist` | 先在 MySQL 中创建数据库：`CREATE DATABASE bigdata;` |
-| `Table already exists` | `create_tables.py` 会自动删除旧表，再次运行即可 |
-| `FileNotFoundError: dim_student.csv` | 先运行 `platform_data_factory.py` 生成数据 |
-
----
-
-## 四张表结构
-
-### `dim_student` - 学生表
-- student_id (PK)
-- student_name, id_card, gender
-- origin_region_code, origin_place
-- school_name, school_level, edu_name
-- created_at
-
-### `dim_company` - 企业表
-- company_id (PK)
-- employer_name
-- company_scale, is_top_500, is_listed
-- strategic_tags, reg_capital, last_year_revenue
-
-### `fact_academic` - 学业表
-- academic_id (PK)
-- student_id (FK → dim_student)
-- edu_level, major_code, major_name
-- discipline_category, major_category, skill_level
-
-### `fact_employment` - 就业表
-- emp_id (PK)
-- student_id (FK → dim_student)
-- employer_name, avg_salary
-- first_insured_date, sh_insurance_status
-- leading_industry_tag
-
----
-
-##  查询示例
-
-```sql
--- 获取上海交通大学学生总数
-SELECT COUNT(*) FROM dim_student WHERE school_name = '上海交通大学';
-
--- 查询平均薪资最高的行业
-SELECT leading_industry_tag, AVG(avg_salary) as avg_salary
-FROM fact_employment
-GROUP BY leading_industry_tag
-ORDER BY avg_salary DESC;
-
--- 查询在三大先导产业的学生
-SELECT s.student_name, e.leading_industry_tag, e.avg_salary
-FROM dim_student s
-JOIN fact_employment e ON s.student_id = e.student_id
-WHERE e.leading_industry_tag IN ('集成电路', '人工智能', '生物医药');
-
--- 查询双一流高校有社保的学生比例
-SELECT 
-    s.school_name,
-    COUNT(*) as total_students,
-    SUM(e.sh_insurance_status) as with_insurance,
-    ROUND(SUM(e.sh_insurance_status)/COUNT(*)*100, 2) as insurance_rate
-FROM dim_student s
-JOIN fact_employment e ON s.student_id = e.student_id
-WHERE s.school_level = '双一流建设高校'
-GROUP BY s.school_name;
-```
-
----
-
-##  核心改进点
-
-**自动表创建** - 无需手动建表，脚本自动完成
-**完整日志** - 每步都有详细的日志记录
-**错误恢复** - 出错时能准确定位问题
-**性能优化** - 使用批量导入和连接池
-**数据验证** - 导入前验证 CSV 文件完整性
- **外键管理** - 自动处理外键约束
-
----
-
-##  快速帮助
+## 4. 启动后端
 
 ```bash
-# 查看最新日志
-tail -f mysql_import_*.log
-
-# 查看所有日志文件
-ls -la *.log
-
-# 重新初始化（清空所有表）
-python create_tables.py
+python backend/app.py
 ```
 
----
+重点接口：
 
-**祝导入顺利！**
+- `/api/demand/forecast`
+- `/api/demand/forecast/eval`
+- `/api/demand/forecast/backtest`
+- `/api/supply-demand/gap`
+- `/api/job-skills/heatmap`
+- `/api/algorithm/chain-log`
+- `/api/report`
 
----
+## 5. 启动前端
 
-## 2026-04-12 更新说明（按当前代码为准）
-
-本文前面的数据库配置步骤仍保留作历史参考，但当前代码已不再推荐直接修改 `PutData.py` 和 `create_tables.py` 中的连接信息。
-
-### 当前推荐做法
-
-统一在 [config.py](/e:/Code/CAC/config.py) 中收口数据库配置，并优先通过环境变量覆盖：
-
-```powershell
-$env:DB_HOST="localhost"
-$env:DB_PORT="3306"
-$env:DB_USER="root"
-$env:DB_PASSWORD="你的数据库密码"
-$env:DB_NAME="bigdata"
+```bash
+cd frontend
+npm install
+npm run dev
 ```
 
-然后直接运行一键流水线：
+访问 Vite 提示的本地地址。教师端、政府端和公众端会根据账号角色展示不同模块。
 
-```powershell
-python run_full_pipeline.py
-```
+## 6. 演示账号
 
-当前流水线不仅会导入基础数据，还会继续执行：
+- 教师端：`teacher_shu / 123456`
+- 政府端：`gov_sh / 123456`
+- 公众端：`guest / 123456`
 
-- `init_security.py`
-- `Spark-all.py`
-- `LSTM-all.py`
-- `CF-all.py`
-- `FPgrowth-all.py`
+## 7. 演示提示
 
-### 当前需要重点检查的结果表
-
-```sql
-USE bigdata;
-
-SELECT COUNT(*) FROM ads_salary_forecast;
-SELECT COUNT(*) FROM ads_enrollment_matching;
-SELECT COUNT(*) FROM ads_major_matching_rules;
-SELECT COUNT(*) FROM ads_job_recommendation;
-```
-
-如果页面仍显示“数据异常”，优先检查上述 `ads_*` 表是否存在且有数据。
+正式演示建议直接执行 `python run_full_pipeline.py`，完成后打开前端查看“需求预测”“算法链路”“分析专报”和“审计日志”相关模块。

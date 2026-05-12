@@ -1,0 +1,748 @@
+{
+  "generated_at": "2026-04-28T14:58:21.613567",
+  "passed": true,
+  "checks": [
+    {
+      "check": "生产前端不引用 mock/fakeData/demoData/hardcoded/fallbackData",
+      "passed": true,
+      "value": 0,
+      "expected": "0"
+    },
+    {
+      "check": "生产前端无旧版 salary forecast 主链路",
+      "passed": true,
+      "value": [],
+      "expected": "[]"
+    },
+    {
+      "check": "前端包含无数据 Empty/暂无数据处理",
+      "passed": true,
+      "value": 12,
+      "expected": ">0"
+    }
+  ],
+  "findings": [],
+  "zero_fallback_warnings": [
+    {
+      "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+      "line": 219,
+      "severity": "warning",
+      "text": "{ title: '就业率', value: Number(schoolOverview.employment_rate || 0), suffix: '%', style: statValueCyan },"
+    },
+    {
+      "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+      "line": 226,
+      "severity": "warning",
+      "text": "{ title: '就业率', value: Number(majorOverview.employment_rate || 0), suffix: '%', style: statValueCyan },"
+    },
+    {
+      "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+      "line": 238,
+      "severity": "warning",
+      "text": "{ title: '就业率', dataIndex: 'employment_rate', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+      "line": 240,
+      "severity": "warning",
+      "text": "{ title: '先导产业占比', dataIndex: 'strategic_ratio', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+      "line": 315,
+      "severity": "warning",
+      "text": "{Number(majorDetail?.enrollment_hint?.avg_match_score || 0).toFixed(3)}"
+    },
+    {
+      "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+      "line": 320,
+      "severity": "warning",
+      "text": "<div style={metaValueStyle}>{formatNumber(majorDetail?.enrollment_hint?.total_sample_size || 0)}</div>"
+    },
+    {
+      "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+      "line": 324,
+      "severity": "warning",
+      "text": "<div style={metaValueStyle}>{Number(majorOverview.strategic_ratio || 0).toFixed(1)}%</div>"
+    },
+    {
+      "file": "frontend\\src\\components\\HeroInfoStrip.jsx",
+      "line": 14,
+      "severity": "warning",
+      "text": "<div className=\"hero-info-strip__value\">{schoolCount || 0} 所</div>"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 51,
+      "severity": "review",
+      "text": "rate ? `就业率：${Number(rate.value || 0).toFixed(1)}%` : '',"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 52,
+      "severity": "review",
+      "text": "strategic ? `高质量就业占比：${Number(strategic.value || 0).toFixed(1)}%` : '',"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 95,
+      "severity": "review",
+      "text": "data: rows.map((item) => Number(item.avg_salary || 0)),"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 105,
+      "severity": "warning",
+      "text": "data: rows.map((item) => Number(item.employment_rate || 0)),"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 116,
+      "severity": "review",
+      "text": "data: rows.map((item) => Number(item.strategic_ratio || 0)),"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 137,
+      "severity": "review",
+      "text": "rate ? `就业率：${Number(rate.value || 0).toFixed(1)}%` : '',"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 180,
+      "severity": "review",
+      "text": "data: rows.map((item) => Number(item.avg_salary || 0)),"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 190,
+      "severity": "warning",
+      "text": "data: rows.map((item) => Number(item.employment_rate || 0)),"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 265,
+      "severity": "warning",
+      "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 265,
+      "severity": "warning",
+      "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 272,
+      "severity": "warning",
+      "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 272,
+      "severity": "warning",
+      "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 287,
+      "severity": "warning",
+      "text": "avgEmploymentRate: visibleOverview.reduce((sum, item) => sum + Number(item.employment_rate || 0), 0) / total,"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 288,
+      "severity": "warning",
+      "text": "avgSalary: visibleOverview.reduce((sum, item) => sum + Number(item.avg_salary || 0), 0) / total,"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 289,
+      "severity": "warning",
+      "text": "totalStudents: visibleOverview.reduce((sum, item) => sum + Number(item.student_count || 0), 0),"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 307,
+      "severity": "warning",
+      "text": "{ title: '就业率', dataIndex: 'employment_rate', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 312,
+      "severity": "warning",
+      "text": "render: (value) => `${Number(value || 0).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 321,
+      "severity": "warning",
+      "text": "{ title: '就业率', dataIndex: 'employment_rate', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+      "line": 326,
+      "severity": "warning",
+      "text": "render: (value) => `${Number(value || 0).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolMapExplorer.jsx",
+      "line": 30,
+      "severity": "review",
+      "text": "const maxEmp = Math.max(...points.map((item) => Number(item.total_emp || 0)), 1)"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolMapExplorer.jsx",
+      "line": 106,
+      "severity": "warning",
+      "text": "const emp = Number(params?.data?.detail?.total_emp || 0)"
+    },
+    {
+      "file": "frontend\\src\\components\\SchoolMapExplorer.jsx",
+      "line": 487,
+      "severity": "warning",
+      "text": "{renderStatCard('先导产业占比', `${Number(selectedDetail.strategic_ratio || 0).toFixed(1)}%`, '#d97706')}"
+    },
+    {
+      "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+      "line": 12,
+      "severity": "warning",
+      "text": "const rows = [...algorithmChainLogData].sort((a, b) => Number(a.stage_order || 0) - Number(b.stage_order || 0))"
+    },
+    {
+      "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+      "line": 12,
+      "severity": "warning",
+      "text": "const rows = [...algorithmChainLogData].sort((a, b) => Number(a.stage_order || 0) - Number(b.stage_order || 0))"
+    },
+    {
+      "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+      "line": 32,
+      "severity": "warning",
+      "text": "<div>耗时：{Number(item.cost_seconds || 0).toFixed(2)} 秒</div>"
+    },
+    {
+      "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+      "line": 49,
+      "severity": "warning",
+      "text": "{ title: '耗时秒数', dataIndex: 'cost_seconds', render: (value) => Number(value || 0).toFixed(2) },"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 78,
+      "severity": "review",
+      "text": "const index = params?.[0]?.dataIndex ?? 0"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 83,
+      "severity": "warning",
+      "text": "`支持度：${(Number(matched.support || 0) * 100).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 84,
+      "severity": "warning",
+      "text": "`置信度：${(Number(matched.confidence || 0) * 100).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 85,
+      "severity": "warning",
+      "text": "`提升度：${Number(matched.lift || 0).toFixed(2)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 102,
+      "severity": "review",
+      "text": "data: rules.map((item) => Number(item.lift || 0)),"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 383,
+      "severity": "warning",
+      "text": "{ title: '支持度', dataIndex: 'support', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 384,
+      "severity": "warning",
+      "text": "{ title: '置信度', dataIndex: 'confidence', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\pages\\Dashboard.jsx",
+      "line": 385,
+      "severity": "warning",
+      "text": "{ title: '提升度', dataIndex: 'lift', render: (value) => Number(value || 0).toFixed(2) },"
+    },
+    {
+      "file": "frontend\\src\\pages\\DemandForecast.jsx",
+      "line": 62,
+      "severity": "review",
+      "text": "highMajorCount: new Set(rows.filter((item) => item.demand_level === '高需求' || Number(item.predicted_demand_count || 0) >= 80).map((item) => item.major_name)).size,"
+    },
+    {
+      "file": "frontend\\src\\pages\\DemandForecast.jsx",
+      "line": 63,
+      "severity": "review",
+      "text": "topJobCategory: rows.reduce((best, item) => Number(item.predicted_demand_count || 0) > Number(best.predicted_demand_count || 0) ? item : best, {}),"
+    },
+    {
+      "file": "frontend\\src\\pages\\DemandForecast.jsx",
+      "line": 63,
+      "severity": "review",
+      "text": "topJobCategory: rows.reduce((best, item) => Number(item.predicted_demand_count || 0) > Number(best.predicted_demand_count || 0) ? item : best, {}),"
+    },
+    {
+      "file": "frontend\\src\\pages\\DemandForecast.jsx",
+      "line": 105,
+      "severity": "warning",
+      "text": "const mape = Number(metrics.find((item) => item.metric_name === 'MAPE')?.metric_value || 0)"
+    },
+    {
+      "file": "frontend\\src\\pages\\DemandForecast.jsx",
+      "line": 106,
+      "severity": "warning",
+      "text": "const topSkills = [...jobSkillsHeatmapData].sort((a, b) => Number(b.skill_count || 0) - Number(a.skill_count || 0)).slice(0, 8)"
+    },
+    {
+      "file": "frontend\\src\\pages\\DemandForecast.jsx",
+      "line": 106,
+      "severity": "warning",
+      "text": "const topSkills = [...jobSkillsHeatmapData].sort((a, b) => Number(b.skill_count || 0) - Number(a.skill_count || 0)).slice(0, 8)"
+    },
+    {
+      "file": "frontend\\src\\pages\\DemandForecast.jsx",
+      "line": 153,
+      "severity": "warning",
+      "text": "{ title: '增长率', dataIndex: 'demand_growth_rate', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\pages\\EmploymentMonitor.jsx",
+      "line": 55,
+      "severity": "warning",
+      "text": "emp_count: Number(item?.emp_count || 0),"
+    },
+    {
+      "file": "frontend\\src\\pages\\EmploymentMonitor.jsx",
+      "line": 56,
+      "severity": "warning",
+      "text": "avg_salary: Number(item?.avg_salary || 0),"
+    },
+    {
+      "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+      "line": 34,
+      "severity": "warning",
+      "text": "`匹配分：${Number(item.matching_score || 0).toFixed(2)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+      "line": 35,
+      "severity": "warning",
+      "text": "`样本量：${item.sample_size || 0}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+      "line": 53,
+      "severity": "review",
+      "text": "value: Number(item.matching_score || 0),"
+    },
+    {
+      "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+      "line": 78,
+      "severity": "warning",
+      "text": "? topList.reduce((sum, item) => sum + Number(item.matching_score || 0), 0) / topList.length"
+    },
+    {
+      "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+      "line": 81,
+      "severity": "warning",
+      "text": "? topList.reduce((sum, item) => sum + Number(item.sample_size || 0), 0) / topList.length"
+    },
+    {
+      "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+      "line": 94,
+      "severity": "warning",
+      "text": "render: (value) => Number(value || 0).toFixed(2),"
+    },
+    {
+      "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+      "line": 152,
+      "severity": "warning",
+      "text": "value={Number(evalMap['Precision@K']?.metric_value || 0)}"
+    },
+    {
+      "file": "frontend\\src\\pages\\JobRecommendation.jsx",
+      "line": 81,
+      "severity": "warning",
+      "text": "{ title: '相似度', dataIndex: 'matching_score', render: (value) => Number(value || 0).toFixed(3) },"
+    },
+    {
+      "file": "frontend\\src\\pages\\JobRecommendation.jsx",
+      "line": 110,
+      "severity": "warning",
+      "text": "<Col xs={24} md={12}><Statistic title=\"Top1 平均相似度\" value={evalMap.AvgTop1Similarity?.metric_value || 0} precision={3} styles={{ title: statTitleStyle, content: statValuePrimary }} "
+    },
+    {
+      "file": "frontend\\src\\pages\\JobRecommendation.jsx",
+      "line": 111,
+      "severity": "warning",
+      "text": "<Col xs={24} md={12}><Statistic title=\"高置信推荐占比\" value={(evalMap.HighConfidenceRatio?.metric_value || 0) * 100} precision={2} suffix=\"%\" styles={{ title: statTitleStyle, content: st"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 52,
+      "severity": "warning",
+      "text": "`优先级：${Number(item.priority_score || 0).toFixed(1)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 53,
+      "severity": "warning",
+      "text": "`估算就业率：${Number(item.employment_rate_estimate || 0).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 54,
+      "severity": "warning",
+      "text": "`平均薪资：${formatNumber(item.avg_salary || 0, 0)} 元`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 78,
+      "severity": "review",
+      "text": "value: [Number(item.employment_rate_estimate || 0), Number(item.avg_salary || 0)],"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 78,
+      "severity": "review",
+      "text": "value: [Number(item.employment_rate_estimate || 0), Number(item.avg_salary || 0)],"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 79,
+      "severity": "review",
+      "text": "symbolSize: Math.max(16, Math.min(54, Number(item.priority_score || 0) / 2)),"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 396,
+      "severity": "warning",
+      "text": "<Tag color=\"cyan\">优先级 {Number(item.priority_score || 0).toFixed(1)}</Tag>"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 424,
+      "severity": "warning",
+      "text": "{ title: '优先级', dataIndex: 'priority_score', width: 100, render: (value) => Number(value || 0).toFixed(1) },"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 429,
+      "severity": "warning",
+      "text": "render: (value) => `${Number(value || 0).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 431,
+      "severity": "warning",
+      "text": "{ title: '平均薪资', dataIndex: 'avg_salary', width: 120, render: (value) => `${formatNumber(value || 0, 0)} 元` },"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 436,
+      "severity": "warning",
+      "text": "`S ${Number(record.top_rule_support || 0).toFixed(2)} / C ${Number(record.top_rule_confidence || 0).toFixed(2)} / L ${Number(record.top_rule_lift || 0).toFixed(2)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 436,
+      "severity": "warning",
+      "text": "`S ${Number(record.top_rule_support || 0).toFixed(2)} / C ${Number(record.top_rule_confidence || 0).toFixed(2)} / L ${Number(record.top_rule_lift || 0).toFixed(2)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+      "line": 436,
+      "severity": "warning",
+      "text": "`S ${Number(record.top_rule_support || 0).toFixed(2)} / C ${Number(record.top_rule_confidence || 0).toFixed(2)} / L ${Number(record.top_rule_lift || 0).toFixed(2)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\PortalHome.jsx",
+      "line": 119,
+      "severity": "warning",
+      "text": "{ title: '样本覆盖高校数', value: overview?.schoolCount || 0, style: statValuePrimary },"
+    },
+    {
+      "file": "frontend\\src\\pages\\PortalHome.jsx",
+      "line": 120,
+      "severity": "warning",
+      "text": "{ title: '公开样本平均薪资', value: overview?.avgSalary || 0, suffix: '元', style: statValueBlue },"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 29,
+      "severity": "review",
+      "text": "const values = data.map((item) => Number(item.avg_salary || 0))"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 39,
+      "severity": "review",
+      "text": "const index = params?.[0]?.dataIndex ?? 0"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 51,
+      "severity": "review",
+      "text": "formatter: (value) => `${Math.round(Number(value || 0) / 1000)}k`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 64,
+      "severity": "review",
+      "text": "data: data.map((item) => Number(item.avg_salary || 0)),"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 77,
+      "severity": "warning",
+      "text": "const salaryValues = data.map((item) => Number(item.avg_salary || 0))"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 78,
+      "severity": "warning",
+      "text": "const sampleValues = data.map((item) => Number(item.sample_count || 0))"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 88,
+      "severity": "review",
+      "text": "const index = params?.[0]?.dataIndex ?? 0"
+    },
+    {
+      "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+      "line": 95,
+      "severity": "warning",
+      "text": "`先导产业占比：${Number(item.strategic_ratio || 0).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 22,
+      "severity": "review",
+      "text": "const index = params?.[0]?.dataIndex ?? 0"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 28,
+      "severity": "warning",
+      "text": "`支持度：${(Number(item.support || 0) * 100).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 29,
+      "severity": "warning",
+      "text": "`置信度：${(Number(item.confidence || 0) * 100).toFixed(1)}%`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 30,
+      "severity": "warning",
+      "text": "`提升度：${Number(item.lift || 0).toFixed(2)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 31,
+      "severity": "warning",
+      "text": "`证据分：${Number(item.evidence_score || 0).toFixed(2)}`,"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 49,
+      "severity": "review",
+      "text": "data: data.map((item) => Number(Number(item.evidence_score || 0).toFixed(2))),"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 56,
+      "severity": "review",
+      "text": "data: data.map((item) => Number((Number(item.support || 0) * 100).toFixed(1))),"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 70,
+      "severity": "review",
+      "text": "return `${cleanRuleLabel(params.data.source)} → ${cleanRuleLabel(params.data.target)}<br/>提升度：${Number(params.data.value || 0).toFixed(2)}`"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 131,
+      "severity": "warning",
+      "text": "{ title: '支持度', dataIndex: 'support', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 132,
+      "severity": "warning",
+      "text": "{ title: '置信度', dataIndex: 'confidence', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+    },
+    {
+      "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+      "line": 133,
+      "severity": "warning",
+      "text": "{ title: '提升度', dataIndex: 'lift', render: (value) => Number(value || 0).toFixed(2) },"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 12,
+      "severity": "warning",
+      "text": "return Number(num || 0).toLocaleString('zh-CN', {"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 27,
+      "severity": "warning",
+      "text": "avg_salary: Number(item.avg_salary || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 28,
+      "severity": "warning",
+      "text": "emp_count: Number(item.emp_count || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 29,
+      "severity": "warning",
+      "text": "high_tech_ratio: Number(item.high_tech_ratio || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 43,
+      "severity": "warning",
+      "text": "predicted_salary: Number(item.predicted_demand_count ?? item.predicted_salary ?? 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 44,
+      "severity": "warning",
+      "text": "predicted_demand_count: Number(item.predicted_demand_count ?? item.predicted_salary ?? 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 55,
+      "severity": "warning",
+      "text": "support: Number(item.support || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 56,
+      "severity": "warning",
+      "text": "confidence: Number(item.confidence || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 57,
+      "severity": "warning",
+      "text": "lift: Number(item.lift || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 58,
+      "severity": "warning",
+      "text": "evidence_score: Number(item.evidence_score || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 164,
+      "severity": "review",
+      "text": "return matched ? Number(matched.predicted_salary || 0) : null"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 234,
+      "severity": "warning",
+      "text": "counts.set(label, (counts.get(label) || 0) + 1)"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 251,
+      "severity": "warning",
+      "text": "current.total += Number(item.predicted_salary || 0)"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 256,
+      "severity": "warning",
+      "text": "const weightedEmpCount = scopedEmployment.reduce((sum, item) => sum + Number(item.emp_count || 0), 0)"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 258,
+      "severity": "warning",
+      "text": "? scopedEmployment.reduce((sum, item) => sum + Number(item.avg_salary || 0) * Number(item.emp_count || 0), 0) / weightedEmpCount"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 258,
+      "severity": "warning",
+      "text": "? scopedEmployment.reduce((sum, item) => sum + Number(item.avg_salary || 0) * Number(item.emp_count || 0), 0) / weightedEmpCount"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 370,
+      "severity": "warning",
+      "text": "metric_value: Number(item.metric_value || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 373,
+      "severity": "warning",
+      "text": "sample_size: Number(item.sample_size || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 374,
+      "severity": "warning",
+      "text": "train_window_size: Number(item.train_window_size || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 375,
+      "severity": "warning",
+      "text": "test_window_size: Number(item.test_window_size || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 376,
+      "severity": "warning",
+      "text": "k_value: Number(item.k_value || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 377,
+      "severity": "warning",
+      "text": "evaluated_profiles: Number(item.evaluated_profiles || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 392,
+      "severity": "warning",
+      "text": "actual_salary: Number(item.actual_salary || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 393,
+      "severity": "warning",
+      "text": "predicted_salary: Number(item.predicted_salary || 0),"
+    },
+    {
+      "file": "frontend\\src\\utils\\dataAdapter.js",
+      "line": 394,
+      "severity": "warning",
+      "text": "abs_error: Number(item.abs_error || 0),"
+    }
+  ],
+  "zero_fallback_warning_count": 182
+}

@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { message } from 'antd'
-import { clearStoredSession, getStoredSession } from '../utils/mockAuth'
+import { clearStoredSession, getStoredSession } from '../utils/authStorage'
 
 const ERROR_DEBOUNCE_MS = 1800
 let lastErrorAt = 0
@@ -45,13 +45,16 @@ api.interceptors.response.use(
   }
 )
 
-function ensurePayload(response) {
-  return response?.data?.data || []
+function ensurePayload(response, fallback = []) {
+  const payload = response?.data
+  if (payload?.code === 0) return payload.data ?? fallback
+  if (payload?.success) return payload.data ?? fallback
+  return fallback
 }
 
 export async function login(payload) {
   const response = await api.post('/auth/login', payload)
-  return response?.data?.data || null
+  return ensurePayload(response, null)
 }
 
 export async function logout() {
@@ -60,17 +63,17 @@ export async function logout() {
 
 export async function fetchAuthMe() {
   const response = await api.get('/auth/me')
-  return response?.data?.data || null
+  return ensurePayload(response, null)
 }
 
 export async function logModuleAccess(payload) {
   const response = await api.post('/auth/access-log', payload)
-  return response?.data?.data || null
+  return ensurePayload(response, null)
 }
 
 export async function fetchAuditLogs(params = {}) {
-  const response = await api.get('/audit-logs', { params })
-  return response?.data?.data || {}
+  const response = await api.get('/audit/logs', { params })
+  return ensurePayload(response, {})
 }
 
 export async function fetchEmploymentSummary() {
@@ -78,18 +81,44 @@ export async function fetchEmploymentSummary() {
   return ensurePayload(response)
 }
 
-export async function fetchSalaryForecast() {
-  const response = await api.get('/salary-forecast')
+export async function fetchDemandForecast() {
+  const response = await api.get('/demand/forecast')
   return ensurePayload(response)
 }
 
-export async function fetchSalaryForecastEvaluation() {
-  const response = await api.get('/salary-forecast-evaluation')
+export async function fetchDemandForecastEvaluation() {
+  const [metricsRes, backtestRes] = await Promise.all([
+    api.get('/demand/forecast/eval'),
+    api.get('/demand/forecast/backtest'),
+  ])
+  return {
+    metrics: ensurePayload(metricsRes),
+    backtest: ensurePayload(backtestRes),
+  }
+}
+
+export async function fetchSupplyDemandGap() {
+  const response = await api.get('/supply-demand/gap')
   return ensurePayload(response)
+}
+
+export async function fetchJobSkillsHeatmap() {
+  const response = await api.get('/job-skills/heatmap')
+  return ensurePayload(response)
+}
+
+export async function fetchAlgorithmChainLog() {
+  const response = await api.get('/algorithm/chain-log')
+  return ensurePayload(response)
+}
+
+export async function fetchAutoReport() {
+  const response = await api.get('/report/ai')
+  return ensurePayload(response, {})
 }
 
 export async function fetchEnrollmentMatching() {
-  const response = await api.get('/enrollment-matching')
+  const response = await api.get('/enrollment/matching')
   return ensurePayload(response)
 }
 
@@ -99,7 +128,7 @@ export async function fetchEnrollmentMatchingEvaluation() {
 }
 
 export async function fetchMajorMatchingRules() {
-  const response = await api.get('/major-matching-rules')
+  const response = await api.get('/training/rules')
   return ensurePayload(response)
 }
 
@@ -109,13 +138,23 @@ export async function fetchTrainingProgramOptimization() {
 }
 
 export async function fetchMajorStructureAdvice() {
-  const response = await api.get('/major-structure-advice')
-  return response?.data?.data || {}
+  const response = await api.get('/major/optimization')
+  return ensurePayload(response, {})
 }
 
 export async function fetchJobRecommendation() {
-  const response = await api.get('/job-recommendation')
+  const response = await api.get('/recommendation/jobs')
   return ensurePayload(response)
+}
+
+export async function fetchRecommendationSummary() {
+  const response = await api.get('/recommendation/summary')
+  return ensurePayload(response, {})
+}
+
+export async function fetchRecommendationStudent(params = {}) {
+  const response = await api.get('/recommendation/student', { params })
+  return ensurePayload(response, {})
 }
 
 export async function fetchJobRecommendationEvaluation() {
@@ -129,37 +168,42 @@ export async function fetchModelMetrics() {
 }
 
 export async function fetchRegionalWarnings() {
-  const response = await api.get('/regional-warnings')
-  return response?.data?.data || {}
+  const response = await api.get('/monitor/school')
+  return ensurePayload(response, {})
+}
+
+export async function fetchPublicSalaryRanking(limit = 10) {
+  const response = await api.get('/public/salary-ranking', { params: { limit } })
+  return ensurePayload(response, { items: [] })
 }
 
 export async function fetchGovSchoolDetail(schoolName) {
   const response = await api.get('/gov/school-detail', {
     params: { school_name: schoolName },
   })
-  return response?.data?.data || {}
+  return ensurePayload(response, {})
 }
 
 export async function fetchGovMajorDetail(schoolName, majorName) {
   const response = await api.get('/gov/major-detail', {
     params: { school_name: schoolName, major_name: majorName },
   })
-  return response?.data?.data || {}
+  return ensurePayload(response, {})
 }
 
 export async function fetchGovSchoolBenchmarkOverview() {
   const response = await api.get('/gov/school-benchmark-overview')
-  return response?.data?.data || {}
+  return ensurePayload(response, {})
 }
 
 export async function fetchGovSchoolBenchmarkMajor(majorName) {
   const response = await api.get('/gov/school-benchmark-major', {
     params: { major_name: majorName },
   })
-  return response?.data?.data || {}
+  return ensurePayload(response, {})
 }
 
 export const generateEmploymentInsight = (payload) => api.post('/llm/employment-insight', payload)
-export const generateReport = (payload) => api.post('/report/generate', payload)
+export const generateReport = (payload) => api.post('/report/ai', payload)
 
 export default api

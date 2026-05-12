@@ -1,0 +1,227 @@
+{
+  "generated_at": "2026-04-28T14:58:20.492630",
+  "passed": true,
+  "checks": [
+    {
+      "check": "上海大学学校维度存在",
+      "passed": true,
+      "value": {
+        "school_id": "SHU007",
+        "school_name": "上海大学",
+        "major_count": 86
+      },
+      "expected": "上海大学"
+    },
+    {
+      "check": "上海大学 bridge_school_major >= 80",
+      "passed": true,
+      "value": 86,
+      "expected": ">=80"
+    },
+    {
+      "check": "上海大学 fact_graduate >= 6000",
+      "passed": true,
+      "value": 18933,
+      "expected": ">=6000"
+    },
+    {
+      "check": "上海大学 fact_employment >= 4500",
+      "passed": true,
+      "value": 18543,
+      "expected": ">=4500"
+    },
+    {
+      "check": "上海大学预测记录数 > 0",
+      "passed": true,
+      "value": 1320,
+      "expected": ">0"
+    },
+    {
+      "check": "上海大学预测平均值 >= 50",
+      "passed": true,
+      "value": 94.22,
+      "expected": ">=50"
+    },
+    {
+      "check": "Top10 组合未来 12 月不全 0",
+      "passed": true,
+      "value": 0,
+      "expected": "0"
+    },
+    {
+      "check": "不存在明显不合理专业-岗位组合",
+      "passed": true,
+      "value": [],
+      "expected": "[]"
+    },
+    {
+      "check": "上海大学招生匹配记录 >= 60",
+      "passed": true,
+      "value": 86,
+      "expected": ">=60"
+    },
+    {
+      "check": "上海大学平均 match_score > 0.35",
+      "passed": true,
+      "value": 0.5841,
+      "expected": ">0.35"
+    },
+    {
+      "check": "招生匹配 sample_count 不为 0",
+      "passed": true,
+      "value": 0,
+      "expected": "0"
+    },
+    {
+      "check": "上海大学推荐覆盖学生 >= 3000",
+      "passed": true,
+      "value": 3600,
+      "expected": ">=3000"
+    },
+    {
+      "check": "上海大学推荐覆盖单位 >= 100",
+      "passed": true,
+      "value": 1769,
+      "expected": ">=100"
+    },
+    {
+      "check": "Top1 平均 similarity_score > 0.6",
+      "passed": true,
+      "value": 0.8007,
+      "expected": ">0.6"
+    },
+    {
+      "check": "高置信推荐占比在 35%-70%",
+      "passed": true,
+      "value": 0.4259,
+      "expected": "0.35-0.70"
+    },
+    {
+      "check": "专业结构调整总数等于五类主建议加和",
+      "passed": true,
+      "value": {
+        "total": 654,
+        "primary_sum": 654
+      },
+      "expected": "相等"
+    },
+    {
+      "check": "培养规则记录数 > 0",
+      "passed": true,
+      "value": 271,
+      "expected": ">0"
+    },
+    {
+      "check": "evidence_score 不全部相同",
+      "passed": true,
+      "value": 47,
+      "expected": ">1"
+    },
+    {
+      "check": "接口 /demand/kpi 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "接口 /demand/forecast 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "接口 /enrollment/matching 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "接口 /major/optimization 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "接口 /training/rules 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "接口 /recommendation/summary 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "接口 /recommendation/jobs 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "接口 /report/ai 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "政府端接口 /demand/kpi 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "政府端接口 /demand/forecast 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    },
+    {
+      "check": "政府端接口 /monitor/school 返回非空成功数据",
+      "passed": true,
+      "value": {
+        "code": 0,
+        "non_empty": true
+      },
+      "expected": "code=0 且 data 非空"
+    }
+  ],
+  "details": {
+    "shanghai_university": {
+      "school_id": "SHU007",
+      "school_name": "上海大学",
+      "major_count": 86
+    }
+  }
+}

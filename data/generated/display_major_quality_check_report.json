@@ -1,0 +1,96 @@
+{
+  "major_catalog_count": 845,
+  "real_display_major_count": 107,
+  "catalog_placeholder_count": 738,
+  "bridge_placeholder_count": 0,
+  "employment_placeholder_count": 0,
+  "fact_graduate_count": 120000,
+  "fact_employment_count": 102000,
+  "fact_job_posting_count": 126000,
+  "school_employment_distribution": [
+    {
+      "school_name": "上海交通大学",
+      "employment_count": 12036
+    },
+    {
+      "school_name": "复旦大学",
+      "employment_count": 11424
+    },
+    {
+      "school_name": "同济大学",
+      "employment_count": 11016
+    },
+    {
+      "school_name": "华东师范大学",
+      "employment_count": 9792
+    },
+    {
+      "school_name": "华东理工大学",
+      "employment_count": 10200
+    },
+    {
+      "school_name": "上海财经大学",
+      "employment_count": 8772
+    },
+    {
+      "school_name": "上海大学",
+      "employment_count": 11832
+    },
+    {
+      "school_name": "东华大学",
+      "employment_count": 8976
+    },
+    {
+      "school_name": "上海外国语大学",
+      "employment_count": 7956
+    },
+    {
+      "school_name": "上海理工大学",
+      "employment_count": 9996
+    }
+  ],
+  "school_employment_max_min_ratio": 1.513,
+  "public_school_comparison_invalid_names": [],
+  "public_salary_ranking_status": 200,
+  "public_salary_ranking_names": [
+    "数据科学与大数据技术",
+    "通信工程",
+    "统计学",
+    "电子信息工程",
+    "集成电路设计与集成系统",
+    "计算机科学与技术",
+    "人工智能",
+    "网络工程",
+    "电子科学与技术",
+    "金融学"
+  ],
+  "public_salary_ranking_invalid_names": [],
+  "government_warning_status": 200,
+  "government_warning_names": [
+    "新能源科学与工程",
+    "机械设计制造及其自动化",
+    "集成电路设计与集成系统",
+    "服装设计与工程",
+    "机械工程",
+    "土木工程",
+    "广播电视学",
+    "金融学",
+    "能源与动力工程",
+    "临床医学",
+    "环境工程",
+    "护理学",
+    "电子信息工程",
+    "化学工程与工艺",
+    "翻译",
+    "医学影像技术",
+    "建筑学",
+    "数字媒体技术",
+    "车辆工程",
+    "汉语言文学"
+  ],
+  "government_warning_invalid_names": [],
+  "government_sample_count": 102000,
+  "government_school_comparison_status": 200,
+  "government_school_comparison_count": 10,
+  "passed": true
+}

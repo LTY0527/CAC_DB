@@ -1,0 +1,141 @@
+universities:
+  - school_id: SHU001
+    school_name: 上海交通大学
+    school_type: 综合研究型 / 双一流
+    city: 上海市
+    district: 闵行区
+    major_count: 75
+    first_class_major_count: 43
+    discipline_strength_tags: [船舶与海洋工程, 机械工程, 能源与动力工程, 电子科学与技术, 临床医学, 计算机科学与技术]
+    industry_affinity: [高端制造, 医疗健康, 电子信息, 人工智能, 船舶海洋, 科研研发, 金融科技]
+    salary_level_factor: 1.22
+    employment_stability_factor: 0.92
+    research_factor: 0.98
+    application_factor: 0.84
+    policy_response_factor: 0.94
+  - school_id: SHU002
+    school_name: 复旦大学
+    school_type: 综合研究型 / 双一流
+    city: 上海市
+    district: 杨浦区
+    major_count: 79
+    first_class_major_count: 41
+    discipline_strength_tags: [哲学, 经济学, 法学, 新闻学, 数学, 临床医学, 微电子科学与工程]
+    industry_affinity: [金融分析, 公共政策, 新闻传媒, 生物医药, 临床医学, 芯片研发, 数据分析, 咨询研究]
+    salary_level_factor: 1.20
+    employment_stability_factor: 0.90
+    research_factor: 0.97
+    application_factor: 0.82
+    policy_response_factor: 0.92
+  - school_id: SHU003
+    school_name: 同济大学
+    school_type: 工科优势综合研究型 / 双一流
+    city: 上海市
+    district: 杨浦区
+    major_count: 82
+    first_class_major_count: 36
+    discipline_strength_tags: [土木工程, 建筑学, 城乡规划, 交通工程, 环境工程, 车辆工程, 软件工程, 德语]
+    industry_affinity: [建筑设计, 城市规划, 土木工程, 交通运输, 环境治理, 汽车工程, 工业设计, 工程管理]
+    salary_level_factor: 1.12
+    employment_stability_factor: 0.88
+    research_factor: 0.91
+    application_factor: 0.88
+    policy_response_factor: 0.90
+  - school_id: SHU004
+    school_name: 华东师范大学
+    school_type: 师范综合研究型 / 双一流
+    city: 上海市
+    district: 普陀区
+    major_count: 78
+    first_class_major_count: 31
+    discipline_strength_tags: [教育学, 心理学, 教育技术学, 汉语言文学, 英语, 统计学, 软件工程, 数据科学与大数据技术]
+    industry_affinity: [教育培训, 心理咨询, 教育技术, 数据科学, 基础教育研究, 数字教育产品, 公共服务]
+    salary_level_factor: 1.02
+    employment_stability_factor: 0.91
+    research_factor: 0.89
+    application_factor: 0.86
+    policy_response_factor: 0.88
+  - school_id: SHU005
+    school_name: 华东理工大学
+    school_type: 理工行业特色 / 双一流
+    city: 上海市
+    district: 徐汇区
+    major_count: 72
+    first_class_major_count: 26
+    discipline_strength_tags: [化学工程与工艺, 过程装备与控制工程, 应用化学, 制药工程, 生物工程, 高分子材料与工程, 环境工程, 自动化]
+    industry_affinity: [化工工艺, 制药研发, 材料工程, 环境治理, 新能源材料, 过程装备, 智能制造]
+    salary_level_factor: 1.07
+    employment_stability_factor: 0.87
+    research_factor: 0.88
+    application_factor: 0.90
+    policy_response_factor: 0.91
+  - school_id: SHU006
+    school_name: 上海财经大学
+    school_type: 财经特色 / 双一流
+    city: 上海市
+    district: 杨浦区
+    major_count: 38
+    first_class_major_count: 18
+    discipline_strength_tags: [会计学, 财务管理, 金融学, 经济学, 财政学, 国际经济与贸易, 统计学, 法学]
+    industry_affinity: [金融分析, 审计, 会计, 税务, 投资研究, 风险控制, 保险精算, 数据风控, 金融科技]
+    salary_level_factor: 1.18
+    employment_stability_factor: 0.86
+    research_factor: 0.82
+    application_factor: 0.91
+    policy_response_factor: 0.89
+  - school_id: SHU007
+    school_name: 上海大学
+    school_type: 综合应用研究型 / 双一流
+    city: 上海市
+    district: 宝山区
+    major_count: 86
+    first_class_major_count: 28
+    discipline_strength_tags: [社会学, 汉语言文学, 广播电视学, 历史学, 数学与应用数学, 理论与应用力学, 机械设计制造及其自动化, 金属材料工程, 通信工程, 数字媒体技术, 土木工程, 工商管理, 档案学, 美术学, 环境设计]
+    industry_affinity: [数字媒体, 智能制造, 材料工程, 通信工程, 文化传播, 社会治理, 档案信息化, 城市建设, 产品设计]
+    salary_level_factor: 1.05
+    employment_stability_factor: 0.86
+    research_factor: 0.82
+    application_factor: 0.90
+    policy_response_factor: 0.90
+  - school_id: SHU008
+    school_name: 东华大学
+    school_type: 纺织服装与材料特色 / 双一流
+    city: 上海市
+    district: 长宁区
+    major_count: 58
+    first_class_major_count: 22
+    discipline_strength_tags: [纺织工程, 服装设计与工程, 服装与服饰设计, 高分子材料与工程, 复合材料与工程, 轻化工程, 环境工程, 机械工程]
+    industry_affinity: [纺织新材料, 服装设计, 时尚产业, 供应链管理, 绿色制造, 材料研发, 品牌电商]
+    salary_level_factor: 1.00
+    employment_stability_factor: 0.84
+    research_factor: 0.80
+    application_factor: 0.91
+    policy_response_factor: 0.86
+  - school_id: SHU009
+    school_name: 上海外国语大学
+    school_type: 外语与国际传播特色 / 双一流
+    city: 上海市
+    district: 虹口区
+    major_count: 43
+    first_class_major_count: 19
+    discipline_strength_tags: [英语, 俄语, 阿拉伯语, 德语, 法语, 西班牙语, 翻译, 商务英语, 新闻学, 国际政治, 国际经济与贸易, 外交学]
+    industry_affinity: [国际传播, 翻译, 本地化运营, 跨境电商, 外事服务, 国际组织, 涉外法务, 语言技术, 国际商务]
+    salary_level_factor: 1.04
+    employment_stability_factor: 0.83
+    research_factor: 0.78
+    application_factor: 0.88
+    policy_response_factor: 0.84
+  - school_id: SHU010
+    school_name: 上海理工大学
+    school_type: 应用理工特色
+    city: 上海市
+    district: 杨浦区
+    major_count: 64
+    first_class_major_count: 20
+    discipline_strength_tags: [编辑出版学, 机械设计制造及其自动化, 测控技术与仪器, 能源与动力工程, 光电信息科学与工程, 环境工程, 生物医学工程, 计算机科学与技术, 食品科学与工程, 医学影像技术, 产品设计]
+    industry_affinity: [先进制造, 光电仪器, 能源动力, 医疗器械, 出版传媒, 食品工程, 产品设计, 环境工程]
+    salary_level_factor: 1.01
+    employment_stability_factor: 0.82
+    research_factor: 0.74
+    application_factor: 0.89
+    policy_response_factor: 0.83

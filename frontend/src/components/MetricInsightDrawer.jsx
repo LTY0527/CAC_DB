@@ -26,7 +26,7 @@ function renderSimpleValue(value) {
     )
   }
 
-  return value || '暂无说明'
+  return value || '暂无内容'
 }
 
 export default function MetricInsightDrawer({ open, onClose, insight, roleMode = 'school' }) {
@@ -35,12 +35,12 @@ export default function MetricInsightDrawer({ open, onClose, insight, roleMode =
         {
           key: 'definition',
           label: '统计口径',
-          children: <div style={valueStyle}>{insight.definition || '暂无说明'}</div>,
+          children: <div style={valueStyle}>{insight.definition || '暂无内容'}</div>,
         },
         {
           key: 'source',
           label: '数据来源',
-          children: <div style={valueStyle}>{insight.dataSource || '暂无说明'}</div>,
+          children: <div style={valueStyle}>{insight.dataSource || '暂无内容'}</div>,
         },
         {
           key: 'dimensions',
@@ -50,26 +50,26 @@ export default function MetricInsightDrawer({ open, onClose, insight, roleMode =
         {
           key: 'api',
           label: '接口路径',
-          children: <div style={{ ...valueStyle, fontFamily: 'Consolas, monospace', fontSize: 13 }}>{insight.apiPath || '暂无说明'}</div>,
+          children: <div style={{ ...valueStyle, fontFamily: 'Consolas, monospace', fontSize: 13 }}>{insight.apiPath || '暂无内容'}</div>,
         },
         {
           key: 'notes',
-          label: '备注说明',
-          children: <div style={valueStyle}>{insight.notes || '暂无说明'}</div>,
+          label: '备注',
+          children: <div style={valueStyle}>{insight.notes || '暂无内容'}</div>,
         },
       ]
     : []
 
   const roleLabel =
     roleMode === 'gov'
-      ? '治理监测说明'
+      ? '治理监测'
       : roleMode === 'public'
-        ? '公开说明'
-        : '校内分析说明'
+        ? '公开信息'
+        : '校内分析'
 
   return (
     <Drawer
-      title={<span style={sectionTitleStyle}>指标说明</span>}
+      title={<span style={sectionTitleStyle}>指标详情</span>}
       placement="right"
       width={480}
       open={open}
@@ -92,10 +92,10 @@ export default function MetricInsightDrawer({ open, onClose, insight, roleMode =
             labelStyle={{ ...labelStyle, width: 96 }}
             contentStyle={valueStyle}
             items={[
-              { key: 'scope', label: '统计范围', children: insight.scope || '暂无说明' },
-              { key: 'interpretation', label: '如何理解', children: insight.interpretation || '暂无说明' },
-              { key: 'updatedAt', label: '最近更新', children: insight.updatedAt || '暂无说明' },
-              { key: 'decisionHint', label: '辅助判断', children: insight.decisionHint || '暂无说明' },
+              { key: 'scope', label: '统计范围', children: insight.scope || '暂无内容' },
+              { key: 'interpretation', label: '如何理解', children: insight.interpretation || '暂无内容' },
+              { key: 'updatedAt', label: '最近更新', children: insight.updatedAt || '暂无内容' },
+              { key: 'decisionHint', label: '辅助判断', children: insight.decisionHint || '暂无内容' },
             ]}
           />
 

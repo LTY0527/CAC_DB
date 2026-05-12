@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-04-29T18:25:19",
+  "passed": true,
+  "checks": [
+    {
+      "check": "dim_school 是否为 10",
+      "passed": true,
+      "value": 10,
+      "expected": "10"
+    },
+    {
+      "check": "ads_school_compare_summary 是否有全专业数据",
+      "passed": true,
+      "value": 10,
+      "expected": "10"
+    },
+    {
+      "check": "ads_school_compare_summary 是否有专业粒度数据",
+      "passed": true,
+      "value": 654,
+      "expected": ">0"
+    },
+    {
+      "check": "学校对标就业样本最大/最小比例不过大",
+      "passed": true,
+      "value": 1.513,
+      "expected": "<=3"
+    },
+    {
+      "check": "全市数据样本总量 >= 100000",
+      "passed": true,
+      "value": 348000,
+      "expected": ">=100000"
+    },
+    {
+      "check": "学校对标分析接口数据源不为空",
+      "passed": true,
+      "value": 10,
+      "expected": ">0"
+    }
+  ],
+  "school_compare_rows": [
+    {
+      "school_name": "上海交通大学",
+      "employment_count": 12036,
+      "graduate_count": 13440,
+      "employment_rate": 0.8955,
+      "avg_salary": 21125.0,
+      "high_quality_employment_rate": 0.4304,
+      "top_industry_name": "软件与信息服务",
+      "leading_industry_employment_count": 2767
+    },
+    {
+      "school_name": "上海大学",
+      "employment_count": 11832,
+      "graduate_count": 14160,
+      "employment_rate": 0.8356,
+      "avg_salary": 20524.09,
+      "high_quality_employment_rate": 0.4258,
+      "top_industry_name": "新闻传媒与数字文化",
+      "leading_industry_employment_count": 2521
+    },
+    {
+      "school_name": "复旦大学",
+      "employment_count": 11424,
+      "graduate_count": 12960,
+      "employment_rate": 0.8815,
+      "avg_salary": 20713.83,
+      "high_quality_employment_rate": 0.4216,
+      "top_industry_name": "教育培训与心理服务",
+      "leading_industry_employment_count": 2304
+    },
+    {
+      "school_name": "同济大学",
+      "employment_count": 11016,
+      "graduate_count": 12840,
+      "employment_rate": 0.8579,
+      "avg_salary": 20356.28,
+      "high_quality_employment_rate": 0.4223,
+      "top_industry_name": "教育培训与心理服务",
+      "leading_industry_employment_count": 2071
+    },
+    {
+      "school_name": "华东理工大学",
+      "employment_count": 10200,
+      "graduate_count": 11760,
+      "employment_rate": 0.8673,
+      "avg_salary": 20580.47,
+      "high_quality_employment_rate": 0.4226,
+      "top_industry_name": "化工制药与材料",
+      "leading_industry_employment_count": 2231
+    },
+    {
+      "school_name": "上海理工大学",
+      "employment_count": 9996,
+      "graduate_count": 11640,
+      "employment_rate": 0.8588,
+      "avg_salary": 20298.68,
+      "high_quality_employment_rate": 0.43,
+      "top_industry_name": "新闻传媒与数字文化",
+      "leading_industry_employment_count": 2092
+    },
+    {
+      "school_name": "华东师范大学",
+      "employment_count": 9792,
+      "graduate_count": 11760,
+      "employment_rate": 0.8327,
+      "avg_salary": 20802.27,
+      "high_quality_employment_rate": 0.435,
+      "top_industry_name": "教育培训与心理服务",
+      "leading_industry_employment_count": 2316
+    },
+    {
+      "school_name": "东华大学",
+      "employment_count": 8976,
+      "graduate_count": 10800,
+      "employment_rate": 0.8311,
+      "avg_salary": 20501.64,
+      "high_quality_employment_rate": 0.4275,
+      "top_industry_name": "新闻传媒与数字文化",
+      "leading_industry_employment_count": 1918
+    },
+    {
+      "school_name": "上海财经大学",
+      "employment_count": 8772,
+      "graduate_count": 10800,
+      "employment_rate": 0.8122,
+      "avg_salary": 20952.56,
+      "high_quality_employment_rate": 0.418,
+      "top_industry_name": "金融会计与审计",
+      "leading_industry_employment_count": 1792
+    },
+    {
+      "school_name": "上海外国语大学",
+      "employment_count": 7956,
+      "graduate_count": 9840,
+      "employment_rate": 0.8085,
+      "avg_salary": 19679.89,
+      "high_quality_employment_rate": 0.409,
+      "top_industry_name": "外语翻译与国际商务",
+      "leading_industry_employment_count": 1547
+    }
+  ],
+  "total_data_sample_count": 348000
+}

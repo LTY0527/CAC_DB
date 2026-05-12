@@ -1,23 +1,21 @@
-﻿import { useMemo, useState } from 'react'
+﻿import { useMemo } from 'react'
 import { Card, Col, Row, Statistic, Table, Tag } from 'antd'
 import ReactECharts from 'echarts-for-react'
 import { useSearchParams } from 'react-router-dom'
 import DataCapabilityBand from '../components/DataCapabilityBand'
 import GovernmentDrillBoard from '../components/GovernmentDrillBoard'
 import GovernmentHeroSection from '../components/GovernmentHeroSection'
-import InfoTrigger from '../components/InfoTrigger'
-import MetricInsightDrawer from '../components/MetricInsightDrawer'
 import RegionalWarningBoard from '../components/RegionalWarningBoard'
 import SchoolMapExplorer from '../components/SchoolMapExplorer'
 import SchoolBenchmarkBoard from '../components/SchoolBenchmarkBoard'
 import TeacherHeroSection from '../components/TeacherHeroSection'
 import { governmentDataCapabilityConfig, teacherDataCapabilityConfig } from '../config/dataCapabilityConfig'
-import { getMetricInsight } from '../config/metricInsightMap'
 import {
   formatNumber,
   getDisciplineDistribution,
   getForecastData,
   getGovDashboardSummary,
+  getHotDemandForecastRows,
   getRegionalWarningsOverview,
   getSchoolDashboardSummary,
   getTopSchoolsByEmployment,
@@ -41,7 +39,7 @@ import {
 } from '../utils/uiTheme'
 
 function cleanRuleLabel(text = '') {
-  return String(text).replace(/[\[\]"]/g, '').replace(/,/g, ' / ').replace(/\s+/g, ' ').trim()
+  return String(text).replace(/[[\]"]/g, '').replace(/,/g, ' / ').replace(/\s+/g, ' ').trim()
 }
 
 function compactRuleLabel(text = '') {
@@ -52,10 +50,11 @@ function compactRuleLabel(text = '') {
 }
 
 function buildForecastOverviewOption(forecast) {
+  const shortLegend = (name = '') => (String(name).length > 16 ? `${String(name).slice(0, 16)}...` : name)
   return {
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis', ...darkTooltip },
-    legend: { top: 8, textStyle: legendTextStyle },
+    legend: { top: 8, textStyle: legendTextStyle, formatter: shortLegend },
     grid: { left: '6%', right: '4%', bottom: '10%', top: '18%', containLabel: true },
     xAxis: { type: 'category', data: forecast.months, axisLabel: axisLabelStyle, axisLine: axisLineStyle },
     yAxis: { type: 'value', min: forecast.min, max: forecast.max, axisLabel: axisLabelStyle, splitLine: splitLineStyle },
@@ -168,7 +167,6 @@ export default function Dashboard({
   currentSchool = '上海大学',
 }) {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [activeMetricKey, setActiveMetricKey] = useState('')
   const selectedSchool = roleMode === 'gov' ? searchParams.get('school') || '' : ''
   const selectedMajor = roleMode === 'gov' ? searchParams.get('major') || '' : ''
   const inGovDrill = roleMode === 'gov' && Boolean(selectedSchool)
@@ -189,9 +187,9 @@ export default function Dashboard({
 
   const schoolSummary = getSchoolDashboardSummary(employmentData, currentSchool)
   const govSummary = getGovDashboardSummary(employmentData)
-  const forecast = getForecastData(forecastData)
+  const forecast = getForecastData(getHotDemandForecastRows(forecastData, roleMode === 'gov' ? 5 : 4), roleMode === 'gov' ? 5 : 4)
   const rules = getTieredRules(rulesData, 10)
-  const topSchools = getTopSchoolsByEmployment(employmentData, 6)
+  const topSchools = getTopSchoolsByEmployment(employmentData, 10)
   const disciplineData = getDisciplineDistribution(employmentData)
   const regionalWarningOverview = getRegionalWarningsOverview(regionalWarningsData, 20)
   const priorityWarningMajorCount = new Set(
@@ -215,15 +213,6 @@ export default function Dashboard({
           { title: '先导产业吸纳人数', value: formatNumber(schoolSummary.topIndustryEmp), style: statValueCyan, metricKey: 'school_lead_industry_employment' },
           { title: '覆盖专业数', value: formatNumber(schoolSummary.majorCount), style: statValuePurple, metricKey: 'school_major_coverage' },
         ]
-
-  const activeMetricInsight = useMemo(
-    () =>
-      getMetricInsight(roleMode, activeMetricKey, {
-        dataLoadedAt,
-        currentSchool,
-      }),
-    [activeMetricKey, currentSchool, dataLoadedAt, roleMode]
-  )
 
   const goBackToCity = () => setSearchParams({})
   const handleSelectSchool = (school) => setSearchParams({ school })
@@ -294,10 +283,7 @@ export default function Dashboard({
           <Card style={panelStyle}>
             <Statistic
               title={
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <span>{item.title}</span>
-                  <InfoTrigger onClick={() => setActiveMetricKey(item.metricKey)} />
-                </div>
+                item.title
               }
               value={item.value}
               suffix={item.suffix}
@@ -343,7 +329,7 @@ export default function Dashboard({
       ) : (
         <>
           <Col xs={24} xl={14}>
-            <Card title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '区域需求预测趋势' : '薪资需求预测趋势'}</span>} style={panelStyle}>
+            <Card title={<span style={sectionTitleStyle}>{roleMode === 'gov' ? '区域岗位需求趋势' : '岗位需求人数预测趋势'}</span>} style={panelStyle}>
               <ReactECharts option={buildForecastOverviewOption(forecast)} style={{ height: 380 }} />
             </Card>
           </Col>
@@ -390,13 +376,6 @@ export default function Dashboard({
           )}
         </>
       )}
-
-      <MetricInsightDrawer
-        open={Boolean(activeMetricInsight)}
-        insight={activeMetricInsight}
-        roleMode={roleMode}
-        onClose={() => setActiveMetricKey('')}
-      />
     </Row>
   )
 }

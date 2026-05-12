@@ -10,9 +10,12 @@ import {
   fetchMajorMatchingRules,
   fetchModelMetrics,
   fetchRegionalWarnings,
-  fetchSalaryForecast,
-  fetchSalaryForecastEvaluation,
+  fetchDemandForecast,
+  fetchDemandForecastEvaluation,
+  fetchSupplyDemandGap,
+  fetchJobSkillsHeatmap,
   fetchTrainingProgramOptimization,
+  fetchPublicSalaryRanking,
 } from '../services/dataService'
 
 function ensureList(value) {
@@ -24,8 +27,10 @@ function buildRoleRequests(role) {
 
   if (role === 'teacher' || role === 'gov') {
     requests.push(
-      { key: 'forecastData', loader: fetchSalaryForecast },
-      { key: 'forecastEvalData', loader: fetchSalaryForecastEvaluation },
+      { key: 'forecastData', loader: fetchDemandForecast },
+      { key: 'forecastEvalData', loader: fetchDemandForecastEvaluation },
+      { key: 'supplyDemandGapData', loader: fetchSupplyDemandGap },
+      { key: 'jobSkillsHeatmapData', loader: fetchJobSkillsHeatmap },
       { key: 'rulesData', loader: fetchMajorMatchingRules },
       { key: 'recommendationData', loader: fetchJobRecommendation },
       { key: 'jobRecommendationEvalData', loader: fetchJobRecommendationEvaluation },
@@ -46,6 +51,10 @@ function buildRoleRequests(role) {
     requests.push({ key: 'regionalWarningsData', loader: fetchRegionalWarnings })
   }
 
+  if (role === 'public') {
+    requests.push({ key: 'publicSalaryRankingData', loader: () => fetchPublicSalaryRanking(10) })
+  }
+
   return requests
 }
 
@@ -62,6 +71,9 @@ const DEFAULT_STATE = {
   jobRecommendationEvalData: [],
   modelMetricsData: [],
   regionalWarningsData: {},
+  supplyDemandGapData: [],
+  jobSkillsHeatmapData: [],
+  publicSalaryRankingData: [],
 }
 
 export default function usePlatformData() {
@@ -81,6 +93,9 @@ export default function usePlatformData() {
   const [jobRecommendationEvalData, setJobRecommendationEvalData] = useState([])
   const [modelMetricsData, setModelMetricsData] = useState([])
   const [regionalWarningsData, setRegionalWarningsData] = useState({})
+  const [supplyDemandGapData, setSupplyDemandGapData] = useState([])
+  const [jobSkillsHeatmapData, setJobSkillsHeatmapData] = useState([])
+  const [publicSalaryRankingData, setPublicSalaryRankingData] = useState([])
   const [dataLoadedAt, setDataLoadedAt] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -117,13 +132,19 @@ export default function usePlatformData() {
             case 'enrollmentEvalData':
             case 'jobRecommendationEvalData':
             case 'modelMetricsData':
-              nextState[requestItem.key] = ensureList(value)
+            case 'supplyDemandGapData':
+            case 'jobSkillsHeatmapData':
+            case 'publicSalaryRankingData': {
+              const payload = value?.items ?? value
+              nextState[requestItem.key] = ensureList(payload)
               break
+            }
             default:
               nextState[requestItem.key] = value || {}
           }
         } else {
           failedKeys.push(requestItem.key)
+          console.warn(`${requestItem.key} 加载失败`, result?.reason)
         }
       })
 
@@ -139,15 +160,16 @@ export default function usePlatformData() {
       setMajorStructureAdviceData(nextState.majorStructureAdviceData)
       setModelMetricsData(nextState.modelMetricsData)
       setRegionalWarningsData(nextState.regionalWarningsData)
+      setSupplyDemandGapData(nextState.supplyDemandGapData)
+      setJobSkillsHeatmapData(nextState.jobSkillsHeatmapData)
+      setPublicSalaryRankingData(nextState.publicSalaryRankingData)
       setDataLoadedAt(
         new Date().toLocaleString('zh-CN', {
           hour12: false,
         })
       )
 
-      if (failedKeys.length) {
-        setError('部分模块数据暂未返回，当前页面已使用可用数据继续渲染。')
-      }
+      setError(failedKeys.includes('employmentData') ? '核心数据暂未返回，请检查后端服务或数据库连接。' : '')
 
       setLoading(false)
     }
@@ -172,6 +194,9 @@ export default function usePlatformData() {
     majorStructureAdviceData,
     modelMetricsData,
     regionalWarningsData,
+    supplyDemandGapData,
+    jobSkillsHeatmapData,
+    publicSalaryRankingData,
     dataLoadedAt,
     loading,
     error,

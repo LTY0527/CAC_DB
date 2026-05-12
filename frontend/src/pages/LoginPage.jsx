@@ -3,13 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Button, Input, message } from 'antd'
 import { LockOutlined, UserOutlined } from '@ant-design/icons'
 import { useAuth } from '../context/AuthContext'
-import { getDefaultPathByRole } from '../config/roleConfig.jsx'
+import { getDefaultPathByRole, SHARED_PLATFORM_TITLE } from '../config/roleConfig.jsx'
 import './loginPage.css'
 
 const TEXT = {
-  platformTag: '高校人才培养与就业大数据平台',
+  platformTag: SHARED_PLATFORM_TITLE,
   loginTitle: '进入平台',
-  loginDesc: '使用演示账号登录，系统将根据角色自动进入对应工作界面。',
   username: '账号',
   password: '密码',
   usernamePlaceholder: '请输入账号',
@@ -47,17 +46,9 @@ function AccountCard({ account, selected, onSelect }) {
         <div className="login-role-card__top">
           <div className="login-role-card__role">{ROLE_LABEL[account.role] || account.roleLabel}</div>
           <div className="login-role-card__name">{account.name}</div>
-          <div className="login-role-card__account">演示账号：{account.username}</div>
         </div>
 
         <div className="login-role-card__desc">{account.description}</div>
-
-        <div className="login-role-card__footer">
-          <div className="login-role-card__meta">
-            <span className="login-role-card__meta-label">适用范围</span>
-            <span className="login-role-card__meta-value">{account.school || '市级公开视角'}</span>
-          </div>
-        </div>
       </div>
     </button>
   )
@@ -108,7 +99,6 @@ export default function LoginPage() {
           <div className="login-page__intro">
             <div className="login-page__tag">{TEXT.platformTag}</div>
             <h1 className="login-page__title">{TEXT.loginTitle}</h1>
-            <p className="login-page__desc">{TEXT.loginDesc}</p>
           </div>
 
           <div className="login-page__grid">
@@ -151,7 +141,6 @@ export default function LoginPage() {
 
             <div className="login-page__accounts">
               <div className="login-page__section-title">角色选择</div>
-              <div className="login-page__section-note">选择角色后自动填入对应演示账号，右侧卡片按统一网格严格对齐。</div>
 
               <div className="login-page__cards-grid">
                 {accounts.map((account) => (

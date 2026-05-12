@@ -1,0 +1,31 @@
+# PAGE_LOGIC_CHECK_REPORT
+
+- [x] 上海大学学校维度存在: {'school_id': 'SHU007', 'school_name': '上海大学', 'major_count': 86}，期望 上海大学
+- [x] 上海大学 bridge_school_major >= 80: 86，期望 >=80
+- [x] 上海大学 fact_graduate >= 6000: 18933，期望 >=6000
+- [x] 上海大学 fact_employment >= 4500: 18543，期望 >=4500
+- [x] 上海大学预测记录数 > 0: 1320，期望 >0
+- [x] 上海大学预测平均值 >= 50: 94.22，期望 >=50
+- [x] Top10 组合未来 12 月不全 0: 0，期望 0
+- [x] 不存在明显不合理专业-岗位组合: []，期望 []
+- [x] 上海大学招生匹配记录 >= 60: 86，期望 >=60
+- [x] 上海大学平均 match_score > 0.35: 0.5841，期望 >0.35
+- [x] 招生匹配 sample_count 不为 0: 0，期望 0
+- [x] 上海大学推荐覆盖学生 >= 3000: 3600，期望 >=3000
+- [x] 上海大学推荐覆盖单位 >= 100: 1769，期望 >=100
+- [x] Top1 平均 similarity_score > 0.6: 0.8007，期望 >0.6
+- [x] 高置信推荐占比在 35%-70%: 0.4259，期望 0.35-0.70
+- [x] 专业结构调整总数等于五类主建议加和: {'total': 654, 'primary_sum': 654}，期望 相等
+- [x] 培养规则记录数 > 0: 271，期望 >0
+- [x] evidence_score 不全部相同: 47，期望 >1
+- [x] 接口 /demand/kpi 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 接口 /demand/forecast 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 接口 /enrollment/matching 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 接口 /major/optimization 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 接口 /training/rules 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 接口 /recommendation/summary 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 接口 /recommendation/jobs 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 接口 /report/ai 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 政府端接口 /demand/kpi 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 政府端接口 /demand/forecast 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空
+- [x] 政府端接口 /monitor/school 返回非空成功数据: {'code': 0, 'non_empty': True}，期望 code=0 且 data 非空

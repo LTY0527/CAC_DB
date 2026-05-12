@@ -33,11 +33,6 @@ export default function HeroInfoStrip({ dataLoadedAt = '', schoolCount = 0 }) {
           ))}
         </Space>
       </div>
-
-      <div className="hero-info-strip__item hero-info-strip__item--wide">
-        <div className="hero-info-strip__label">公开信息说明</div>
-        <div className="hero-info-strip__text">展示院校概况、专业样本与就业结果等公开信息，适合作为社会公众浏览入口。</div>
-      </div>
     </div>
   )
 }

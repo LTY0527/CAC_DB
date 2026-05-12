@@ -1,0 +1,1584 @@
+{
+  "generated_at": "2026-04-28T14:58:41.712767",
+  "passed": true,
+  "steps": [
+    {
+      "name": "生成数据",
+      "command": "D:\\python\\python.exe scripts/platform_data_factory.py --rows 150000 --seed 20260427",
+      "started_at": "2026-04-28T14:47:04.046612",
+      "finished_at": "2026-04-28T14:55:56.007407",
+      "cost_seconds": 531.93,
+      "returncode": 0,
+      "stdout_tail": "{\n  \"dim_school\": 10,\n  \"dim_major_catalog\": 845,\n  \"bridge_school_major\": 654,\n  \"dim_industry\": 20,\n  \"dim_job_category\": 93,\n  \"dim_enterprise\": 3500,\n  \"fact_job_posting\": 81000,\n  \"fact_graduate\": 51000,\n  \"fact_employment\": 42000,\n  \"fact_enrollment_plan\": 8502,\n  \"fact_course_skill\": 8502,\n  \"fact_policy_signal\": 5100\n}\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "创建数据库表",
+      "command": "D:\\python\\python.exe scripts/create_tables.py --reset",
+      "started_at": "2026-04-28T14:55:56.007472",
+      "finished_at": "2026-04-28T14:55:57.926621",
+      "cost_seconds": 1.92,
+      "returncode": 0,
+      "stdout_tail": "数据库表结构初始化完成。\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "导入数据",
+      "command": "D:\\python\\python.exe scripts/PutData.py --reset --input data/generated",
+      "started_at": "2026-04-28T14:55:57.926653",
+      "finished_at": "2026-04-28T14:56:30.944913",
+      "cost_seconds": 33.02,
+      "returncode": 0,
+      "stdout_tail": "{\n  \"generated_at\": \"2026-04-28T14:56:30.810175\",\n  \"passed\": true,\n  \"checks\": [\n    {\n      \"check\": \"dim_school 是否正好 10 所上海高校\",\n      \"passed\": true,\n      \"value\": 10,\n      \"expected\": \"10\"\n    },\n    {\n      \"check\": \"dim_school 是否包含上海大学\",\n      \"passed\": true,\n      \"value\": 1,\n      \"expected\": \"1\"\n    },\n    {\n      \"check\": \"dim_major_catalog 是否为 845 条\",\n      \"passed\": true,\n      \"value\": 845,\n      \"expected\": \"845\"\n    },\n    {\n      \"check\": \"dim_major_catalog 是否覆盖 12 个学科门类\",\n      \"passed\": true,\n      \"value\": 12,\n      \"expected\": \"12\"\n    },\n    {\n      \"check\": \"dim_major_catalog 是否覆盖 93 个专业类\",\n      \"passed\": true,\n      \"value\": 93,\n      \"expected\": \"93\"\n    },\n    {\n      \"check\": \"bridge_school_major 是否为每所高校生成真实优势专业\",\n      \"passed\": true,\n      \"value\": 10,\n      \"expected\": \"10\"\n    },\n    {\n      \"check\": \"fact_job_posting 是否大于等于 80000 条\",\n      \"passed\": true,\n      \"value\": 81000,\n      \"expected\": \">=80000\"\n    },\n    {\n      \"check\": \"计算机相关岗位占比是否小于等于 25%\",\n      \"passed\": true,\n      \"value\": 0.1075,\n      \"expected\": \"<=0.25\"\n    },\n    {\n      \"check\": \"非计算机岗位是否覆盖至少 15 个行业\",\n      \"passed\": true,\n      \"value\": 18,\n      \"expected\": \">=15\"\n    },\n    {\n      \"check\": \"就业率是否分布合理而非全部接近 100%\",\n      \"passed\": true,\n      \"value\": 0.2684,\n      \"expected\": \">0.02 spread\"\n    },\n    {\n      \"check\": \"平均薪资是否按学校、专业、行业有差异\",\n      \"passed\": true,\n      \"value\": 2591.59,\n      \"expected\": \">900\"\n    },\n    {\n      \"check\": \"岗位需求曲线是否存在季节波动\",\n      \"passed\": true,\n      \"value\": 2.063,\n      \"expected\": \">1.25\"\n    },\n    {\n      \"check\": \"是否存在明显硬编码 mock 数据\",\n      \"passed\": true,\n      \"value\": 0,\n      \"expected\": \"0\"\n    },\n    {\n      \"check\": \"是否存在旧版 salary prediction 主逻辑残留\",\n      \"passed\": true,\n      \"value\": 0,\n      \"expected\": \"0\"\n    }\n  ]\n}\ndim_school: 10\ndim_major_catalog: 845\nbridge_school_major: 654\ndim_industry: 20\ndim_job_category: 93\ndim_enterprise: 3500\nfact_job_posting: 81000\nfact_graduate: 51000\nfact_employment: 42000\nfact_enrollment_plan: 8502\nfact_course_skill: 8502\nfact_policy_signal: 5100\n数据导入完成，开始运行质量检查。\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "Spark 聚合",
+      "command": "D:\\python\\python.exe scripts/Spark-all.py",
+      "started_at": "2026-04-28T14:56:30.944952",
+      "finished_at": "2026-04-28T14:57:02.498601",
+      "cost_seconds": 31.55,
+      "returncode": 0,
+      "stdout_tail": "ads_job_demand_features: 127501\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "岗位需求预测",
+      "command": "D:\\python\\python.exe scripts/LSTM-all.py",
+      "started_at": "2026-04-28T14:57:02.498634",
+      "finished_at": "2026-04-28T14:57:12.955648",
+      "cost_seconds": 10.46,
+      "returncode": 0,
+      "stdout_tail": "ads_job_demand_forecast: 3120, MAPE=17.48%\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "招生匹配",
+      "command": "D:\\python\\python.exe scripts/CF-all.py",
+      "started_at": "2026-04-28T14:57:12.955686",
+      "finished_at": "2026-04-28T14:57:14.659449",
+      "cost_seconds": 1.7,
+      "returncode": 0,
+      "stdout_tail": "ads_enrollment_matching: 654, SHU=86, precision=0.374\nads_major_optimization: 654\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "培养方案优化",
+      "command": "D:\\python\\python.exe scripts/FPgrowth-all.py",
+      "started_at": "2026-04-28T14:57:14.659494",
+      "finished_at": "2026-04-28T14:57:16.128020",
+      "cost_seconds": 1.47,
+      "returncode": 0,
+      "stdout_tail": "ads_training_rules: 271, evidence_distinct=45\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "就业推荐",
+      "command": "D:\\python\\python.exe scripts/job_recommendation.py",
+      "started_at": "2026-04-28T14:57:16.128055",
+      "finished_at": "2026-04-28T14:58:17.885368",
+      "cost_seconds": 61.75,
+      "returncode": 0,
+      "stdout_tail": "ads_job_recommendation: 40804, SHU_students=3600, enterprises=2451, top1=0.815\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "初始化安全表",
+      "command": "D:\\python\\python.exe scripts/init_security.py",
+      "started_at": "2026-04-28T14:58:17.885403",
+      "finished_at": "2026-04-28T14:58:18.781197",
+      "cost_seconds": 0.9,
+      "returncode": 0,
+      "stdout_tail": "安全账户初始化完成。默认账户：teacher_shu/gov_sh/guest，默认密码：123456\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "数据质量检查",
+      "command": "D:\\python\\python.exe scripts/check_data_quality.py",
+      "started_at": "2026-04-28T14:58:18.781247",
+      "finished_at": "2026-04-28T14:58:19.442884",
+      "cost_seconds": 0.66,
+      "returncode": 0,
+      "stdout_tail": "{\n  \"generated_at\": \"2026-04-28T14:58:19.399839\",\n  \"passed\": true,\n  \"checks\": [\n    {\n      \"check\": \"dim_school 是否正好 10 所上海高校\",\n      \"passed\": true,\n      \"value\": 10,\n      \"expected\": \"10\"\n    },\n    {\n      \"check\": \"dim_school 是否包含上海大学\",\n      \"passed\": true,\n      \"value\": 1,\n      \"expected\": \"1\"\n    },\n    {\n      \"check\": \"dim_major_catalog 是否为 845 条\",\n      \"passed\": true,\n      \"value\": 845,\n      \"expected\": \"845\"\n    },\n    {\n      \"check\": \"dim_major_catalog 是否覆盖 12 个学科门类\",\n      \"passed\": true,\n      \"value\": 12,\n      \"expected\": \"12\"\n    },\n    {\n      \"check\": \"dim_major_catalog 是否覆盖 93 个专业类\",\n      \"passed\": true,\n      \"value\": 93,\n      \"expected\": \"93\"\n    },\n    {\n      \"check\": \"bridge_school_major 是否为每所高校生成真实优势专业\",\n      \"passed\": true,\n      \"value\": 10,\n      \"expected\": \"10\"\n    },\n    {\n      \"check\": \"fact_job_posting 是否大于等于 80000 条\",\n      \"passed\": true,\n      \"value\": 81000,\n      \"expected\": \">=80000\"\n    },\n    {\n      \"check\": \"计算机相关岗位占比是否小于等于 25%\",\n      \"passed\": true,\n      \"value\": 0.1075,\n      \"expected\": \"<=0.25\"\n    },\n    {\n      \"check\": \"非计算机岗位是否覆盖至少 15 个行业\",\n      \"passed\": true,\n      \"value\": 18,\n      \"expected\": \">=15\"\n    },\n    {\n      \"check\": \"就业率是否分布合理而非全部接近 100%\",\n      \"passed\": true,\n      \"value\": 0.2684,\n      \"expected\": \">0.02 spread\"\n    },\n    {\n      \"check\": \"平均薪资是否按学校、专业、行业有差异\",\n      \"passed\": true,\n      \"value\": 2591.59,\n      \"expected\": \">900\"\n    },\n    {\n      \"check\": \"岗位需求曲线是否存在季节波动\",\n      \"passed\": true,\n      \"value\": 2.063,\n      \"expected\": \">1.25\"\n    },\n    {\n      \"check\": \"预测结果是否不存在负数\",\n      \"passed\": true,\n      \"value\": 0,\n      \"expected\": \"0\"\n    },\n    {\n      \"check\": \"MAPE 是否在合理范围\",\n      \"passed\": true,\n      \"value\": 19.02,\n      \"expected\": \"12-28\"\n    },\n    {\n      \"check\": \"Precision@K 是否不为 0\",\n      \"passed\": true,\n      \"value\": 0.3741,\n      \"expected\": \">0\"\n    },\n    {\n      \"check\": \"高价值规则 evidence_score 是否不是全部相同\",\n      \"passed\": true,\n      \"value\": 47,\n      \"expected\": \">1\"\n    },\n    {\n      \"check\": \"专业结构调整建议是否包含五类主建议且口径一致\",\n      \"passed\": true,\n      \"value\": {\n        \"total\": 654,\n        \"primary_sum\": 654,\n        \"types\": 5\n      },\n      \"expected\": \"五类且总数一致\"\n    },\n    {\n      \"check\": \"是否存在明显硬编码 mock 数据\",\n      \"passed\": true,\n      \"value\": 0,\n      \"expected\": \"0\"\n    },\n    {\n      \"check\": \"是否存在旧版 salary prediction 主逻辑残留\",\n      \"passed\": true,\n      \"value\": 0,\n      \"expected\": \"0\"\n    }\n  ]\n}\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "页面逻辑检查",
+      "command": "D:\\python\\python.exe scripts/check_page_logic.py",
+      "started_at": "2026-04-28T14:58:19.442925",
+      "finished_at": "2026-04-28T14:58:20.538757",
+      "cost_seconds": 1.1,
+      "returncode": 0,
+      "stdout_tail": "     \"check\": \"上海大学推荐覆盖单位 >= 100\",\n      \"passed\": true,\n      \"value\": 1769,\n      \"expected\": \">=100\"\n    },\n    {\n      \"check\": \"Top1 平均 similarity_score > 0.6\",\n      \"passed\": true,\n      \"value\": 0.8007,\n      \"expected\": \">0.6\"\n    },\n    {\n      \"check\": \"高置信推荐占比在 35%-70%\",\n      \"passed\": true,\n      \"value\": 0.4259,\n      \"expected\": \"0.35-0.70\"\n    },\n    {\n      \"check\": \"专业结构调整总数等于五类主建议加和\",\n      \"passed\": true,\n      \"value\": {\n        \"total\": 654,\n        \"primary_sum\": 654\n      },\n      \"expected\": \"相等\"\n    },\n    {\n      \"check\": \"培养规则记录数 > 0\",\n      \"passed\": true,\n      \"value\": 271,\n      \"expected\": \">0\"\n    },\n    {\n      \"check\": \"evidence_score 不全部相同\",\n      \"passed\": true,\n      \"value\": 47,\n      \"expected\": \">1\"\n    },\n    {\n      \"check\": \"接口 /demand/kpi 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"接口 /demand/forecast 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"接口 /enrollment/matching 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"接口 /major/optimization 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"接口 /training/rules 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"接口 /recommendation/summary 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"接口 /recommendation/jobs 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"接口 /report/ai 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"政府端接口 /demand/kpi 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"政府端接口 /demand/forecast 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    },\n    {\n      \"check\": \"政府端接口 /monitor/school 返回非空成功数据\",\n      \"passed\": true,\n      \"value\": {\n        \"code\": 0,\n        \"non_empty\": true\n      },\n      \"expected\": \"code=0 且 data 非空\"\n    }\n  ],\n  \"details\": {\n    \"shanghai_university\": {\n      \"school_id\": \"SHU007\",\n      \"school_name\": \"上海大学\",\n      \"major_count\": 86\n    }\n  }\n}\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "API 合约检查",
+      "command": "D:\\python\\python.exe scripts/check_api_contract.py",
+      "started_at": "2026-04-28T14:58:20.538810",
+      "finished_at": "2026-04-28T14:58:21.532231",
+      "cost_seconds": 0.99,
+      "returncode": 0,
+      "stdout_tail": " },\n      \"expected\": \"code=0、字段齐全、非空、非全0\"\n    },\n    {\n      \"check\": \"government /api/demand/forecast 合约检查\",\n      \"passed\": true,\n      \"value\": {\n        \"status\": 200,\n        \"code\": 0,\n        \"count\": 120,\n        \"missing\": [],\n        \"all_zero\": false\n      },\n      \"expected\": \"code=0、字段齐全、非空、非全0\"\n    },\n    {\n      \"check\": \"government /api/monitor/school 合约检查\",\n      \"passed\": true,\n      \"value\": {\n        \"status\": 200,\n        \"code\": 0,\n        \"count\": 20,\n        \"missing\": [],\n        \"all_zero\": false\n      },\n      \"expected\": \"code=0、字段齐全、非空、非全0\"\n    },\n    {\n      \"check\": \"/api/recommendation/student 不存在学生返回明确错误\",\n      \"passed\": true,\n      \"value\": {\n        \"status\": 404,\n        \"payload\": {\n          \"code\": 1,\n          \"data\": null,\n          \"message\": \"未找到该学生的推荐结果\"\n        }\n      },\n      \"expected\": \"code=1 + data=null\"\n    },\n    {\n      \"check\": \"教师端默认上海大学\",\n      \"passed\": true,\n      \"value\": \"SHU007\",\n      \"expected\": \"SHU007\"\n    },\n    {\n      \"check\": \"政府端默认十校汇总\",\n      \"passed\": true,\n      \"value\": \"上海市十校汇总\",\n      \"expected\": \"上海市十校汇总\"\n    },\n    {\n      \"check\": \"政府端平均预测需求大于教师端\",\n      \"passed\": true,\n      \"value\": {\n        \"teacher\": 1110.09,\n        \"government\": 1865.92\n      },\n      \"expected\": \"government > teacher\"\n    },\n    {\n      \"check\": \"高置信推荐占比在 35%-70%\",\n      \"passed\": true,\n      \"value\": 0.4259,\n      \"expected\": \"0.35-0.70\"\n    }\n  ],\n  \"endpoints\": [\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/demand/kpi\",\n      \"status\": 200,\n      \"count\": 7,\n      \"missing\": []\n    },\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/demand/forecast\",\n      \"status\": 200,\n      \"count\": 120,\n      \"missing\": []\n    },\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/enrollment/matching\",\n      \"status\": 200,\n      \"count\": 80,\n      \"missing\": []\n    },\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/major/optimization\",\n      \"status\": 200,\n      \"count\": 86,\n      \"missing\": []\n    },\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/training/rules\",\n      \"status\": 200,\n      \"count\": 271,\n      \"missing\": []\n    },\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/recommendation/summary\",\n      \"status\": 200,\n      \"count\": 5,\n      \"missing\": []\n    },\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/recommendation/jobs\",\n      \"status\": 200,\n      \"count\": 1200,\n      \"missing\": []\n    },\n    {\n      \"role\": \"teacher\",\n      \"endpoint\": \"/api/report/ai\",\n      \"status\": 200,\n      \"count\": 2,\n      \"missing\": []\n    },\n    {\n      \"role\": \"government\",\n      \"endpoint\": \"/api/demand/kpi\",\n      \"status\": 200,\n      \"count\": 7,\n      \"missing\": []\n    },\n    {\n      \"role\": \"government\",\n      \"endpoint\": \"/api/demand/forecast\",\n      \"status\": 200,\n      \"count\": 120,\n      \"missing\": []\n    },\n    {\n      \"role\": \"government\",\n      \"endpoint\": \"/api/monitor/school\",\n      \"status\": 200,\n      \"count\": 20,\n      \"missing\": []\n    }\n  ]\n}\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "前端静态扫描",
+      "command": "D:\\python\\python.exe scripts/check_frontend_static.py",
+      "started_at": "2026-04-28T14:58:21.532267",
+      "finished_at": "2026-04-28T14:58:21.621364",
+      "cost_seconds": 0.09,
+      "returncode": 0,
+      "stdout_tail": "item.evidence_score || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 164,\n      \"severity\": \"review\",\n      \"text\": \"return matched ? Number(matched.predicted_salary || 0) : null\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 234,\n      \"severity\": \"warning\",\n      \"text\": \"counts.set(label, (counts.get(label) || 0) + 1)\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 251,\n      \"severity\": \"warning\",\n      \"text\": \"current.total += Number(item.predicted_salary || 0)\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 256,\n      \"severity\": \"warning\",\n      \"text\": \"const weightedEmpCount = scopedEmployment.reduce((sum, item) => sum + Number(item.emp_count || 0), 0)\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 258,\n      \"severity\": \"warning\",\n      \"text\": \"? scopedEmployment.reduce((sum, item) => sum + Number(item.avg_salary || 0) * Number(item.emp_count || 0), 0) / weightedEmpCount\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 258,\n      \"severity\": \"warning\",\n      \"text\": \"? scopedEmployment.reduce((sum, item) => sum + Number(item.avg_salary || 0) * Number(item.emp_count || 0), 0) / weightedEmpCount\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 370,\n      \"severity\": \"warning\",\n      \"text\": \"metric_value: Number(item.metric_value || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 373,\n      \"severity\": \"warning\",\n      \"text\": \"sample_size: Number(item.sample_size || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 374,\n      \"severity\": \"warning\",\n      \"text\": \"train_window_size: Number(item.train_window_size || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 375,\n      \"severity\": \"warning\",\n      \"text\": \"test_window_size: Number(item.test_window_size || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 376,\n      \"severity\": \"warning\",\n      \"text\": \"k_value: Number(item.k_value || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 377,\n      \"severity\": \"warning\",\n      \"text\": \"evaluated_profiles: Number(item.evaluated_profiles || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 392,\n      \"severity\": \"warning\",\n      \"text\": \"actual_salary: Number(item.actual_salary || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 393,\n      \"severity\": \"warning\",\n      \"text\": \"predicted_salary: Number(item.predicted_salary || 0),\"\n    },\n    {\n      \"file\": \"frontend\\\\src\\\\utils\\\\dataAdapter.js\",\n      \"line\": 394,\n      \"severity\": \"warning\",\n      \"text\": \"abs_error: Number(item.abs_error || 0),\"\n    }\n  ],\n  \"zero_fallback_warning_count\": 182\n}\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "前端依赖安装",
+      "command": "npm.cmd install",
+      "started_at": "2026-04-28T14:58:21.621475",
+      "finished_at": "2026-04-28T14:58:39.931287",
+      "cost_seconds": 18.31,
+      "returncode": 0,
+      "stdout_tail": "\nup to date in 18s\n\n43 packages are looking for funding\n  run `npm fund` for details\n",
+      "stderr_tail": "",
+      "passed": true
+    },
+    {
+      "name": "前端构建检查",
+      "command": "npm.cmd run build",
+      "started_at": "2026-04-28T14:58:39.931317",
+      "finished_at": "2026-04-28T14:58:41.465752",
+      "cost_seconds": 1.53,
+      "returncode": 0,
+      "stdout_tail": "\n> frontend@0.0.0 build\n> vite build\n\n\u001b[36mvite v8.0.0 \u001b[32mbuilding client environment for production...\u001b[36m\u001b[39m\n\u001b[2K\ntransforming...✓ 3692 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/index.html                     0.47 kB │ gzip:   0.30 kB\ndist/assets/index-DRlj10MH.css     25.17 kB │ gzip:   5.61 kB\ndist/assets/index-DGXOmPuL.js   2,350.37 kB │ gzip: 751.75 kB\n\n\u001b[32m✓ built in 921ms\u001b[39m\n",
+      "stderr_tail": "\u001b[33m[plugin builtin:vite-reporter] \n(!) Some chunks are larger than 500 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\u001b[39m\n",
+      "passed": true
+    }
+  ],
+  "table_counts": {
+    "dim_school": 10,
+    "dim_major_catalog": 845,
+    "bridge_school_major": 654,
+    "dim_industry": 20,
+    "dim_job_category": 93,
+    "dim_enterprise": 3500,
+    "fact_job_posting": 81000,
+    "fact_graduate": 51000,
+    "fact_employment": 42000,
+    "fact_enrollment_plan": 8502,
+    "fact_course_skill": 8502,
+    "fact_policy_signal": 5100,
+    "ads_job_demand_features": 127501,
+    "ads_job_demand_forecast": 3120,
+    "ads_enrollment_matching": 654,
+    "ads_training_rules": 271,
+    "ads_major_optimization": 654,
+    "ads_job_recommendation": 40804,
+    "sys_user_account": 3,
+    "sys_audit_log": 4
+  },
+  "metrics": {
+    "shu_graduate_count": 18933,
+    "shu_employment_count": 18543,
+    "shu_forecast_count": 1320,
+    "shu_forecast_avg": 94.22,
+    "shu_enrollment_matching_count": 86,
+    "shu_major_optimization_count": 86,
+    "shu_recommendation_students": 3600,
+    "shu_recommendation_enterprises": 1769,
+    "top1_similarity": 0.8007,
+    "training_rule_count": 271,
+    "evidence_distinct": 47,
+    "optimization_total": 654,
+    "optimization_primary_sum": 654
+  },
+  "quality_report": {
+    "generated_at": "2026-04-28T14:58:19.399839",
+    "passed": true,
+    "checks": [
+      {
+        "check": "dim_school 是否正好 10 所上海高校",
+        "passed": true,
+        "value": 10,
+        "expected": "10"
+      },
+      {
+        "check": "dim_school 是否包含上海大学",
+        "passed": true,
+        "value": 1,
+        "expected": "1"
+      },
+      {
+        "check": "dim_major_catalog 是否为 845 条",
+        "passed": true,
+        "value": 845,
+        "expected": "845"
+      },
+      {
+        "check": "dim_major_catalog 是否覆盖 12 个学科门类",
+        "passed": true,
+        "value": 12,
+        "expected": "12"
+      },
+      {
+        "check": "dim_major_catalog 是否覆盖 93 个专业类",
+        "passed": true,
+        "value": 93,
+        "expected": "93"
+      },
+      {
+        "check": "bridge_school_major 是否为每所高校生成真实优势专业",
+        "passed": true,
+        "value": 10,
+        "expected": "10"
+      },
+      {
+        "check": "fact_job_posting 是否大于等于 80000 条",
+        "passed": true,
+        "value": 81000,
+        "expected": ">=80000"
+      },
+      {
+        "check": "计算机相关岗位占比是否小于等于 25%",
+        "passed": true,
+        "value": 0.1075,
+        "expected": "<=0.25"
+      },
+      {
+        "check": "非计算机岗位是否覆盖至少 15 个行业",
+        "passed": true,
+        "value": 18,
+        "expected": ">=15"
+      },
+      {
+        "check": "就业率是否分布合理而非全部接近 100%",
+        "passed": true,
+        "value": 0.2684,
+        "expected": ">0.02 spread"
+      },
+      {
+        "check": "平均薪资是否按学校、专业、行业有差异",
+        "passed": true,
+        "value": 2591.59,
+        "expected": ">900"
+      },
+      {
+        "check": "岗位需求曲线是否存在季节波动",
+        "passed": true,
+        "value": 2.063,
+        "expected": ">1.25"
+      },
+      {
+        "check": "预测结果是否不存在负数",
+        "passed": true,
+        "value": 0,
+        "expected": "0"
+      },
+      {
+        "check": "MAPE 是否在合理范围",
+        "passed": true,
+        "value": 19.02,
+        "expected": "12-28"
+      },
+      {
+        "check": "Precision@K 是否不为 0",
+        "passed": true,
+        "value": 0.3741,
+        "expected": ">0"
+      },
+      {
+        "check": "高价值规则 evidence_score 是否不是全部相同",
+        "passed": true,
+        "value": 47,
+        "expected": ">1"
+      },
+      {
+        "check": "专业结构调整建议是否包含五类主建议且口径一致",
+        "passed": true,
+        "value": {
+          "total": 654,
+          "primary_sum": 654,
+          "types": 5
+        },
+        "expected": "五类且总数一致"
+      },
+      {
+        "check": "是否存在明显硬编码 mock 数据",
+        "passed": true,
+        "value": 0,
+        "expected": "0"
+      },
+      {
+        "check": "是否存在旧版 salary prediction 主逻辑残留",
+        "passed": true,
+        "value": 0,
+        "expected": "0"
+      }
+    ]
+  },
+  "page_logic_report": {
+    "generated_at": "2026-04-28T14:58:20.492630",
+    "passed": true,
+    "checks": [
+      {
+        "check": "上海大学学校维度存在",
+        "passed": true,
+        "value": {
+          "school_id": "SHU007",
+          "school_name": "上海大学",
+          "major_count": 86
+        },
+        "expected": "上海大学"
+      },
+      {
+        "check": "上海大学 bridge_school_major >= 80",
+        "passed": true,
+        "value": 86,
+        "expected": ">=80"
+      },
+      {
+        "check": "上海大学 fact_graduate >= 6000",
+        "passed": true,
+        "value": 18933,
+        "expected": ">=6000"
+      },
+      {
+        "check": "上海大学 fact_employment >= 4500",
+        "passed": true,
+        "value": 18543,
+        "expected": ">=4500"
+      },
+      {
+        "check": "上海大学预测记录数 > 0",
+        "passed": true,
+        "value": 1320,
+        "expected": ">0"
+      },
+      {
+        "check": "上海大学预测平均值 >= 50",
+        "passed": true,
+        "value": 94.22,
+        "expected": ">=50"
+      },
+      {
+        "check": "Top10 组合未来 12 月不全 0",
+        "passed": true,
+        "value": 0,
+        "expected": "0"
+      },
+      {
+        "check": "不存在明显不合理专业-岗位组合",
+        "passed": true,
+        "value": [],
+        "expected": "[]"
+      },
+      {
+        "check": "上海大学招生匹配记录 >= 60",
+        "passed": true,
+        "value": 86,
+        "expected": ">=60"
+      },
+      {
+        "check": "上海大学平均 match_score > 0.35",
+        "passed": true,
+        "value": 0.5841,
+        "expected": ">0.35"
+      },
+      {
+        "check": "招生匹配 sample_count 不为 0",
+        "passed": true,
+        "value": 0,
+        "expected": "0"
+      },
+      {
+        "check": "上海大学推荐覆盖学生 >= 3000",
+        "passed": true,
+        "value": 3600,
+        "expected": ">=3000"
+      },
+      {
+        "check": "上海大学推荐覆盖单位 >= 100",
+        "passed": true,
+        "value": 1769,
+        "expected": ">=100"
+      },
+      {
+        "check": "Top1 平均 similarity_score > 0.6",
+        "passed": true,
+        "value": 0.8007,
+        "expected": ">0.6"
+      },
+      {
+        "check": "高置信推荐占比在 35%-70%",
+        "passed": true,
+        "value": 0.4259,
+        "expected": "0.35-0.70"
+      },
+      {
+        "check": "专业结构调整总数等于五类主建议加和",
+        "passed": true,
+        "value": {
+          "total": 654,
+          "primary_sum": 654
+        },
+        "expected": "相等"
+      },
+      {
+        "check": "培养规则记录数 > 0",
+        "passed": true,
+        "value": 271,
+        "expected": ">0"
+      },
+      {
+        "check": "evidence_score 不全部相同",
+        "passed": true,
+        "value": 47,
+        "expected": ">1"
+      },
+      {
+        "check": "接口 /demand/kpi 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "接口 /demand/forecast 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "接口 /enrollment/matching 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "接口 /major/optimization 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "接口 /training/rules 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "接口 /recommendation/summary 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "接口 /recommendation/jobs 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "接口 /report/ai 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "政府端接口 /demand/kpi 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "政府端接口 /demand/forecast 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      },
+      {
+        "check": "政府端接口 /monitor/school 返回非空成功数据",
+        "passed": true,
+        "value": {
+          "code": 0,
+          "non_empty": true
+        },
+        "expected": "code=0 且 data 非空"
+      }
+    ],
+    "details": {
+      "shanghai_university": {
+        "school_id": "SHU007",
+        "school_name": "上海大学",
+        "major_count": 86
+      }
+    }
+  },
+  "api_contract_report": {
+    "generated_at": "2026-04-28T14:58:21.469389",
+    "passed": true,
+    "checks": [
+      {
+        "check": "/api/auth/login 教师账号返回 token",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0
+        },
+        "expected": "HTTP 200 + code=0 + token"
+      },
+      {
+        "check": "/api/auth/login 政府账号返回 token",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0
+        },
+        "expected": "HTTP 200 + code=0 + token"
+      },
+      {
+        "check": "teacher /api/demand/kpi 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 7,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "teacher /api/demand/forecast 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 120,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "teacher /api/enrollment/matching 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 80,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "teacher /api/major/optimization 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 86,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "teacher /api/training/rules 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 271,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "teacher /api/recommendation/summary 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 5,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "teacher /api/recommendation/jobs 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 1200,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "teacher /api/report/ai 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 2,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "government /api/demand/kpi 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 7,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "government /api/demand/forecast 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 120,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "government /api/monitor/school 合约检查",
+        "passed": true,
+        "value": {
+          "status": 200,
+          "code": 0,
+          "count": 20,
+          "missing": [],
+          "all_zero": false
+        },
+        "expected": "code=0、字段齐全、非空、非全0"
+      },
+      {
+        "check": "/api/recommendation/student 不存在学生返回明确错误",
+        "passed": true,
+        "value": {
+          "status": 404,
+          "payload": {
+            "code": 1,
+            "data": null,
+            "message": "未找到该学生的推荐结果"
+          }
+        },
+        "expected": "code=1 + data=null"
+      },
+      {
+        "check": "教师端默认上海大学",
+        "passed": true,
+        "value": "SHU007",
+        "expected": "SHU007"
+      },
+      {
+        "check": "政府端默认十校汇总",
+        "passed": true,
+        "value": "上海市十校汇总",
+        "expected": "上海市十校汇总"
+      },
+      {
+        "check": "政府端平均预测需求大于教师端",
+        "passed": true,
+        "value": {
+          "teacher": 1110.09,
+          "government": 1865.92
+        },
+        "expected": "government > teacher"
+      },
+      {
+        "check": "高置信推荐占比在 35%-70%",
+        "passed": true,
+        "value": 0.4259,
+        "expected": "0.35-0.70"
+      }
+    ],
+    "endpoints": [
+      {
+        "role": "teacher",
+        "endpoint": "/api/demand/kpi",
+        "status": 200,
+        "count": 7,
+        "missing": []
+      },
+      {
+        "role": "teacher",
+        "endpoint": "/api/demand/forecast",
+        "status": 200,
+        "count": 120,
+        "missing": []
+      },
+      {
+        "role": "teacher",
+        "endpoint": "/api/enrollment/matching",
+        "status": 200,
+        "count": 80,
+        "missing": []
+      },
+      {
+        "role": "teacher",
+        "endpoint": "/api/major/optimization",
+        "status": 200,
+        "count": 86,
+        "missing": []
+      },
+      {
+        "role": "teacher",
+        "endpoint": "/api/training/rules",
+        "status": 200,
+        "count": 271,
+        "missing": []
+      },
+      {
+        "role": "teacher",
+        "endpoint": "/api/recommendation/summary",
+        "status": 200,
+        "count": 5,
+        "missing": []
+      },
+      {
+        "role": "teacher",
+        "endpoint": "/api/recommendation/jobs",
+        "status": 200,
+        "count": 1200,
+        "missing": []
+      },
+      {
+        "role": "teacher",
+        "endpoint": "/api/report/ai",
+        "status": 200,
+        "count": 2,
+        "missing": []
+      },
+      {
+        "role": "government",
+        "endpoint": "/api/demand/kpi",
+        "status": 200,
+        "count": 7,
+        "missing": []
+      },
+      {
+        "role": "government",
+        "endpoint": "/api/demand/forecast",
+        "status": 200,
+        "count": 120,
+        "missing": []
+      },
+      {
+        "role": "government",
+        "endpoint": "/api/monitor/school",
+        "status": 200,
+        "count": 20,
+        "missing": []
+      }
+    ]
+  },
+  "frontend_static_report": {
+    "generated_at": "2026-04-28T14:58:21.613567",
+    "passed": true,
+    "checks": [
+      {
+        "check": "生产前端不引用 mock/fakeData/demoData/hardcoded/fallbackData",
+        "passed": true,
+        "value": 0,
+        "expected": "0"
+      },
+      {
+        "check": "生产前端无旧版 salary forecast 主链路",
+        "passed": true,
+        "value": [],
+        "expected": "[]"
+      },
+      {
+        "check": "前端包含无数据 Empty/暂无数据处理",
+        "passed": true,
+        "value": 12,
+        "expected": ">0"
+      }
+    ],
+    "findings": [],
+    "zero_fallback_warnings": [
+      {
+        "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+        "line": 219,
+        "severity": "warning",
+        "text": "{ title: '就业率', value: Number(schoolOverview.employment_rate || 0), suffix: '%', style: statValueCyan },"
+      },
+      {
+        "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+        "line": 226,
+        "severity": "warning",
+        "text": "{ title: '就业率', value: Number(majorOverview.employment_rate || 0), suffix: '%', style: statValueCyan },"
+      },
+      {
+        "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+        "line": 238,
+        "severity": "warning",
+        "text": "{ title: '就业率', dataIndex: 'employment_rate', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+        "line": 240,
+        "severity": "warning",
+        "text": "{ title: '先导产业占比', dataIndex: 'strategic_ratio', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+        "line": 315,
+        "severity": "warning",
+        "text": "{Number(majorDetail?.enrollment_hint?.avg_match_score || 0).toFixed(3)}"
+      },
+      {
+        "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+        "line": 320,
+        "severity": "warning",
+        "text": "<div style={metaValueStyle}>{formatNumber(majorDetail?.enrollment_hint?.total_sample_size || 0)}</div>"
+      },
+      {
+        "file": "frontend\\src\\components\\GovernmentDrillBoard.jsx",
+        "line": 324,
+        "severity": "warning",
+        "text": "<div style={metaValueStyle}>{Number(majorOverview.strategic_ratio || 0).toFixed(1)}%</div>"
+      },
+      {
+        "file": "frontend\\src\\components\\HeroInfoStrip.jsx",
+        "line": 14,
+        "severity": "warning",
+        "text": "<div className=\"hero-info-strip__value\">{schoolCount || 0} 所</div>"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 51,
+        "severity": "review",
+        "text": "rate ? `就业率：${Number(rate.value || 0).toFixed(1)}%` : '',"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 52,
+        "severity": "review",
+        "text": "strategic ? `高质量就业占比：${Number(strategic.value || 0).toFixed(1)}%` : '',"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 95,
+        "severity": "review",
+        "text": "data: rows.map((item) => Number(item.avg_salary || 0)),"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 105,
+        "severity": "warning",
+        "text": "data: rows.map((item) => Number(item.employment_rate || 0)),"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 116,
+        "severity": "review",
+        "text": "data: rows.map((item) => Number(item.strategic_ratio || 0)),"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 137,
+        "severity": "review",
+        "text": "rate ? `就业率：${Number(rate.value || 0).toFixed(1)}%` : '',"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 180,
+        "severity": "review",
+        "text": "data: rows.map((item) => Number(item.avg_salary || 0)),"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 190,
+        "severity": "warning",
+        "text": "data: rows.map((item) => Number(item.employment_rate || 0)),"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 265,
+        "severity": "warning",
+        "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 265,
+        "severity": "warning",
+        "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 272,
+        "severity": "warning",
+        "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 272,
+        "severity": "warning",
+        "text": "return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 287,
+        "severity": "warning",
+        "text": "avgEmploymentRate: visibleOverview.reduce((sum, item) => sum + Number(item.employment_rate || 0), 0) / total,"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 288,
+        "severity": "warning",
+        "text": "avgSalary: visibleOverview.reduce((sum, item) => sum + Number(item.avg_salary || 0), 0) / total,"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 289,
+        "severity": "warning",
+        "text": "totalStudents: visibleOverview.reduce((sum, item) => sum + Number(item.student_count || 0), 0),"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 307,
+        "severity": "warning",
+        "text": "{ title: '就业率', dataIndex: 'employment_rate', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 312,
+        "severity": "warning",
+        "text": "render: (value) => `${Number(value || 0).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 321,
+        "severity": "warning",
+        "text": "{ title: '就业率', dataIndex: 'employment_rate', render: (value) => `${Number(value || 0).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolBenchmarkBoard.jsx",
+        "line": 326,
+        "severity": "warning",
+        "text": "render: (value) => `${Number(value || 0).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolMapExplorer.jsx",
+        "line": 30,
+        "severity": "review",
+        "text": "const maxEmp = Math.max(...points.map((item) => Number(item.total_emp || 0)), 1)"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolMapExplorer.jsx",
+        "line": 106,
+        "severity": "warning",
+        "text": "const emp = Number(params?.data?.detail?.total_emp || 0)"
+      },
+      {
+        "file": "frontend\\src\\components\\SchoolMapExplorer.jsx",
+        "line": 487,
+        "severity": "warning",
+        "text": "{renderStatCard('先导产业占比', `${Number(selectedDetail.strategic_ratio || 0).toFixed(1)}%`, '#d97706')}"
+      },
+      {
+        "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+        "line": 12,
+        "severity": "warning",
+        "text": "const rows = [...algorithmChainLogData].sort((a, b) => Number(a.stage_order || 0) - Number(b.stage_order || 0))"
+      },
+      {
+        "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+        "line": 12,
+        "severity": "warning",
+        "text": "const rows = [...algorithmChainLogData].sort((a, b) => Number(a.stage_order || 0) - Number(b.stage_order || 0))"
+      },
+      {
+        "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+        "line": 32,
+        "severity": "warning",
+        "text": "<div>耗时：{Number(item.cost_seconds || 0).toFixed(2)} 秒</div>"
+      },
+      {
+        "file": "frontend\\src\\pages\\AlgorithmChain.jsx",
+        "line": 49,
+        "severity": "warning",
+        "text": "{ title: '耗时秒数', dataIndex: 'cost_seconds', render: (value) => Number(value || 0).toFixed(2) },"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 78,
+        "severity": "review",
+        "text": "const index = params?.[0]?.dataIndex ?? 0"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 83,
+        "severity": "warning",
+        "text": "`支持度：${(Number(matched.support || 0) * 100).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 84,
+        "severity": "warning",
+        "text": "`置信度：${(Number(matched.confidence || 0) * 100).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 85,
+        "severity": "warning",
+        "text": "`提升度：${Number(matched.lift || 0).toFixed(2)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 102,
+        "severity": "review",
+        "text": "data: rules.map((item) => Number(item.lift || 0)),"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 383,
+        "severity": "warning",
+        "text": "{ title: '支持度', dataIndex: 'support', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 384,
+        "severity": "warning",
+        "text": "{ title: '置信度', dataIndex: 'confidence', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\pages\\Dashboard.jsx",
+        "line": 385,
+        "severity": "warning",
+        "text": "{ title: '提升度', dataIndex: 'lift', render: (value) => Number(value || 0).toFixed(2) },"
+      },
+      {
+        "file": "frontend\\src\\pages\\DemandForecast.jsx",
+        "line": 62,
+        "severity": "review",
+        "text": "highMajorCount: new Set(rows.filter((item) => item.demand_level === '高需求' || Number(item.predicted_demand_count || 0) >= 80).map((item) => item.major_name)).size,"
+      },
+      {
+        "file": "frontend\\src\\pages\\DemandForecast.jsx",
+        "line": 63,
+        "severity": "review",
+        "text": "topJobCategory: rows.reduce((best, item) => Number(item.predicted_demand_count || 0) > Number(best.predicted_demand_count || 0) ? item : best, {}),"
+      },
+      {
+        "file": "frontend\\src\\pages\\DemandForecast.jsx",
+        "line": 63,
+        "severity": "review",
+        "text": "topJobCategory: rows.reduce((best, item) => Number(item.predicted_demand_count || 0) > Number(best.predicted_demand_count || 0) ? item : best, {}),"
+      },
+      {
+        "file": "frontend\\src\\pages\\DemandForecast.jsx",
+        "line": 105,
+        "severity": "warning",
+        "text": "const mape = Number(metrics.find((item) => item.metric_name === 'MAPE')?.metric_value || 0)"
+      },
+      {
+        "file": "frontend\\src\\pages\\DemandForecast.jsx",
+        "line": 106,
+        "severity": "warning",
+        "text": "const topSkills = [...jobSkillsHeatmapData].sort((a, b) => Number(b.skill_count || 0) - Number(a.skill_count || 0)).slice(0, 8)"
+      },
+      {
+        "file": "frontend\\src\\pages\\DemandForecast.jsx",
+        "line": 106,
+        "severity": "warning",
+        "text": "const topSkills = [...jobSkillsHeatmapData].sort((a, b) => Number(b.skill_count || 0) - Number(a.skill_count || 0)).slice(0, 8)"
+      },
+      {
+        "file": "frontend\\src\\pages\\DemandForecast.jsx",
+        "line": 153,
+        "severity": "warning",
+        "text": "{ title: '增长率', dataIndex: 'demand_growth_rate', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\pages\\EmploymentMonitor.jsx",
+        "line": 55,
+        "severity": "warning",
+        "text": "emp_count: Number(item?.emp_count || 0),"
+      },
+      {
+        "file": "frontend\\src\\pages\\EmploymentMonitor.jsx",
+        "line": 56,
+        "severity": "warning",
+        "text": "avg_salary: Number(item?.avg_salary || 0),"
+      },
+      {
+        "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+        "line": 34,
+        "severity": "warning",
+        "text": "`匹配分：${Number(item.matching_score || 0).toFixed(2)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+        "line": 35,
+        "severity": "warning",
+        "text": "`样本量：${item.sample_size || 0}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+        "line": 53,
+        "severity": "review",
+        "text": "value: Number(item.matching_score || 0),"
+      },
+      {
+        "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+        "line": 78,
+        "severity": "warning",
+        "text": "? topList.reduce((sum, item) => sum + Number(item.matching_score || 0), 0) / topList.length"
+      },
+      {
+        "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+        "line": 81,
+        "severity": "warning",
+        "text": "? topList.reduce((sum, item) => sum + Number(item.sample_size || 0), 0) / topList.length"
+      },
+      {
+        "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+        "line": 94,
+        "severity": "warning",
+        "text": "render: (value) => Number(value || 0).toFixed(2),"
+      },
+      {
+        "file": "frontend\\src\\pages\\EnrollmentMatching.jsx",
+        "line": 152,
+        "severity": "warning",
+        "text": "value={Number(evalMap['Precision@K']?.metric_value || 0)}"
+      },
+      {
+        "file": "frontend\\src\\pages\\JobRecommendation.jsx",
+        "line": 81,
+        "severity": "warning",
+        "text": "{ title: '相似度', dataIndex: 'matching_score', render: (value) => Number(value || 0).toFixed(3) },"
+      },
+      {
+        "file": "frontend\\src\\pages\\JobRecommendation.jsx",
+        "line": 110,
+        "severity": "warning",
+        "text": "<Col xs={24} md={12}><Statistic title=\"Top1 平均相似度\" value={evalMap.AvgTop1Similarity?.metric_value || 0} precision={3} styles={{ title: statTitleStyle, content: statValuePrimary }} "
+      },
+      {
+        "file": "frontend\\src\\pages\\JobRecommendation.jsx",
+        "line": 111,
+        "severity": "warning",
+        "text": "<Col xs={24} md={12}><Statistic title=\"高置信推荐占比\" value={(evalMap.HighConfidenceRatio?.metric_value || 0) * 100} precision={2} suffix=\"%\" styles={{ title: statTitleStyle, content: st"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 52,
+        "severity": "warning",
+        "text": "`优先级：${Number(item.priority_score || 0).toFixed(1)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 53,
+        "severity": "warning",
+        "text": "`估算就业率：${Number(item.employment_rate_estimate || 0).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 54,
+        "severity": "warning",
+        "text": "`平均薪资：${formatNumber(item.avg_salary || 0, 0)} 元`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 78,
+        "severity": "review",
+        "text": "value: [Number(item.employment_rate_estimate || 0), Number(item.avg_salary || 0)],"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 78,
+        "severity": "review",
+        "text": "value: [Number(item.employment_rate_estimate || 0), Number(item.avg_salary || 0)],"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 79,
+        "severity": "review",
+        "text": "symbolSize: Math.max(16, Math.min(54, Number(item.priority_score || 0) / 2)),"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 396,
+        "severity": "warning",
+        "text": "<Tag color=\"cyan\">优先级 {Number(item.priority_score || 0).toFixed(1)}</Tag>"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 424,
+        "severity": "warning",
+        "text": "{ title: '优先级', dataIndex: 'priority_score', width: 100, render: (value) => Number(value || 0).toFixed(1) },"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 429,
+        "severity": "warning",
+        "text": "render: (value) => `${Number(value || 0).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 431,
+        "severity": "warning",
+        "text": "{ title: '平均薪资', dataIndex: 'avg_salary', width: 120, render: (value) => `${formatNumber(value || 0, 0)} 元` },"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 436,
+        "severity": "warning",
+        "text": "`S ${Number(record.top_rule_support || 0).toFixed(2)} / C ${Number(record.top_rule_confidence || 0).toFixed(2)} / L ${Number(record.top_rule_lift || 0).toFixed(2)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 436,
+        "severity": "warning",
+        "text": "`S ${Number(record.top_rule_support || 0).toFixed(2)} / C ${Number(record.top_rule_confidence || 0).toFixed(2)} / L ${Number(record.top_rule_lift || 0).toFixed(2)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\MajorOptimization.jsx",
+        "line": 436,
+        "severity": "warning",
+        "text": "`S ${Number(record.top_rule_support || 0).toFixed(2)} / C ${Number(record.top_rule_confidence || 0).toFixed(2)} / L ${Number(record.top_rule_lift || 0).toFixed(2)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\PortalHome.jsx",
+        "line": 119,
+        "severity": "warning",
+        "text": "{ title: '样本覆盖高校数', value: overview?.schoolCount || 0, style: statValuePrimary },"
+      },
+      {
+        "file": "frontend\\src\\pages\\PortalHome.jsx",
+        "line": 120,
+        "severity": "warning",
+        "text": "{ title: '公开样本平均薪资', value: overview?.avgSalary || 0, suffix: '元', style: statValueBlue },"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 29,
+        "severity": "review",
+        "text": "const values = data.map((item) => Number(item.avg_salary || 0))"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 39,
+        "severity": "review",
+        "text": "const index = params?.[0]?.dataIndex ?? 0"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 51,
+        "severity": "review",
+        "text": "formatter: (value) => `${Math.round(Number(value || 0) / 1000)}k`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 64,
+        "severity": "review",
+        "text": "data: data.map((item) => Number(item.avg_salary || 0)),"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 77,
+        "severity": "warning",
+        "text": "const salaryValues = data.map((item) => Number(item.avg_salary || 0))"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 78,
+        "severity": "warning",
+        "text": "const sampleValues = data.map((item) => Number(item.sample_count || 0))"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 88,
+        "severity": "review",
+        "text": "const index = params?.[0]?.dataIndex ?? 0"
+      },
+      {
+        "file": "frontend\\src\\pages\\PublicWorkspace.jsx",
+        "line": 95,
+        "severity": "warning",
+        "text": "`先导产业占比：${Number(item.strategic_ratio || 0).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 22,
+        "severity": "review",
+        "text": "const index = params?.[0]?.dataIndex ?? 0"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 28,
+        "severity": "warning",
+        "text": "`支持度：${(Number(item.support || 0) * 100).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 29,
+        "severity": "warning",
+        "text": "`置信度：${(Number(item.confidence || 0) * 100).toFixed(1)}%`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 30,
+        "severity": "warning",
+        "text": "`提升度：${Number(item.lift || 0).toFixed(2)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 31,
+        "severity": "warning",
+        "text": "`证据分：${Number(item.evidence_score || 0).toFixed(2)}`,"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 49,
+        "severity": "review",
+        "text": "data: data.map((item) => Number(Number(item.evidence_score || 0).toFixed(2))),"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 56,
+        "severity": "review",
+        "text": "data: data.map((item) => Number((Number(item.support || 0) * 100).toFixed(1))),"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 70,
+        "severity": "review",
+        "text": "return `${cleanRuleLabel(params.data.source)} → ${cleanRuleLabel(params.data.target)}<br/>提升度：${Number(params.data.value || 0).toFixed(2)}`"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 131,
+        "severity": "warning",
+        "text": "{ title: '支持度', dataIndex: 'support', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 132,
+        "severity": "warning",
+        "text": "{ title: '置信度', dataIndex: 'confidence', render: (value) => `${(Number(value || 0) * 100).toFixed(1)}%` },"
+      },
+      {
+        "file": "frontend\\src\\pages\\RuleAnalysis.jsx",
+        "line": 133,
+        "severity": "warning",
+        "text": "{ title: '提升度', dataIndex: 'lift', render: (value) => Number(value || 0).toFixed(2) },"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 12,
+        "severity": "warning",
+        "text": "return Number(num || 0).toLocaleString('zh-CN', {"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 27,
+        "severity": "warning",
+        "text": "avg_salary: Number(item.avg_salary || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 28,
+        "severity": "warning",
+        "text": "emp_count: Number(item.emp_count || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 29,
+        "severity": "warning",
+        "text": "high_tech_ratio: Number(item.high_tech_ratio || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 43,
+        "severity": "warning",
+        "text": "predicted_salary: Number(item.predicted_demand_count ?? item.predicted_salary ?? 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 44,
+        "severity": "warning",
+        "text": "predicted_demand_count: Number(item.predicted_demand_count ?? item.predicted_salary ?? 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 55,
+        "severity": "warning",
+        "text": "support: Number(item.support || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 56,
+        "severity": "warning",
+        "text": "confidence: Number(item.confidence || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 57,
+        "severity": "warning",
+        "text": "lift: Number(item.lift || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 58,
+        "severity": "warning",
+        "text": "evidence_score: Number(item.evidence_score || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 164,
+        "severity": "review",
+        "text": "return matched ? Number(matched.predicted_salary || 0) : null"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 234,
+        "severity": "warning",
+        "text": "counts.set(label, (counts.get(label) || 0) + 1)"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 251,
+        "severity": "warning",
+        "text": "current.total += Number(item.predicted_salary || 0)"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 256,
+        "severity": "warning",
+        "text": "const weightedEmpCount = scopedEmployment.reduce((sum, item) => sum + Number(item.emp_count || 0), 0)"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 258,
+        "severity": "warning",
+        "text": "? scopedEmployment.reduce((sum, item) => sum + Number(item.avg_salary || 0) * Number(item.emp_count || 0), 0) / weightedEmpCount"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 258,
+        "severity": "warning",
+        "text": "? scopedEmployment.reduce((sum, item) => sum + Number(item.avg_salary || 0) * Number(item.emp_count || 0), 0) / weightedEmpCount"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 370,
+        "severity": "warning",
+        "text": "metric_value: Number(item.metric_value || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 373,
+        "severity": "warning",
+        "text": "sample_size: Number(item.sample_size || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 374,
+        "severity": "warning",
+        "text": "train_window_size: Number(item.train_window_size || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 375,
+        "severity": "warning",
+        "text": "test_window_size: Number(item.test_window_size || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 376,
+        "severity": "warning",
+        "text": "k_value: Number(item.k_value || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 377,
+        "severity": "warning",
+        "text": "evaluated_profiles: Number(item.evaluated_profiles || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 392,
+        "severity": "warning",
+        "text": "actual_salary: Number(item.actual_salary || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 393,
+        "severity": "warning",
+        "text": "predicted_salary: Number(item.predicted_salary || 0),"
+      },
+      {
+        "file": "frontend\\src\\utils\\dataAdapter.js",
+        "line": 394,
+        "severity": "warning",
+        "text": "abs_error: Number(item.abs_error || 0),"
+      }
+    ],
+    "zero_fallback_warning_count": 182
+  },
+  "issues": [],
+  "auto_fixed": []
+}

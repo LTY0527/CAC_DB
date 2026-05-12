@@ -201,7 +201,6 @@ export default function SchoolBenchmarkBoard() {
   const [majorRows, setMajorRows] = useState([])
   const [selectedSchools, setSelectedSchools] = useState([])
   const [selectedMajor, setSelectedMajor] = useState('')
-  const [updatedAt, setUpdatedAt] = useState('')
   const [loading, setLoading] = useState(true)
   const [majorLoading, setMajorLoading] = useState(false)
 
@@ -217,9 +216,8 @@ export default function SchoolBenchmarkBoard() {
         const options = Array.isArray(payload?.major_options) ? payload.major_options : []
         setOverview(rows)
         setMajorOptions(options)
-        setSelectedSchools(rows.slice(0, 5).map((item) => item.school_name))
+        setSelectedSchools(rows.slice(0, 10).map((item) => item.school_name))
         setSelectedMajor(options[0]?.major_name || '')
-        setUpdatedAt(payload?.updated_at || '')
       } finally {
         if (alive) setLoading(false)
       }
@@ -261,7 +259,7 @@ export default function SchoolBenchmarkBoard() {
   const visibleOverview = useMemo(() => {
     const baseRows = selectedSchools.length
       ? overview.filter((item) => selectedSchoolSet.has(item.school_name))
-      : overview.slice(0, 5)
+      : overview.slice(0, 10)
     return [...baseRows].sort((a, b) => Number(b.avg_salary || 0) - Number(a.avg_salary || 0))
   }, [overview, selectedSchoolSet, selectedSchools.length])
 
@@ -381,7 +379,7 @@ export default function SchoolBenchmarkBoard() {
                   style={{ width: '100%', marginTop: 8 }}
                   value={selectedSchools}
                   options={schoolOptions}
-                  onChange={(values) => setSelectedSchools(values.slice(0, 6))}
+                  onChange={(values) => setSelectedSchools(values.slice(0, 10))}
                   placeholder="选择参与对标的学校"
                 />
               </Col>

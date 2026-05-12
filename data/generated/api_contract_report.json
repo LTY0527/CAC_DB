@@ -1,0 +1,275 @@
+{
+  "generated_at": "2026-04-28T14:58:21.469389",
+  "passed": true,
+  "checks": [
+    {
+      "check": "/api/auth/login 教师账号返回 token",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0
+      },
+      "expected": "HTTP 200 + code=0 + token"
+    },
+    {
+      "check": "/api/auth/login 政府账号返回 token",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0
+      },
+      "expected": "HTTP 200 + code=0 + token"
+    },
+    {
+      "check": "teacher /api/demand/kpi 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 7,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "teacher /api/demand/forecast 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 120,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "teacher /api/enrollment/matching 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 80,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "teacher /api/major/optimization 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 86,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "teacher /api/training/rules 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 271,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "teacher /api/recommendation/summary 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 5,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "teacher /api/recommendation/jobs 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 1200,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "teacher /api/report/ai 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 2,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "government /api/demand/kpi 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 7,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "government /api/demand/forecast 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 120,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "government /api/monitor/school 合约检查",
+      "passed": true,
+      "value": {
+        "status": 200,
+        "code": 0,
+        "count": 20,
+        "missing": [],
+        "all_zero": false
+      },
+      "expected": "code=0、字段齐全、非空、非全0"
+    },
+    {
+      "check": "/api/recommendation/student 不存在学生返回明确错误",
+      "passed": true,
+      "value": {
+        "status": 404,
+        "payload": {
+          "code": 1,
+          "data": null,
+          "message": "未找到该学生的推荐结果"
+        }
+      },
+      "expected": "code=1 + data=null"
+    },
+    {
+      "check": "教师端默认上海大学",
+      "passed": true,
+      "value": "SHU007",
+      "expected": "SHU007"
+    },
+    {
+      "check": "政府端默认十校汇总",
+      "passed": true,
+      "value": "上海市十校汇总",
+      "expected": "上海市十校汇总"
+    },
+    {
+      "check": "政府端平均预测需求大于教师端",
+      "passed": true,
+      "value": {
+        "teacher": 1110.09,
+        "government": 1865.92
+      },
+      "expected": "government > teacher"
+    },
+    {
+      "check": "高置信推荐占比在 35%-70%",
+      "passed": true,
+      "value": 0.4259,
+      "expected": "0.35-0.70"
+    }
+  ],
+  "endpoints": [
+    {
+      "role": "teacher",
+      "endpoint": "/api/demand/kpi",
+      "status": 200,
+      "count": 7,
+      "missing": []
+    },
+    {
+      "role": "teacher",
+      "endpoint": "/api/demand/forecast",
+      "status": 200,
+      "count": 120,
+      "missing": []
+    },
+    {
+      "role": "teacher",
+      "endpoint": "/api/enrollment/matching",
+      "status": 200,
+      "count": 80,
+      "missing": []
+    },
+    {
+      "role": "teacher",
+      "endpoint": "/api/major/optimization",
+      "status": 200,
+      "count": 86,
+      "missing": []
+    },
+    {
+      "role": "teacher",
+      "endpoint": "/api/training/rules",
+      "status": 200,
+      "count": 271,
+      "missing": []
+    },
+    {
+      "role": "teacher",
+      "endpoint": "/api/recommendation/summary",
+      "status": 200,
+      "count": 5,
+      "missing": []
+    },
+    {
+      "role": "teacher",
+      "endpoint": "/api/recommendation/jobs",
+      "status": 200,
+      "count": 1200,
+      "missing": []
+    },
+    {
+      "role": "teacher",
+      "endpoint": "/api/report/ai",
+      "status": 200,
+      "count": 2,
+      "missing": []
+    },
+    {
+      "role": "government",
+      "endpoint": "/api/demand/kpi",
+      "status": 200,
+      "count": 7,
+      "missing": []
+    },
+    {
+      "role": "government",
+      "endpoint": "/api/demand/forecast",
+      "status": 200,
+      "count": 120,
+      "missing": []
+    },
+    {
+      "role": "government",
+      "endpoint": "/api/monitor/school",
+      "status": 200,
+      "count": 20,
+      "missing": []
+    }
+  ]
+}

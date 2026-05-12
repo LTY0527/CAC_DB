@@ -1,0 +1,29 @@
+{
+  "generated_at": "2026-04-29T18:19:04",
+  "table_rows": {
+    "dim_school": 10,
+    "dim_major_catalog": 845,
+    "bridge_school_major": 654,
+    "dim_industry": 20,
+    "dim_job_category": 93,
+    "dim_enterprise": 5400,
+    "fact_job_posting": 126000,
+    "fact_graduate": 120000,
+    "fact_employment": 102000,
+    "fact_enrollment_plan": 11118,
+    "fact_course_skill": 11118,
+    "fact_policy_signal": 10200
+  },
+  "shanghai_university": {
+    "bridge_major_count": 86,
+    "graduate_count": 14160,
+    "employment_count": 11832
+  },
+  "major_catalog_count": 845,
+  "discipline_count": 12,
+  "major_class_count": 93,
+  "computer_job_ratio": 0.1075,
+  "seasonality_ratio": 2.018,
+  "monthly_demand_min": 82264,
+  "monthly_demand_max": 166004
+}

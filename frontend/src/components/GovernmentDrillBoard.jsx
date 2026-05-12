@@ -26,6 +26,7 @@ import {
   designTokens,
   legendTextStyle,
   metaLabelStyle,
+  metaValueStyle,
   panelStyle,
   sectionTitleStyle,
   splitLineStyle,

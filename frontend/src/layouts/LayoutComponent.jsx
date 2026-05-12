@@ -22,6 +22,7 @@ export default function LayoutComponent() {
   const platformData = usePlatformData()
 
   const roleConfig = ROLE_CONFIGS[session?.role] || ROLE_CONFIGS.teacher
+  const hasCriticalDataError = Boolean(platformData.error && !(platformData.employmentData || []).length)
   const allSchools = Array.from(new Set((platformData.employmentData || []).map((item) => item.school_name).filter(Boolean)))
   const currentSchool =
     session?.role === 'teacher' && session?.school
@@ -63,9 +64,11 @@ export default function LayoutComponent() {
           <div style={{ color: designTokens.textPrimary, fontSize: 21, fontWeight: 700, letterSpacing: '-0.01em', lineHeight: 1.35 }}>
             {roleConfig.title}
           </div>
-          <div style={{ marginTop: 8, color: designTokens.textMuted, fontSize: 12, lineHeight: 1.7 }}>
-            {roleConfig.subtitle}
-          </div>
+          {roleConfig.subtitle ? (
+            <div style={{ marginTop: 8, color: designTokens.textMuted, fontSize: 12, lineHeight: 1.7 }}>
+              {roleConfig.subtitle}
+            </div>
+          ) : null}
         </div>
 
         <Menu
@@ -100,9 +103,11 @@ export default function LayoutComponent() {
             <div style={{ color: designTokens.textPrimary, fontSize: 24, fontWeight: 700, lineHeight: 1.25, letterSpacing: '-0.02em' }}>
               {roleConfig.headerTitle(currentSchool)}
             </div>
-            <div style={{ marginTop: 6, color: designTokens.textMuted, fontSize: 12, lineHeight: 1.6 }}>
-              {roleConfig.headerSubtitle}
-            </div>
+            {roleConfig.headerSubtitle ? (
+              <div style={{ marginTop: 6, color: designTokens.textMuted, fontSize: 12, lineHeight: 1.6 }}>
+                {roleConfig.headerSubtitle}
+              </div>
+            ) : null}
           </div>
 
           <Space size={10} align="start">
@@ -124,8 +129,8 @@ export default function LayoutComponent() {
               </Space>
             </div>
             <Tag color="blue">数据版本：V2.0</Tag>
-            <Tag color={platformData.loading ? 'gold' : platformData.error ? 'red' : 'green'}>
-              {platformData.loading ? '状态：数据加载中' : platformData.error ? '状态：部分数据异常' : '状态：数据已连接'}
+            <Tag color={platformData.loading ? 'gold' : hasCriticalDataError ? 'red' : 'green'}>
+              {platformData.loading ? '状态：数据加载中' : hasCriticalDataError ? '状态：数据不可用' : '状态：数据正常'}
             </Tag>
             <Button
               icon={<LogoutOutlined />}

@@ -31,13 +31,72 @@ import {
 } from '../utils/uiTheme'
 
 function getActionHex(action = '') {
-  if (action === '重点调优') return '#ff6b6b'
-  if (action === '补强就业导向') return '#f7c948'
-  if (action === '强化优势方向') return '#37c66d'
+  const text = String(action || '')
+  if (text === 'expand' || text.includes('扩招')) return '#37c66d'
+  if (text === 'stable' || text.includes('稳招')) return '#58a6ff'
+  if (text === 'shrink' || text.includes('缩招')) return '#ff6b6b'
+  if (text === 'practice' || text.includes('实践')) return '#f7c948'
+  if (text === 'support' || text.includes('扶持')) return '#9b7bff'
+  if (text === '重点调优') return '#ff6b6b'
+  if (text === '补强就业导向') return '#f7c948'
+  if (text === '强化优势方向') return '#37c66d'
   return '#58a6ff'
 }
 
+function firstFinite(...values) {
+  for (const value of values) {
+    const num = Number(value)
+    if (Number.isFinite(num)) return num
+  }
+  return 0
+}
+
+function percentLike(value) {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return 0
+  return num <= 1 ? num * 100 : num
+}
+
+function getOptimizationPriority(item = {}) {
+  const direct = firstFinite(item.priority_score)
+  if (direct > 0) return direct
+  const policyHeat = percentLike(item.policy_heat)
+  const demandGrowth = percentLike(item.demand_growth_rate)
+  const skillGap = percentLike(item.skill_gap_score)
+  const matchScore = percentLike(item.avg_match_score ?? item.match_score)
+  const evidenceScore = firstFinite(item.evidence_score, item.top_rule_lift) * 20
+  return policyHeat * 0.3 + demandGrowth * 0.25 + skillGap * 0.2 + matchScore * 0.15 + evidenceScore * 0.1
+}
+
+function getSuggestionScatterRows(rows = []) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((item) => {
+      const priority = getOptimizationPriority(item)
+      const avgSalary = firstFinite(item.avg_salary, item.salary)
+      const sampleSize = firstFinite(item.sample_count, item.evidence_count, item.rule_sample_count, item.priority_score, 30)
+      const actionType = item.primary_suggestion_type || item.suggestion_type || item.action_type || item.gap_level || ''
+      return {
+        ...item,
+        priority_score: priority,
+        avg_salary: avgSalary,
+        sample_size: sampleSize,
+        action_type: actionType,
+      }
+    })
+    .filter((item) => item.major_name && Number.isFinite(item.priority_score) && Number.isFinite(item.avg_salary))
+    .sort((a, b) => b.priority_score - a.priority_score)
+    .slice(0, 80)
+}
+
 function buildSuggestionScatterOption(rows = []) {
+  const chartRows = getSuggestionScatterRows(rows)
+  const priorities = chartRows.map((item) => item.priority_score)
+  const salaries = chartRows.map((item) => item.avg_salary).filter((value) => value > 0)
+  const minPriority = priorities.length ? Math.max(0, Math.floor((Math.min(...priorities) - 5) / 5) * 5) : 0
+  const maxPriority = priorities.length ? Math.ceil((Math.max(...priorities) + 8) / 5) * 5 : 100
+  const minSalary = salaries.length ? Math.max(0, Math.floor((Math.min(...salaries) - 1500) / 1000) * 1000) : 0
+  const maxSalary = salaries.length ? Math.ceil((Math.max(...salaries) + 1500) / 1000) * 1000 : undefined
+
   return {
     backgroundColor: 'transparent',
     tooltip: {
@@ -50,23 +109,28 @@ function buildSuggestionScatterOption(rows = []) {
           `学校：${item.school_name || '-'}`,
           `学科：${item.discipline_category || '-'}`,
           `优先级：${Number(item.priority_score || 0).toFixed(1)}`,
-          `估算就业率：${Number(item.employment_rate_estimate || 0).toFixed(1)}%`,
           `平均薪资：${formatNumber(item.avg_salary || 0, 0)} 元`,
+          `样本量：${Number(item.sample_size || 0).toFixed(0)}`,
           `建议动作：${item.action_type || '-'}`,
+          `技能缺口：${Number(item.skill_gap_score || 0).toFixed(2)}`,
+          `政策热度：${Number(item.policy_heat || 0).toFixed(1)}`,
+          item.explanation || item.suggestion_reason ? `建议原因：${item.explanation || item.suggestion_reason}` : '',
         ].join('<br/>')
       },
     },
     grid: { left: '7%', right: '6%', bottom: '12%', top: '8%', containLabel: true },
     xAxis: {
-      name: '估算就业率',
-      min: 70,
-      max: 100,
-      axisLabel: { ...axisLabelStyle, formatter: '{value}%' },
+      name: '培养优化优先级',
+      min: minPriority,
+      max: maxPriority,
+      axisLabel: axisLabelStyle,
       nameTextStyle: { color: designTokens.textMuted },
       splitLine: splitLineStyle,
     },
     yAxis: {
       name: '平均薪资',
+      min: minSalary,
+      max: maxSalary,
       axisLabel: axisLabelStyle,
       nameTextStyle: { color: designTokens.textMuted },
       splitLine: splitLineStyle,
@@ -74,9 +138,9 @@ function buildSuggestionScatterOption(rows = []) {
     series: [
       {
         type: 'scatter',
-        data: rows.map((item) => ({
-          value: [Number(item.employment_rate_estimate || 0), Number(item.avg_salary || 0)],
-          symbolSize: Math.max(16, Math.min(54, Number(item.priority_score || 0) / 2)),
+        data: chartRows.map((item) => ({
+          value: [item.priority_score, item.avg_salary, item.sample_size],
+          symbolSize: Math.max(16, Math.min(58, Math.sqrt(Math.max(item.sample_size, 1)) * 4 + item.priority_score / 8)),
           itemStyle: {
             color: getActionHex(item.action_type),
             opacity: 0.92,
@@ -141,6 +205,7 @@ export default function MajorOptimization({
   )
   const overview = useMemo(() => getTrainingProgramOverview(visibleRows), [visibleRows])
   const topSuggestions = visibleRows.slice(0, 3)
+  const scatterRows = useMemo(() => getSuggestionScatterRows(visibleRows), [visibleRows])
 
   const structureRows = useMemo(
     () =>
@@ -374,8 +439,8 @@ export default function MajorOptimization({
       </Card>
 
       <Card title={<span style={sectionTitleStyle}>培养优化优先级分布</span>} style={panelStyle}>
-        {visibleRows.length ? (
-          <ReactECharts option={buildSuggestionScatterOption(visibleRows)} style={{ height: '58vh', minHeight: 420 }} />
+        {scatterRows.length ? (
+          <ReactECharts option={buildSuggestionScatterOption(scatterRows)} style={{ height: '58vh', minHeight: 420 }} />
         ) : (
           <Empty description="当前筛选下暂无培养方案建议" />
         )}

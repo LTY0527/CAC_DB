@@ -1,0 +1,161 @@
+groups:
+  - name: 软件与信息服务
+    jobs: [后端开发, 前端开发, 软件测试, 运维工程师, 数据库开发]
+    computer_related: true
+    skills: [Java, Spring Boot, MySQL, Git, Linux]
+    majors: [计算机类, 电子信息类]
+    salary_band: [12000, 28000]
+    demand_growth_level: high
+    policy_direction_tags: [数字经济, 软件产业]
+  - name: 人工智能与数据
+    jobs: [数据分析师, 数据开发工程师, 算法工程师, 机器学习工程师, AI产品经理]
+    computer_related: true
+    skills: [Python, SQL, 机器学习, 深度学习, 数据治理]
+    majors: [计算机类, 统计学类, 数学类]
+    salary_band: [14000, 34000]
+    demand_growth_level: high
+    policy_direction_tags: [人工智能, 数据要素]
+  - name: 集成电路与电子信息
+    jobs: [芯片验证工程师, 射频工程师, 电子信息工程师, 通信工程师, 物联网工程师]
+    computer_related: false
+    skills: [Verilog, 电路设计, 信号处理, 通信原理]
+    majors: [电子信息类, 电气类, 自动化类]
+    salary_band: [12000, 30000]
+    demand_growth_level: high
+    policy_direction_tags: [集成电路, 电子信息]
+  - name: 智能制造与装备
+    jobs: [机械工程师, 自动化工程师, 质量工程师, 工艺工程师, 机器人工程师]
+    computer_related: false
+    skills: [机械设计, PLC, 工业机器人, 质量管理, CAD]
+    majors: [机械类, 自动化类, 仪器类]
+    salary_band: [9500, 24000]
+    demand_growth_level: high
+    policy_direction_tags: [智能制造, 工业互联网]
+  - name: 新能源与汽车
+    jobs: [能源工程师, 电池研发工程师, 新能源汽车工程师, 储能工程师]
+    computer_related: false
+    skills: [电池材料, 热管理, 电机控制, 能源系统]
+    majors: [能源动力类, 材料类, 机械类]
+    salary_band: [10000, 26000]
+    demand_growth_level: high
+    policy_direction_tags: [新能源, 绿色低碳]
+  - name: 化工制药与材料
+    jobs: [化工工艺工程师, 材料工程师, 制药工程师, 药物研发, 高分子工程师]
+    computer_related: false
+    skills: [化学工程原理, 过程控制, GMP规范, 材料表征]
+    majors: [化工与制药类, 材料类, 生物工程类, 药学类]
+    salary_band: [8500, 22000]
+    demand_growth_level: medium
+    policy_direction_tags: [生物医药, 新材料]
+  - name: 医疗健康与护理
+    jobs: [临床医生, 护理师, 医学影像技师, 公共卫生专员, 康养服务专员]
+    computer_related: false
+    skills: [临床诊疗, 护理评估, 医学影像, 公共卫生]
+    majors: [临床医学类, 护理学类, 医学技术类, 公共卫生与预防医学类]
+    salary_band: [8500, 25000]
+    demand_growth_level: high
+    policy_direction_tags: [护理康养, 健康中国]
+  - name: 金融会计与审计
+    jobs: [金融分析师, 会计审计, 税务顾问, 风险控制, 保险精算, 投资研究]
+    computer_related: false
+    skills: [金融计量, 财务会计, 审计实务, 税法, 风险管理]
+    majors: [金融学类, 经济学类, 工商管理类, 统计学类]
+    salary_band: [9500, 29000]
+    demand_growth_level: medium
+    policy_direction_tags: [金融科技, 现代服务业]
+  - name: 教育培训与心理服务
+    jobs: [教师, 课程研发, 心理咨询师, 教育技术专员]
+    computer_related: false
+    skills: [教育心理学, 课程设计, 学情分析, 教育评价]
+    majors: [教育学类, 心理学类, 中国语言文学类, 外国语言文学类]
+    salary_band: [7000, 18500]
+    demand_growth_level: medium
+    policy_direction_tags: [数字教育, 基础教育]
+  - name: 建筑土木与城市规划
+    jobs: [建筑设计师, 城市规划师, 土木工程师, 结构工程师, BIM工程师]
+    computer_related: false
+    skills: [工程制图, 结构力学, BIM, 城市设计, GIS]
+    majors: [建筑类, 土木类, 测绘类]
+    salary_band: [8500, 24000]
+    demand_growth_level: medium
+    policy_direction_tags: [城市更新, 韧性城市]
+  - name: 交通运输与物流供应链
+    jobs: [交通规划师, 供应链管理, 物流运营, 采购管理]
+    computer_related: false
+    skills: [交通仿真, 仓储管理, 供应链优化, 采购分析]
+    majors: [交通运输类, 物流管理与工程类, 管理科学与工程类]
+    salary_band: [7500, 20000]
+    demand_growth_level: medium
+    policy_direction_tags: [现代物流, 交通强国]
+  - name: 环境治理与绿色低碳
+    jobs: [环境工程师, 碳管理专员, 水处理工程师, 资源循环工程师]
+    computer_related: false
+    skills: [环境监测, 碳核算, 水处理, 资源循环]
+    majors: [环境科学与工程类, 自然保护与环境生态类]
+    salary_band: [7500, 19000]
+    demand_growth_level: medium
+    policy_direction_tags: [绿色低碳, 双碳]
+  - name: 外语翻译与国际商务
+    jobs: [翻译, 本地化专员, 国际商务, 跨境电商运营, 外事服务专员]
+    computer_related: false
+    skills: [英汉翻译, 跨文化沟通, 本地化工具, 国际贸易]
+    majors: [外国语言文学类, 经济与贸易类, 政治学类]
+    salary_band: [7000, 21000]
+    demand_growth_level: medium
+    policy_direction_tags: [国际传播, 跨境贸易]
+  - name: 新闻传媒与数字文化
+    jobs: [新闻编辑, 内容策划, 数字媒体设计, 影视编导, 新媒体运营]
+    computer_related: false
+    skills: [新闻采编, 视听语言, 数字媒体, 内容运营]
+    majors: [新闻传播学类, 戏剧与影视学类, 设计学类, 计算机类]
+    salary_band: [7000, 22000]
+    demand_growth_level: high
+    policy_direction_tags: [数字文化, 国际传播]
+  - name: 纺织服装与时尚设计
+    jobs: [服装设计师, 纺织工程师, 品牌运营, 面料研发]
+    computer_related: false
+    skills: [服装结构设计, 面料工艺, 品牌策划, 纺织材料]
+    majors: [纺织类, 设计学类, 材料类]
+    salary_band: [6500, 18500]
+    demand_growth_level: medium
+    policy_direction_tags: [时尚消费, 绿色制造]
+  - name: 公共管理与社会服务
+    jobs: [公共事务专员, 社会工作者, 行政管理, 档案管理, 信息资源管理]
+    computer_related: false
+    skills: [公共政策, 社会调查, 档案数字化, 行政协同]
+    majors: [公共管理类, 社会学类, 图书情报与档案管理类]
+    salary_band: [6500, 16500]
+    demand_growth_level: low
+    policy_direction_tags: [社会治理, 数字政府]
+  - name: 法律与合规
+    jobs: [法律助理, 合规专员, 知识产权专员, 涉外法务]
+    computer_related: false
+    skills: [民商法, 合规审查, 知识产权, 法律检索]
+    majors: [法学类, 政治学类]
+    salary_band: [7500, 23000]
+    demand_growth_level: medium
+    policy_direction_tags: [法治化营商环境, 涉外法治]
+  - name: 市场运营与项目管理
+    jobs: [产品经理, 项目管理, 市场营销, 人力资源, 品牌策划]
+    computer_related: false
+    skills: [需求分析, 项目计划, 市场调研, 组织管理]
+    majors: [工商管理类, 管理科学与工程类, 电子商务类]
+    salary_band: [7500, 24000]
+    demand_growth_level: medium
+    policy_direction_tags: [现代服务业, 数字营销]
+  - name: 旅游会展与文旅服务
+    jobs: [旅游策划, 会展运营, 文旅产品经理, 酒店管理]
+    computer_related: false
+    skills: [文旅策划, 会展执行, 客户服务, 产品设计]
+    majors: [旅游管理类, 工商管理类, 设计学类]
+    salary_band: [6000, 16500]
+    demand_growth_level: medium
+    policy_direction_tags: [文旅消费, 城市品牌]
+  - name: 低空经济与现代农业
+    jobs: [无人机应用工程师, 低空运营专员, 农业数据分析, 设施农业工程师]
+    computer_related: false
+    skills: [无人机飞控, 空域管理, 农业物联网, 设施栽培]
+    majors: [航空航天类, 农业工程类, 植物生产类, 电子信息类]
+    salary_band: [8000, 23000]
+    demand_growth_level: high
+    policy_direction_tags: [低空经济, 现代农业]

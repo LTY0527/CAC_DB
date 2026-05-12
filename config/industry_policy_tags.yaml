@@ -1,0 +1,53 @@
+leading_industries:
+  - code: IC
+    name: 集成电路
+    keywords:
+      - 集成电路
+      - 芯片
+      - 半导体
+      - IC设计
+      - IC验证
+      - 晶圆制造
+      - 封装测试
+  - code: BIOMED
+    name: 生物医药
+    keywords:
+      - 生物医药
+      - 医药研发
+      - 药物研发
+      - 生物技术
+      - 医疗器械
+      - 临床研究
+      - 制药
+  - code: AI
+    name: 人工智能
+    keywords:
+      - 人工智能
+      - 算法
+      - 机器学习
+      - 深度学习
+      - 大模型
+      - 智能机器人
+      - 计算机视觉
+      - 自然语言处理
+
+six_key_fields:
+  - 电子信息
+  - 生命健康
+  - 汽车
+  - 高端装备
+  - 先进材料
+  - 时尚消费品
+
+four_new_tracks:
+  - 数字经济
+  - 绿色低碳
+  - 元宇宙
+  - 智能终端
+
+five_future_industries:
+  - 未来健康
+  - 未来智能
+  - 未来能源
+  - 未来空间
+  - 未来材料

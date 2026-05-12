@@ -2,7 +2,7 @@ import { Button, Tooltip } from 'antd'
 import { InfoCircleOutlined } from '@ant-design/icons'
 import { designTokens } from '../utils/uiTheme'
 
-export default function InfoTrigger({ onClick, label = '查看指标说明' }) {
+export default function InfoTrigger({ onClick, label = '查看指标详情' }) {
   return (
     <Tooltip title={label}>
       <Button

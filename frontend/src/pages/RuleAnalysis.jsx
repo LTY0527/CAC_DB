@@ -9,8 +9,8 @@ function cleanRuleLabel(text = '') {
 
 function buildRulesMetricsOption(data = []) {
   const labels = data.map((item, index) => {
-    const label = cleanRuleLabel(item.antecedent || `规则${index + 1}`)
-    return label.length > 12 ? `${label.slice(0, 12)}...` : label
+    const label = cleanRuleLabel(item.rule_title || item.consequent || `规则${index + 1}`)
+    return label.length > 10 ? `${label.slice(0, 10)}...` : label
   })
 
   return {
@@ -22,66 +22,39 @@ function buildRulesMetricsOption(data = []) {
         const index = params?.[0]?.dataIndex ?? 0
         const item = data[index] || {}
         return [
-          `<strong>${cleanRuleLabel(item.antecedent)}</strong>`,
+          `<strong>${cleanRuleLabel(item.rule_title || labels[index])}</strong>`,
+          `${cleanRuleLabel(item.antecedent)} → ${cleanRuleLabel(item.consequent)}`,
           `结果项：${cleanRuleLabel(item.consequent)}`,
           `支持度：${(Number(item.support || 0) * 100).toFixed(1)}%`,
           `置信度：${(Number(item.confidence || 0) * 100).toFixed(1)}%`,
           `提升度：${Number(item.lift || 0).toFixed(2)}`,
+          `证据分：${Number(item.evidence_score || 0).toFixed(2)}`,
         ].join('<br/>')
       },
     },
     legend: { top: 8, textStyle: { color: designTokens.textSecondary } },
-    grid: { left: '6%', right: '5%', bottom: '18%', top: '16%', containLabel: true },
+    grid: { left: '14%', right: '6%', bottom: '8%', top: '16%', containLabel: true },
     xAxis: {
-      type: 'category',
-      data: labels,
-      axisLabel: { color: designTokens.textSecondary, interval: 0 },
-      axisLine: { lineStyle: { color: designTokens.borderStrong } },
+      type: 'value',
+      name: '分值',
+      axisLabel: { color: designTokens.textSecondary },
+      splitLine: { lineStyle: { color: 'rgba(80,130,170,0.18)' } },
     },
-    yAxis: [
-      {
-        type: 'value',
-        name: '比例',
-        min: 0,
-        max: 100,
-        axisLabel: { color: designTokens.textSecondary, formatter: '{value}%' },
-        nameTextStyle: { color: designTokens.textMuted },
-        splitLine: { lineStyle: { color: 'rgba(80,130,170,0.18)' } },
-      },
-      {
-        type: 'value',
-        name: '提升度',
-        min: 1,
-        max: 5,
-        axisLabel: { color: designTokens.textSecondary },
-        nameTextStyle: { color: designTokens.textMuted },
-      },
-    ],
+    yAxis: { type: 'category', data: labels, inverse: true, axisLabel: { color: designTokens.textSecondary, interval: 0 }, axisLine: { lineStyle: { color: designTokens.borderStrong } } },
     series: [
       {
-        name: '置信度',
+        name: '证据分',
         type: 'bar',
-        barMaxWidth: 20,
-        data: data.map((item) => Number((Number(item.confidence || 0) * 100).toFixed(1))),
-        itemStyle: { color: '#39c4ff', borderRadius: [6, 6, 0, 0] },
+        barMaxWidth: 18,
+        data: data.map((item) => Number(Number(item.evidence_score || 0).toFixed(2))),
+        itemStyle: { color: '#39c4ff', borderRadius: [0, 6, 6, 0] },
       },
       {
         name: '支持度',
         type: 'bar',
-        barMaxWidth: 20,
+        barMaxWidth: 18,
         data: data.map((item) => Number((Number(item.support || 0) * 100).toFixed(1))),
-        itemStyle: { color: '#67e8f9', borderRadius: [6, 6, 0, 0] },
-      },
-      {
-        name: '提升度',
-        type: 'line',
-        yAxisIndex: 1,
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 8,
-        data: data.map((item) => Number(item.lift || 0)),
-        lineStyle: { width: 3, color: '#f7c948' },
-        itemStyle: { color: '#f7c948' },
+        itemStyle: { color: '#67e8f9', borderRadius: [0, 6, 6, 0] },
       },
     ],
   }

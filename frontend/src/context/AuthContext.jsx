@@ -6,7 +6,7 @@ import {
   getDemoAccounts,
   getStoredSession,
   storeSession,
-} from '../utils/mockAuth'
+} from '../utils/authStorage'
 
 const AuthContext = createContext(null)
 

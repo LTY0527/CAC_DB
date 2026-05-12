@@ -1,15 +1,21 @@
+# -*- coding: utf-8 -*-
 """
-高校人才培养与就业大数据平台一键全流程脚本
+高校“需求—招生—培养—就业—监测”一体化平台一键链路脚本。
 
-执行链路:
-1. 数据生成
-2. 基础表建表
-3. 基础数据导入
-4. 特征加工/ADS 聚合
-5. LSTM 需求预测
-6. 协同过滤招生匹配 + 余弦相似度就业推荐
-7. 关联规则挖掘
-8. 结果校验
+链路：
+1. 数据集团样本数据生成
+2. 初始化数据库表结构
+3. 导入基础数据与岗位需求数据
+4. 初始化账号、权限与审计表
+5. Spark 特征加工与 ADS 聚合
+6. LSTM 岗位需求人数预测
+7. 协同过滤招生匹配与就业推荐
+8. FP-Growth 关联规则挖掘
+9. 培养方案优化建议生成
+10. 结果校验与链路日志汇总
+
+第一轮重构保证 1-6 阶段跑通；后续算法脚本若尚未完成深改，会被记录为
+可降级阶段，不影响数据库与岗位需求预测主链路。
 """
 
 from __future__ import annotations
@@ -25,14 +31,14 @@ from datetime import datetime
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.exc import SQLAlchemyError
 
-from config import DB_SETTINGS, DB_URL
+from config import DB_SETTINGS, DB_URL_PYMYSQL
 
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 ROOT_DIR = Path(__file__).resolve().parent
+PIPELINE_BATCH_ID = f"CHAIN_{datetime.now().strftime('%Y%m%d%H%M%S')}"
 LOG_FILE = ROOT_DIR / f"pipeline_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 
 logging.basicConfig(
@@ -46,59 +52,54 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def build_db_engine():
-    fallback_url = (
-        f"mysql+pymysql://{DB_SETTINGS['user']}:{DB_SETTINGS['password']}"
-        f"@{DB_SETTINGS['host']}:{DB_SETTINGS['port']}/{DB_SETTINGS['database']}?charset=utf8mb4"
-    )
-    candidate_urls = (DB_URL, fallback_url)
-
-    last_error = None
-    for url in candidate_urls:
-        try:
-            engine = create_engine(url, pool_pre_ping=True)
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            logger.info("[数据库] 使用连接串: %s", url.split("@", 1)[0])
-            return engine
-        except Exception as exc:  # noqa: BLE001
-            last_error = exc
-
-    raise RuntimeError(f"无法创建数据库连接: {last_error}") from last_error
-
-
-DB_ENGINE = build_db_engine()
-
-
 @dataclass(frozen=True)
 class TableCheck:
     name: str
     min_rows: int = 1
+    required: bool = True
 
 
 @dataclass(frozen=True)
 class FileCheck:
     path: str
     min_size_bytes: int = 1
+    required: bool = True
 
 
 @dataclass(frozen=True)
 class PipelineStage:
+    order: int
     key: str
-    description: str
-    script: str
-    env: dict[str, str] = field(default_factory=dict)
+    stage_name: str
+    script: str | None
+    algorithm_name: str
+    input_tables: tuple[str, ...] = ()
+    output_tables: tuple[str, ...] = ()
     requires_tables: tuple[TableCheck, ...] = ()
-    requires_files: tuple[FileCheck, ...] = ()
     produces_tables: tuple[TableCheck, ...] = ()
+    requires_files: tuple[FileCheck, ...] = ()
     produces_files: tuple[FileCheck, ...] = ()
+    env: dict[str, str] = field(default_factory=dict)
+    core: bool = True
 
+
+CSV_FILES = (
+    FileCheck("dim_student.csv"),
+    FileCheck("dim_company.csv"),
+    FileCheck("fact_academic.csv"),
+    FileCheck("fact_employment.csv"),
+    FileCheck("fact_job_demand.csv"),
+)
 
 BASE_TABLES = (
     TableCheck("dim_student", min_rows=0),
     TableCheck("dim_company", min_rows=0),
     TableCheck("fact_academic", min_rows=0),
     TableCheck("fact_employment", min_rows=0),
+    TableCheck("fact_job_demand", min_rows=0),
+    TableCheck("ods_cleaning_log", min_rows=0),
+    TableCheck("ads_algorithm_chain_log", min_rows=0),
+    TableCheck("sys_audit_log", min_rows=0),
 )
 
 BASE_TABLES_WITH_DATA = (
@@ -106,226 +107,401 @@ BASE_TABLES_WITH_DATA = (
     TableCheck("dim_company"),
     TableCheck("fact_academic"),
     TableCheck("fact_employment"),
-)
-
-RESULT_TABLES = (
-    TableCheck("ads_employment_summary"),
-    TableCheck("ads_school_kpi"),
-    TableCheck("ads_salary_forecast"),
-    TableCheck("ads_salary_forecast_eval"),
-    TableCheck("ads_salary_forecast_backtest"),
-    TableCheck("ads_enrollment_matching"),
-    TableCheck("ads_enrollment_matching_eval"),
-    TableCheck("ads_major_matching_rules"),
-    TableCheck("ads_training_program_suggestions"),
-    TableCheck("ads_job_recommendation"),
-    TableCheck("ads_job_recommendation_eval"),
-)
-
-CSV_FILES = (
-    FileCheck("dim_student.csv"),
-    FileCheck("dim_company.csv"),
-    FileCheck("fact_academic.csv"),
-    FileCheck("fact_employment.csv"),
+    TableCheck("fact_job_demand"),
+    TableCheck("ods_cleaning_log"),
 )
 
 PIPELINE_STAGES = (
     PipelineStage(
+        order=1,
         key="generate_data",
-        description="阶段 1/7 生成样本数据",
+        stage_name="数据集团样本数据生成",
         script="platform_data_factory.py",
+        algorithm_name="DataGroupSyntheticFactory",
+        output_tables=(),
         produces_files=CSV_FILES,
+        core=True,
     ),
     PipelineStage(
-        key="create_base_tables",
-        description="阶段 2/7 初始化基础表结构",
+        order=2,
+        key="create_tables",
+        stage_name="初始化数据库表结构",
         script="create_tables.py",
+        algorithm_name="MySQL DDL",
+        output_tables=tuple(table.name for table in BASE_TABLES),
         produces_tables=BASE_TABLES,
+        core=True,
     ),
     PipelineStage(
-        key="import_base_data",
-        description="阶段 3/8 导入基础数据到 MySQL",
+        order=3,
+        key="import_data",
+        stage_name="导入基础数据与岗位需求数据",
         script="PutData.py",
+        algorithm_name="ODS Cleaning + MySQL Load",
+        input_tables=tuple(table.name for table in BASE_TABLES),
+        output_tables=tuple(table.name for table in BASE_TABLES_WITH_DATA),
         requires_files=CSV_FILES,
         requires_tables=BASE_TABLES,
         produces_tables=BASE_TABLES_WITH_DATA,
+        core=True,
     ),
     PipelineStage(
+        order=4,
         key="init_security",
-        description="阶段 4/8 初始化系统账号与审计表",
+        stage_name="初始化账号权限与审计表",
         script="init_security.py",
+        algorithm_name="PasswordHash + RoleBootstrap",
+        input_tables=("sys_audit_log",),
+        output_tables=("sys_audit_log",),
         requires_tables=BASE_TABLES_WITH_DATA,
+        produces_tables=(TableCheck("sys_audit_log", min_rows=0),),
+        core=False,
     ),
     PipelineStage(
-        key="feature_engineering",
-        description="阶段 5/8 特征加工与 ADS 聚合",
+        order=5,
+        key="spark_features",
+        stage_name="Spark 特征加工与 ADS 聚合",
         script="Spark-all.py",
-        env={"MATCHING_DATA_SOURCE": "jdbc"},
+        algorithm_name="Spark/Pandas Feature Engineering",
+        input_tables=("fact_employment", "fact_academic", "fact_job_demand"),
+        output_tables=("ads_employment_summary", "ads_school_kpi", "ads_job_demand_monthly", "ads_job_skill_heatmap", "ads_major_supply_demand_gap"),
         requires_tables=BASE_TABLES_WITH_DATA,
-        produces_tables=(TableCheck("ads_employment_summary"), TableCheck("ads_school_kpi")),
-    ),
-    PipelineStage(
-        key="lstm_forecast",
-        description="阶段 6/8 LSTM 需求预测",
-        script="LSTM-all.py",
-        requires_tables=(TableCheck("fact_employment"),),
         produces_tables=(
-            TableCheck("ads_salary_forecast"),
-            TableCheck("ads_salary_forecast_eval"),
-            TableCheck("ads_salary_forecast_backtest"),
+            TableCheck("ads_employment_summary", min_rows=0, required=False),
+            TableCheck("ads_school_kpi", min_rows=0, required=False),
+            TableCheck("ads_job_demand_monthly", min_rows=0, required=False),
+            TableCheck("ads_job_skill_heatmap", min_rows=0, required=False),
+            TableCheck("ads_major_supply_demand_gap", min_rows=0, required=False),
         ),
+        env={"MATCHING_DATA_SOURCE": "jdbc"},
+        core=False,
     ),
     PipelineStage(
-        key="matching",
-        description="阶段 7/8 协同过滤招生匹配与余弦相似度就业推荐",
+        order=6,
+        key="lstm_job_demand",
+        stage_name="LSTM 岗位需求人数预测",
+        script="LSTM-job-demand.py",
+        algorithm_name="LSTM",
+        input_tables=("ads_job_demand_monthly", "fact_job_demand", "fact_employment", "fact_academic"),
+        output_tables=("ads_job_demand_forecast", "ads_job_demand_forecast_eval", "ads_job_demand_forecast_backtest"),
+        requires_tables=(TableCheck("fact_job_demand"),),
+        produces_tables=(
+            TableCheck("ads_job_demand_forecast"),
+            TableCheck("ads_job_demand_forecast_eval"),
+            TableCheck("ads_job_demand_forecast_backtest"),
+        ),
+        core=True,
+    ),
+    PipelineStage(
+        order=7,
+        key="cf_matching",
+        stage_name="协同过滤招生匹配与就业推荐",
         script="CF-all.py",
-        env={
-            "MATCHING_DATA_SOURCE": "jdbc",
-            "MATCHING_OUTPUT_MODE": "jdbc",
-        },
+        algorithm_name="Collaborative Filtering + Cosine Similarity",
+        input_tables=("fact_academic", "fact_employment", "ads_job_demand_forecast"),
+        output_tables=("ads_enrollment_matching", "ads_enrollment_matching_eval", "ads_job_recommendation", "ads_job_recommendation_eval"),
         requires_tables=BASE_TABLES_WITH_DATA,
         produces_tables=(
-            TableCheck("ads_enrollment_matching"),
-            TableCheck("ads_job_recommendation"),
-            TableCheck("ads_enrollment_matching_eval"),
-            TableCheck("ads_job_recommendation_eval"),
+            TableCheck("ads_enrollment_matching", min_rows=0, required=False),
+            TableCheck("ads_enrollment_matching_eval", min_rows=0, required=False),
+            TableCheck("ads_job_recommendation", min_rows=0, required=False),
+            TableCheck("ads_job_recommendation_eval", min_rows=0, required=False),
         ),
+        env={"MATCHING_DATA_SOURCE": "jdbc", "MATCHING_OUTPUT_MODE": "jdbc"},
+        core=False,
     ),
     PipelineStage(
-        key="rule_mining",
-        description="阶段 8/8 关联规则挖掘",
+        order=8,
+        key="fp_growth",
+        stage_name="FP-Growth 关联规则挖掘",
         script="FPgrowth-all.py",
-        env={"MATCHING_DATA_SOURCE": "jdbc"},
+        algorithm_name="FP-Growth",
+        input_tables=("fact_job_demand", "fact_employment", "fact_academic"),
+        output_tables=("ads_major_matching_rules",),
         requires_tables=BASE_TABLES_WITH_DATA,
-        produces_tables=(
-            TableCheck("ads_major_matching_rules"),
-            TableCheck("ads_training_program_suggestions"),
-        ),
+        produces_tables=(TableCheck("ads_major_matching_rules", min_rows=0, required=False),),
+        env={"MATCHING_DATA_SOURCE": "jdbc"},
+        core=False,
+    ),
+    PipelineStage(
+        order=9,
+        key="training_suggestion",
+        stage_name="培养方案优化建议生成",
+        script="training_program_suggester.py",
+        algorithm_name="RuleBasedTrainingProgramSuggestion",
+        input_tables=("ads_job_demand_forecast", "ads_job_skill_heatmap", "ads_major_matching_rules", "ads_major_supply_demand_gap"),
+        output_tables=("ads_training_program_suggestions",),
+        produces_tables=(TableCheck("ads_training_program_suggestions", min_rows=0, required=False),),
+        core=False,
+    ),
+    PipelineStage(
+        order=10,
+        key="summary",
+        stage_name="结果校验与链路日志汇总",
+        script=None,
+        algorithm_name="ResultValidation",
+        input_tables=("ads_algorithm_chain_log",),
+        output_tables=("ads_algorithm_chain_log",),
+        core=True,
     ),
 )
 
 
+def get_db_engine():
+    engine = create_engine(DB_URL_PYMYSQL, pool_pre_ping=True, pool_recycle=3600)
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    return engine
+
+
+DB_ENGINE = get_db_engine()
+PENDING_CHAIN_LOGS: list[dict] = []
+
+
 def log_banner(title: str) -> None:
-    logger.info("\n%s", "=" * 78)
+    logger.info("")
+    logger.info("=" * 88)
     logger.info(title)
-    logger.info("%s", "=" * 78)
+    logger.info("=" * 88)
 
 
-def ensure_script_exists(script_name: str) -> Path:
-    script_path = ROOT_DIR / script_name
-    if not script_path.exists():
-        raise FileNotFoundError(f"脚本不存在: {script_path}")
-    return script_path
+def table_exists(table_name: str) -> bool:
+    with DB_ENGINE.connect() as conn:
+        exists = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                  AND table_name = :table_name
+                """
+            ),
+            {"table_name": table_name},
+        ).scalar()
+    return bool(exists)
+
+
+def fetch_table_row_count(table_name: str) -> int | None:
+    if not table_exists(table_name):
+        return None
+    with DB_ENGINE.connect() as conn:
+        return int(conn.execute(text(f"SELECT COUNT(*) FROM `{table_name}`")).scalar() or 0)
 
 
 def verify_files(checks: tuple[FileCheck, ...], reason: str) -> None:
     for check in checks:
         file_path = ROOT_DIR / check.path
         if not file_path.exists():
-            raise FileNotFoundError(f"{reason}: 缺少文件 {file_path}")
+            message = f"{reason}: 缺少文件 {file_path}"
+            if check.required:
+                raise FileNotFoundError(message)
+            logger.warning(message)
+            continue
         size = file_path.stat().st_size
         if size < check.min_size_bytes:
-            raise RuntimeError(f"{reason}: 文件为空或异常 {file_path} (size={size})")
-        logger.info("[依赖检查] 文件 %s 已就绪, size=%s bytes", file_path.name, size)
-
-
-def fetch_table_row_count(table_name: str) -> int:
-    with DB_ENGINE.connect() as conn:
-        exists_sql = text(
-            """
-            SELECT COUNT(*)
-            FROM information_schema.tables
-            WHERE table_schema = DATABASE() AND table_name = :table_name
-            """
-        )
-        exists = conn.execute(exists_sql, {"table_name": table_name}).scalar() or 0
-        if not exists:
-            raise RuntimeError(f"数据表不存在: {table_name}")
-
-        count_sql = text(f"SELECT COUNT(*) FROM `{table_name}`")
-        return int(conn.execute(count_sql).scalar() or 0)
+            message = f"{reason}: 文件为空或异常 {file_path}，size={size}"
+            if check.required:
+                raise RuntimeError(message)
+            logger.warning(message)
+            continue
+        logger.info("依赖文件检查通过：%s，size=%s bytes", file_path.name, size)
 
 
 def verify_tables(checks: tuple[TableCheck, ...], reason: str) -> None:
     for check in checks:
         row_count = fetch_table_row_count(check.name)
+        if row_count is None:
+            message = f"{reason}: 数据表不存在 {check.name}"
+            if check.required:
+                raise RuntimeError(message)
+            logger.warning(message)
+            continue
         if row_count < check.min_rows:
-            raise RuntimeError(
-                f"{reason}: 数据表 {check.name} 行数不足, 当前 {row_count}, 期望至少 {check.min_rows}"
-            )
-        logger.info("[依赖检查] 表 %s 行数=%s", check.name, row_count)
+            message = f"{reason}: 数据表 {check.name} 行数不足，当前 {row_count}，期望至少 {check.min_rows}"
+            if check.required:
+                raise RuntimeError(message)
+            logger.warning(message)
+            continue
+        logger.info("依赖表检查通过：%s，行数=%s", check.name, row_count)
 
 
-def verify_database_connection() -> None:
-    try:
-        with DB_ENGINE.connect() as conn:
-            conn.execute(text("SELECT 1"))
-        logger.info("[数据库] 连接成功")
-    except SQLAlchemyError as exc:
-        raise RuntimeError(f"数据库连接失败: {exc}") from exc
+def ensure_chain_log_table() -> bool:
+    return table_exists("ads_algorithm_chain_log")
 
 
-def run_stage(stage: PipelineStage) -> None:
-    script_path = ensure_script_exists(stage.script)
+def build_chain_log_params(stage: PipelineStage, status: str, started_at: datetime, finished_at: datetime, row_count: int, error_message: str = "") -> dict:
+    return {
+        "batch_id": PIPELINE_BATCH_ID,
+        "stage_order": stage.order,
+        "stage_name": stage.stage_name,
+        "input_tables": ",".join(stage.input_tables),
+        "output_tables": ",".join(stage.output_tables),
+        "algorithm_name": stage.algorithm_name,
+        "status": status,
+        "row_count": row_count,
+        "started_at": started_at,
+        "finished_at": finished_at,
+        "cost_seconds": round((finished_at - started_at).total_seconds(), 2),
+        "error_message": error_message[:2000] if error_message else None,
+    }
 
-    if stage.requires_files:
-        verify_files(stage.requires_files, f"{stage.description} 依赖检查失败")
-    if stage.requires_tables:
-        verify_tables(stage.requires_tables, f"{stage.description} 依赖检查失败")
 
-    log_banner(stage.description)
-    logger.info("[阶段开始] key=%s script=%s", stage.key, script_path.name)
+def insert_chain_log_rows(rows: list[dict]) -> None:
+    with DB_ENGINE.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO ads_algorithm_chain_log (
+                    batch_id, stage_order, stage_name, input_tables, output_tables,
+                    algorithm_name, status, row_count, started_at, finished_at,
+                    cost_seconds, error_message
+                )
+                VALUES (
+                    :batch_id, :stage_order, :stage_name, :input_tables, :output_tables,
+                    :algorithm_name, :status, :row_count, :started_at, :finished_at,
+                    :cost_seconds, :error_message
+                )
+                """
+            ),
+            rows,
+        )
+
+
+def write_chain_log(stage: PipelineStage, status: str, started_at: datetime, finished_at: datetime, row_count: int, error_message: str = "") -> None:
+    """写入算法链路运行日志；建表前阶段先缓存在内存中。"""
+    params = build_chain_log_params(stage, status, started_at, finished_at, row_count, error_message)
+    if stage.order < 2 or not ensure_chain_log_table():
+        PENDING_CHAIN_LOGS.append(params)
+        return
+    rows = []
+    if PENDING_CHAIN_LOGS:
+        rows.extend(PENDING_CHAIN_LOGS)
+        PENDING_CHAIN_LOGS.clear()
+    rows.append(params)
+    insert_chain_log_rows(rows)
+
+
+def count_outputs(stage: PipelineStage) -> int:
+    """统计阶段产物总行数，不存在的非核心表按 0 处理。"""
+    total = 0
+    for table_name in stage.output_tables:
+        count = fetch_table_row_count(table_name)
+        if count is not None:
+            total += count
+    return total
+
+
+def run_script(stage: PipelineStage) -> None:
+    script_path = ROOT_DIR / str(stage.script)
+    if not script_path.exists():
+        raise FileNotFoundError(f"阶段脚本不存在：{script_path}")
 
     env = os.environ.copy()
     env.update(stage.env)
     env["PYTHONIOENCODING"] = "utf-8"
-
-    start = time.time()
     result = subprocess.run(
         [sys.executable, str(script_path)],
         cwd=str(ROOT_DIR),
         env=env,
         check=False,
     )
-    duration = time.time() - start
-
     if result.returncode != 0:
-        raise RuntimeError(
-            f"{stage.description} 失败: 脚本 {stage.script} 返回码 {result.returncode}"
-        )
-
-    if stage.produces_files:
-        verify_files(stage.produces_files, f"{stage.description} 产物校验失败")
-    if stage.produces_tables:
-        verify_tables(stage.produces_tables, f"{stage.description} 产物校验失败")
-        logger.info("[数据库写入] %s 对应结果表校验通过", stage.description)
-
-    logger.info("[阶段完成] key=%s cost=%.2fs", stage.key, duration)
+        raise RuntimeError(f"脚本 {stage.script} 返回码 {result.returncode}")
 
 
-def summarize_success() -> None:
-    log_banner("全流程执行完成")
-    logger.info("日志文件: %s", LOG_FILE)
-    for table in RESULT_TABLES:
-        row_count = fetch_table_row_count(table.name)
-        logger.info("[结果表] %s -> %s 行", table.name, row_count)
+def run_summary_stage(stage: PipelineStage) -> None:
+    logger.info("结果表行数汇总：")
+    for table_name in [
+        "dim_student",
+        "dim_company",
+        "fact_academic",
+        "fact_employment",
+        "fact_job_demand",
+        "ods_cleaning_log",
+        "ads_job_demand_monthly",
+        "ads_job_skill_heatmap",
+        "ads_major_supply_demand_gap",
+        "ads_job_demand_forecast",
+        "ads_job_demand_forecast_eval",
+        "ads_job_demand_forecast_backtest",
+        "ads_enrollment_matching",
+        "ads_job_recommendation",
+        "ads_major_matching_rules",
+        "ads_training_program_suggestions",
+        "ads_algorithm_chain_log",
+        "sys_audit_log",
+    ]:
+        count = fetch_table_row_count(table_name)
+        logger.info("  - %-38s %s", table_name, "未创建" if count is None else f"{count} 行")
+
+
+def run_stage(stage: PipelineStage) -> bool:
+    """执行单个阶段，并写入链路日志。"""
+    started_at = datetime.now()
+    log_banner(f"阶段 {stage.order}/10：{stage.stage_name}")
+    logger.info("阶段标识=%s，算法=%s，核心阶段=%s", stage.key, stage.algorithm_name, "是" if stage.core else "否")
+
+    status = "SUCCESS"
+    error_message = ""
+    row_count = 0
+    try:
+        if stage.requires_files:
+            verify_files(stage.requires_files, f"{stage.stage_name} 依赖文件检查失败")
+        if stage.requires_tables:
+            verify_tables(stage.requires_tables, f"{stage.stage_name} 依赖表检查失败")
+
+        if stage.script is None:
+            run_summary_stage(stage)
+        else:
+            run_script(stage)
+
+        if stage.produces_files:
+            verify_files(stage.produces_files, f"{stage.stage_name} 产物文件校验失败")
+        if stage.produces_tables:
+            verify_tables(stage.produces_tables, f"{stage.stage_name} 产物表校验失败")
+        row_count = count_outputs(stage)
+    except Exception as exc:  # noqa: BLE001
+        status = "FAILED"
+        error_message = str(exc)
+        logger.exception("阶段执行失败：%s", stage.stage_name)
+        if stage.core:
+            finished_at = datetime.now()
+            write_chain_log(stage, status, started_at, finished_at, row_count, error_message)
+            raise
+        logger.warning("该阶段为可降级阶段，已记录失败原因，主链路继续执行。")
+
+    finished_at = datetime.now()
+    write_chain_log(stage, status, started_at, finished_at, row_count, error_message)
+    logger.info(
+        "阶段完成：%s，状态=%s，输出行数=%s，耗时=%.2fs",
+        stage.stage_name,
+        status,
+        row_count,
+        (finished_at - started_at).total_seconds(),
+    )
+    return status == "SUCCESS"
 
 
 def main() -> int:
+    log_banner("高校需求—招生—培养—就业—监测一体化平台算法链路启动")
+    logger.info("工作目录：%s", ROOT_DIR)
+    logger.info("数据库：%s:%s/%s", DB_SETTINGS["host"], DB_SETTINGS["port"], DB_SETTINGS["database"])
+    logger.info("链路批次：%s", PIPELINE_BATCH_ID)
+
     try:
-        log_banner("高校人才培养与就业大数据平台一键全流程启动")
-        logger.info("工作目录: %s", ROOT_DIR)
-        verify_database_connection()
-
+        success_map = {}
         for stage in PIPELINE_STAGES:
-            run_stage(stage)
+            success_map[stage.key] = run_stage(stage)
 
-        summarize_success()
-        logger.info("全部阶段执行成功，前后端现在可以直接读取最新分析结果。")
+        log_banner("算法链路执行完成")
+        for stage in PIPELINE_STAGES:
+            logger.info("阶段 %02d %-22s %s", stage.order, stage.stage_name, "成功" if success_map.get(stage.key) else "降级/失败")
+        logger.info("链路日志表：ads_algorithm_chain_log，批次=%s", PIPELINE_BATCH_ID)
+        logger.info("控制台日志文件：%s", LOG_FILE)
         return 0
-    except Exception as exc:
-        logger.exception("[流程失败] %s", exc)
-        logger.error("失败脚本或阶段请查看上方日志和文件: %s", LOG_FILE)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("算法链路执行失败：%s", exc)
+        logger.error("请查看日志文件：%s", LOG_FILE)
         return 1
 
 

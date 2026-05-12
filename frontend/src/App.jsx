@@ -1,7 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import EmploymentMonitor from './pages/EmploymentMonitor'
-import SalaryForecast from './pages/SalaryForecast'
+import DemandForecast from './pages/DemandForecast'
 import EnrollmentMatching from './pages/EnrollmentMatching'
 import RuleAnalysis from './pages/RuleAnalysis'
 import MajorOptimization from './pages/MajorOptimization'
@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage'
 import RoleWorkspace from './pages/RoleWorkspace'
 import JobRecommendation from './pages/JobRecommendation'
 import LayoutComponent from './layouts/LayoutComponent'
+import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { RequireAuth, RequireRole } from './routes/RouteGuard'
 import usePlatformPageData from './hooks/usePlatformPageData'
@@ -32,11 +33,15 @@ function EmploymentRoute() {
 }
 
 function ForecastRoute() {
-  return <SalaryForecast {...usePlatformPageData()} />
+  return <DemandForecast {...usePlatformPageData()} />
 }
 
 function EnrollmentRoute() {
-  return <EnrollmentMatching {...usePlatformPageData()} />
+  return (
+    <ErrorBoundary>
+      <EnrollmentMatching {...usePlatformPageData()} />
+    </ErrorBoundary>
+  )
 }
 
 function RulesRoute() {

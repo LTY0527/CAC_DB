@@ -29,7 +29,6 @@ export default function DataCapabilityBand({
                 </span>
               ))}
             </div>
-            <div className="data-capability-band__desc">{item.description}</div>
           </div>
         ))}
       </div>

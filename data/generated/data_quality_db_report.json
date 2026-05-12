@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-04-29T18:20:39.372511",
+  "passed": false,
+  "checks": [
+    {
+      "check": "dim_school 是否正好 10 所上海高校",
+      "passed": true,
+      "value": 10,
+      "expected": "10"
+    },
+    {
+      "check": "dim_school 是否包含上海大学",
+      "passed": true,
+      "value": 1,
+      "expected": "1"
+    },
+    {
+      "check": "dim_major_catalog 是否为 845 条",
+      "passed": true,
+      "value": 845,
+      "expected": "845"
+    },
+    {
+      "check": "dim_major_catalog 是否覆盖 12 个学科门类",
+      "passed": true,
+      "value": 12,
+      "expected": "12"
+    },
+    {
+      "check": "dim_major_catalog 是否覆盖 93 个专业类",
+      "passed": true,
+      "value": 93,
+      "expected": "93"
+    },
+    {
+      "check": "bridge_school_major 是否为每所高校生成真实优势专业",
+      "passed": true,
+      "value": 10,
+      "expected": "10"
+    },
+    {
+      "check": "fact_job_posting 是否大于等于 80000 条",
+      "passed": true,
+      "value": 126000,
+      "expected": ">=80000"
+    },
+    {
+      "check": "计算机相关岗位占比是否小于等于 25%",
+      "passed": true,
+      "value": 0.1075,
+      "expected": "<=0.25"
+    },
+    {
+      "check": "非计算机岗位是否覆盖至少 15 个行业",
+      "passed": true,
+      "value": 18,
+      "expected": ">=15"
+    },
+    {
+      "check": "就业率是否分布合理而非全部接近 100%",
+      "passed": true,
+      "value": 0.087,
+      "expected": ">0.02 spread"
+    },
+    {
+      "check": "平均薪资是否按学校、专业、行业有差异",
+      "passed": true,
+      "value": 2177.02,
+      "expected": ">900"
+    },
+    {
+      "check": "岗位需求曲线是否存在季节波动",
+      "passed": true,
+      "value": 2.018,
+      "expected": ">1.25"
+    },
+    {
+      "check": "?????????????? 0",
+      "passed": true,
+      "value": 21559,
+      "expected": ">0"
+    },
+    {
+      "check": "?????????????????? 0",
+      "passed": false,
+      "value": 0,
+      "expected": ">0"
+    },
+    {
+      "check": "是否存在明显硬编码 mock 数据",
+      "passed": true,
+      "value": 0,
+      "expected": "0"
+    },
+    {
+      "check": "是否存在旧版 salary prediction 主逻辑残留",
+      "passed": true,
+      "value": 0,
+      "expected": "0"
+    }
+  ]
+}

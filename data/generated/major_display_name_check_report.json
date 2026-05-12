@@ -1,0 +1,26 @@
+{
+  "major_catalog_count": 845,
+  "required_display_columns_present": true,
+  "numeric_suffix_major_count": 738,
+  "numeric_suffix_placeholder_count": 738,
+  "real_display_major_count": 107,
+  "public_salary_ranking_http_status": 200,
+  "public_salary_ranking_code": 0,
+  "public_salary_ranking_count": 10,
+  "public_salary_ranking_names": [
+    "数据科学与大数据技术",
+    "通信工程",
+    "统计学",
+    "电子信息工程",
+    "集成电路设计与集成系统",
+    "计算机科学与技术",
+    "人工智能",
+    "网络工程",
+    "电子科学与技术",
+    "金融学"
+  ],
+  "public_salary_ranking_invalid_names": [],
+  "public_salary_ranking_low_sample_items": [],
+  "public_salary_ranking_trend_item_count": 10,
+  "passed": true
+}

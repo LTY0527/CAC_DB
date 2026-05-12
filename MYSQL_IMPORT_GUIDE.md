@@ -409,7 +409,7 @@ SELECT COUNT(*) FROM fact_employment;
 分析结果表：
 
 ```sql
-SELECT COUNT(*) FROM ads_salary_forecast;
+SELECT COUNT(*) FROM ads_job_demand_forecast;
 SELECT COUNT(*) FROM ads_enrollment_matching;
 SELECT COUNT(*) FROM ads_major_matching_rules;
 SELECT COUNT(*) FROM ads_job_recommendation;

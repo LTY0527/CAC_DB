@@ -1,0 +1,281 @@
+0002	Normal	本科毕业论文（设计）
+0003	Normal	UNDERGRADUATE  THESIS (PROJECT)
+0007	Normal	题   目：基于大数据高校“需求-招生-培养-就业-监测”一体化平台设计与应用实现
+0009	Normal	学    院：计算机工程与科学学院
+0010	Normal	专    业：计算机科学与技术
+0011	Normal	学    号：22122084
+0012	Normal	学生姓名：欧阳裕潇
+0013	Normal	指导教师：许华虎
+0014	Normal	起讫日期：
+0021	Normal	原 创 性 声 明
+0023	Normal	本人声明：所呈交的论文是本人在指导教师指导下进行的研究工作。除了文中特别加以标注和致谢的地方外，论文中不包含其他人已发表或撰写过的研究成果。参与同一工作的其他同志对本研究所做的任何贡献均已在论文中作了明确的说明并表示了谢意。
+0025	Normal	签 名：           日 期：
+0027	Normal	本论文使用授权说明
+0029	Normal	本人完全了解上海大学有关保留、使用学位论文的规定，即：学校有权保留论文及送交论文复印件，允许论文被查阅和借阅；学校可以公布论文的全部或部分内容。
+0030	Normal	（保密的论文在解密后应遵守此规定）
+0032	Normal	签 名：          指导教师签名：          日期：
+0035	Normal	摘  要
+0036	Normal	随着高等教育规模持续扩大和产业结构不断调整，高校毕业生就业压力与企业高质量岗位空缺并存的人才供需错配问题日益突出。当前，高校内部招生、教务、培养、就业等业务系统长期分散建设，存在数据来源多样、统计口径不统一、分析结果难复用、决策依据滞后等问题，制约了人才培养方案的动态优化和就业治理能力的提升。针对上述问题，本文围绕高校“需求—招生—培养—就业—监测”全链路治理场景，设计并实现了一个以数据库系统为核心底座、融合数据治理、智能分析与可视化展示的一体化平台。
+0037	Normal	本文首先从高校人才培养与就业治理的实际业务出发，分析平台所需的数据来源、指标体系和角色需求，提出了覆盖数据接入、标准映射、质量清洗、标签归一、安全治理和分层入库的数据治理流程。在此基础上，构建以学生、企业、学业和就业等核心对象为中心的关系型数据库模型，并进一步设计面向需求预测、招生匹配、培养优化、就业推荐和动态监测等应用场景的结果数据表，实现基础数据、分析特征和业务结果的分层存储与统一管理。围绕平台核心业务，本文结合时间趋势分析、匹配计算、关联规则挖掘和画像推荐等方法，对人才需求变化、专业生源适配、课程培养效果和学生就业方向进行综合分析，使系统能够从单一结果展示扩展为面向决策支持的闭环分析平台。
+0038	Normal	在系统实现方面，平台采用浏览器/服务器架构，后端负责数据查询、权限认证、审计留痕、结果封装和专报生成，前端面向教师端、政府端和公众端提供差异化可视化页面，数据库则统一承载基础业务数据、安全数据和分析结果数据。实验与测试部分以十万级样本数据为基础，从数据质量、功能完整性、接口响应、结果解释性和安全审计等方面对系统进行验证。结果表明，本文设计的平台能够较好地支撑多源异构数据的统一组织、核心指标的可视化表达和分析结果的可解释输出，为高校专业结构优化、招生策略调整、培养方案修订和就业指导提供了可复用的数据支撑路径，也为高校人才培养治理的数字化转型提供了一种可行的系统实现方案。
+0040	Normal	关键词：高校就业；数据治理；数据库设计；需求预测；可视化平台
+0043	Normal	ABSTRACT
+0044	Normal	With the continuous expansion of higher education and the ongoing adjustment of industrial structure, the mismatch between talent supply and demand has become increasingly prominent, as reflected in the coexistence of employment pressure among university graduates and vacancies in high-quality enterprise positions. At present, university systems related to enrollment, academic affairs, curriculum training and employment are often developed separately, leading to problems such as diverse data sources, inconsistent statistical standards, poor reusability of analytical results and delayed decision-making evidence. These problems restrict the dynamic optimization of talent training programs and the improvement of employment governance capabilities. To address these issues, this thesis focuses on the full-chain governance scenario of “demand–enrollment–training–employment–monitoring” in universities, and designs and implements an integrated platform with a database system as the core foundation, supported by data governance, intelligent analysis and visual presentation.
+0045	Normal	This thesis first analyzes the data sources, indicator system and role requirements involved in university talent training and employment governance, and proposes a data governance process covering data access, standard mapping, quality cleaning, label normalization, security governance and layered storage. On this basis, a relational database model centered on key entities such as students, enterprises, academic records and employment records is constructed. Furthermore, result tables are designed for application scenarios including demand forecasting, enrollment matching, training optimization, employment recommendation and dynamic monitoring, so as to realize the layered storage and unified management of basic data, analytical features and business results. For the core business requirements of the platform, this thesis combines time trend analysis, matching calculation, association rule mining and profile-based recommendation methods to comprehensively analyze changes in talent demand, professional enrollment suitability, curriculum training effectiveness and student employment directions. In this way, the system is extended from simple result display to a closed-loop analytical platform for decision support.
+0046	Normal	In terms of system implementation, the platform adopts a Browser/Server architecture. The back end is responsible for data query, permission authentication, audit logging, result encapsulation and report generation, while the front end provides differentiated visual pages for teachers, government administrators and the public. The database uniformly stores basic business data, security data and analytical result data. In the experiment and testing section, a dataset with more than 100,000 simulated records is used to verify the system from the perspectives of data quality, functional completeness, interface response, result interpretability and security audit. The results show that the proposed platform can effectively support the unified organization of multi-source heterogeneous data, the visual expression of core indicators and the interpretable output of analytical results. It provides a reusable data support path for university major structure optimization, enrollment strategy adjustment, training program revision and employment guidance, and offers a feasible system implementation scheme for the digital transformation of university talent training governance.
+0050	TOC 标题1	目  录
+0051	toc 1	摘  要 I
+0052	toc 1	ABSTRACT II
+0053	toc 1	第1章 绪论 1
+0054	toc 2	1.1 研究背景及意义 1
+0055	toc 2	1.2 研究现状及存在问题 3
+0056	toc 2	1.3 本文研究内容及目标 6
+0057	toc 2	1.4 本文文章组织 8
+0058	toc 1	第2章 相关理论与关键技术 9
+0059	toc 1	第3章 需求分析与系统设计 18
+0060	toc 1	第4章 一体化平台开发与实现 28
+0061	toc 1	第5章 系统测试与结果分析 36
+0062	toc 1	第6章 总结与展望 42
+0063	toc 1	参考文献 45
+0064	toc 1	附录 47
+0065	toc 1	致谢 48
+0066	Heading 1	第1章 绪论
+0067	Normal	本章主要介绍课题研究背景及意义、研究现状及存在问题、研究内容及目标、技术路线以及全文组织结构。围绕高校人才供需错配、校内数据孤岛和就业治理数字化转型等现实问题，本文提出基于大数据的高校“需求—招生—培养—就业—监测”一体化平台设计与实现方案。
+0068	Heading 2	1.1 研究背景及意义
+0069	Normal	随着高等教育大众化进程的持续推进和产业结构的不断调整，高校毕业生就业压力与企业高质量岗位空缺并存的人才供需错配问题日益凸显。高校作为人才培养的主要承担者，其专业设置、招生规模、课程体系和就业服务质量直接影响人才供给与产业需求之间的匹配程度。然而，在传统管理模式下，高校内部招生、教务、培养、就业等业务系统往往由不同部门独立建设，数据标准、统计口径和业务流程缺乏统一规划，导致数据难以贯通、结果难以复用、决策依据相对滞后。这种“数据孤岛”现象使高校难以及时掌握外部市场需求变化，也难以将就业结果有效反馈至招生策略、课程体系和培养方案调整之中，从而制约了人才培养质量提升和就业治理能力建设。
+0070	Normal	根据《中国教育现代化2035》中关于“加快信息化时代教育变革”的战略要求引用，高校亟须进一步深化智慧校园和教育治理数字化建设。高等教育系统与劳动力市场之间具有由专业结构、招生计划、课程体系、实践训练、企业需求、产业政策和区域经济发展共同作用形成的复杂系统。若仅从招生规模、就业率或薪资水平等单一节点观察问题，难以及时揭示“市场需求变化如何影响培养过程、培养过程又如何影响就业质量”的传导机制。因此，构建覆盖“需求—招生—培养—就业—监测”全过程的数据分析平台，不仅是对高校现有业务系统的整合，也是将教育治理对象由静态结果统计转向动态过程管理的重要路径。
+0071	Normal	基于上述背景，本文围绕高校人才培养与就业治理场景，设计并实现一个“需求—招生—培养—就业—监测”一体化的大数据分析与可视化平台。平台通过整合外部招聘市场需求数据与校内招生、培养、就业等业务数据，构建统一的数据治理、关系型建模、分析计算和可视化表达链路。在业务层面，需求预测用于识别外部人才市场变化趋势，招生匹配用于辅助优化生源结构和专业布局，培养方案优化用于挖掘课程体系与就业结果之间的关联关系，就业推荐用于提升学生与岗位之间的匹配效率，动态监测与智能专报则将各模块分析结果反馈给管理者，形成持续改进的闭环机制。
+0072	Normal	本研究的意义主要体现在两个方面：一方面，通过统一数据底座和分析结果表设计，提升高校招生、培养和就业数据的组织效率与复用能力，为解决数据分散、口径不一和分析滞后等问题提供系统化实现路径；另一方面，通过将市场需求感知、培养过程优化和就业结果反馈纳入同一平台，增强高校对人才培养全过程的动态监测和辅助决策能力，为专业结构优化、招生策略调整、课程体系修订和就业指导服务提供数据支撑。总体而言，本文研究不仅具有一定的工程应用价值，也为高校人才培养治理的数字化转型提供了一种可验证、可扩展的实践方案。
+0073	Heading 2	1.2 研究现状及存在问题
+0074	Normal	围绕高校人才培养、就业治理和教育数据应用，已有研究和工程实践主要集中在高校就业信息化、数据治理与数据库建模、可视化与智能决策支持三个方面。本文在保留原有研究背景的基础上，将研究现状按上述三个方向进行梳理，以便更清晰地说明本课题与当前项目实现之间的联系。
+0075	Heading 3	1.2.1 高校就业信息化与教育大数据
+0076	Normal	高校就业信息化系统通常以毕业生信息维护、招聘信息发布、就业去向登记和统计报表为主要功能，能够提高事务办理效率。随着教育大数据和学习分析的发展，研究者开始关注学生学业过程、能力画像、就业去向和职业发展之间的关联关系。学习分析强调从教育过程数据中识别规律，数据驱动的就业分析则进一步把学生能力、岗位需求和就业结果联系起来，为培养质量评价和就业服务优化提供依据[1]。
+0077	Normal	现有系统的不足主要体现在分析链路不够连续。部分高校系统侧重就业结果统计，较少将外部岗位需求、招生计划和培养课程纳入同一数据链路；部分系统能够展示就业率和薪资等指标，但缺少面向未来需求变化的预测、面向专业建设的规则证据以及面向多角色的权限隔离。本文平台以“需求—招生—培养—就业—监测”为主线，尝试把就业结果分析前移到需求感知和培养调整环节。
+0078	Heading 3	1.2.2 数据治理与数据库建模
+0079	Normal	高校治理数据来源复杂，涉及学校、专业、学生、企业、岗位、课程、政策和就业结果等对象。数据治理需要解决字段命名不统一、编码体系不一致、标签粒度不同、缺失异常数据处理和个人信息保护等问题。DAMA数据管理知识体系强调数据标准、数据质量、元数据和安全管理等内容[2]，这些原则同样适用于高校就业治理数据的组织。
+0080	Normal	在数据库建模方面，数据仓库和维度建模提供了面向分析场景的常用方法[3]。本文项目没有直接构建完整企业级数据仓库，而是在MySQL中采用DIM维度层、FACT事实层、ADS应用结果层和SYS安全审计层进行分层设计。该设计能够使学校、专业、行业、岗位等编码在不同模块中复用，也使需求预测、招生匹配、培养优化和就业推荐的结果能够稳定供接口查询。
+0081	Heading 3	1.2.3 可视化与智能决策支持
+0082	Normal	数据可视化能够降低复杂指标的理解成本，帮助用户发现趋势、异常和结构关系[4]。高校管理场景中的可视化不仅需要展示图表，还需要与业务角色、数据权限和指标解释相结合。例如教师端关注本校专业建设与学生就业服务，政府端关注区域高校对标和重点产业人才供给，公众端只适合展示脱敏后的公开汇总信息。
+0083	Normal	结合当前项目实现，平台建设的真实难点主要包括：多源异构数据标准化、专业与岗位标签映射、数据质量控制、ADS结果表复用、教师端与政府端的数据范围隔离、公众端脱敏展示、统一登录鉴权以及审计日志追踪。这些问题比单纯讨论可视化工具选择更贴近本课题的工程目标。
+0084	Heading 2	1.3本文研究内容及目标
+0085	Normal	构建“上海高校需求—招生—培养—就业—监测”一体化平台，是响应教育数字化转型、破除人才供需结构性矛盾的创新实践。本研究以需求精准化、服务智能化与监测动态化为核心导向，旨在解决毕业生就业摩擦与企业人才获取成本高昂的现实痛点。以上海大学为实证分析对象，通过打通校内教务数据与校外产业需求壁垒，不仅能为高校学科建设提供量化参考，更能为政府部门优化高等教育资源布局、构建可持续发展的就业生态系统提供决策支撑。
+0086	Normal	在技术实现层面，本课题拟构建一个集数据采集、高效存储、深度计算及多维可视化于一体的综合性大数据分析平台。首先，在底层数据架构上，系统用Hadoop分布式框架构建高可靠数据仓库，利用Spark分布式计算引擎对跨业务域的异构原始数据进行清洗、脱敏与标准化处理，确保存储的扩展性与数据质量。其次，针对行业需求研判，系统通过Python集成深度学习框架，对历史招聘数据进行时序特征提取，利用LSTM模型捕获人才需求的非线性波动趋势。在人才培养关联分析模块，本研究依托Spark计算集群，运用FP-Growth算法深挖课程成绩、技能证书与就业起薪间的隐性耦合关系，以量化指标驱动教学供给侧改革。同时，智能就业推荐模块通过融合协同过滤算法与余弦相似度计算，构建用户画像与职位标签的向量映射空间，为学生提供精准的岗位推送服务。最后，系统采用Flask架构支撑后端逻辑，通过前端Echarts库实现就业态势与培养成效的多维动态渲染。
+0087	Normal	本研究的预期产出包含全流程数据链路的贯通与高性能B/S架构平台的落地。通过实现从“市场需求感知”到“精准人才培养”再到“个性化就业服务”的闭环，系统将验证大数据在高校治理中的实证路径。在算法指标上，LSTM预测模型与推荐系统需在测试集上达到预期的准确率与参考价值，且平台应具备优异的响应速度与交互体验。
+0088	Normal	综上所述，本文通过探索大数据可视化的理论基础并结合上海大学业务现状，设计了一套涵盖数据采集清洗、建模存储及Web可视化设计的实时监测系统，旨在实现从原始数据到管理决策洞察的高效转化。
+0089	Heading 2	1.4 本文文章组织
+0090	Normal	第一章为绪论，介绍课题背景、研究意义、研究现状、研究内容、技术路线和创新点。
+0091	Normal	第二章为相关理论与关键技术，介绍教育大数据、数据仓库、Spark、LSTM、协同过滤、FP-Growth、余弦相似度、B/S架构和数据安全审计等内容。
+0092	Normal	第三章为需求分析与系统总体设计，围绕功能性需求、非功能性需求、数据来源、总体架构、数据库模型、接口设计和安全设计展开。
+0093	Normal	第四章为核心算法与数据处理实现，详细说明数据生成、ETL、需求预测、招生匹配、培养规则挖掘、就业推荐、动态监测和智能专报等模块实现。
+0094	Normal	第五章为系统实现、实验测试与结果分析，介绍系统运行环境、前后端实现、数据库实现、实验数据、模型评价、性能测试和功能测试。
+0095	Normal	第六章为总结与展望，总结本文主要工作、研究贡献和不足，并提出后续可从真实数据接入、在线学习、隐私计算和智能体辅助治理等方向继续研究。
+0099	Heading 1	第2章 相关理论与关键技术
+0100	Normal	本章围绕平台建设所需的关键理论和技术基础展开。由于本文系统同时包含数据库建模、数据治理、特征加工、预测模型、推荐算法、关联规则挖掘、Web接口和可视化展示，因此本章按照“数据底座—计算模型—系统架构—安全治理”的顺序介绍相关技术，并说明其在当前项目中的具体落点。
+0101	Heading 2	2.1 教育大数据与数据治理
+0102	Normal	教育大数据是指在教育教学、学生管理、就业服务和治理决策过程中产生的结构化、半结构化和非结构化数据集合。与普通业务数据相比，教育数据具有主体周期长、跨部门流转多、字段语义强、隐私敏感程度高等特点。高校在使用此类数据进行治理时，需要先解决数据接入、口径统一、质量控制和合规使用等基础问题[1-2]。
+0103	Normal	本文将教育数据治理划分为六个阶段：原始接入、标准映射、质量清洗、标签归一、安全治理和分层入库。图2-1用于说明该流程在平台中的顺序关系。
+0105	Normal	图2-1 数据治理六阶段流程图
+0106	Normal	图2-1表明，数据治理贯穿数据从进入系统到被页面使用的全过程。当前项目中，platform_data_factory.py负责生成脱敏仿真CSV，PutData.py负责入库和基础校验，create_tables.py负责统一表结构，后续算法脚本统一读取标准表和ADS结果表。
+0107	Heading 2	2.2 数据仓库与关系型数据库建模
+0108	Normal	数据仓库强调面向主题、集成、稳定和反映历史变化。本文平台作为原型系统，采用关系型数据库承载主题化数据，将基础业务事实和分析结果分层存储。维度建模思想强调通过稳定维表连接多类事实表，便于按学校、专业、行业、岗位、月份等维度进行统计分析[3]。
+0110	Normal	图2-2 数据库分层模型图
+0111	Normal	图2-2展示了当前项目采用的四层数据库模型。DIM层包括dim_school、dim_major_catalog、dim_industry、dim_job_category等维度表；FACT层包括fact_job_posting、fact_graduate、fact_employment等事实表；ADS层保存需求预测、招生匹配、培养优化和就业推荐结果；SYS层保存账号、审计日志和算法链路日志。该分层设计是后续接口查询和多角色展示的基础。
+0112	Heading 2	2.3 Spark分布式计算与特征加工
+0113	Normal	Spark是一种面向大规模数据处理的分布式计算框架，适合处理迭代计算和交互式分析任务[5]。本文原型在本地环境中主要采用Pandas与Spark风格的聚合逻辑实现特征加工，保留了按学校、专业、行业、岗位、月份等维度进行批处理的计算思路。
+0114	Normal	在当前项目中，scripts/Spark-all.py读取岗位需求、就业、招生、政策等事实表，生成ads_job_demand_features、ads_school_compare_summary和ads_leading_industry_employment_summary等结果。该步骤为需求预测、学校对标和页面KPI提供统一特征输入。
+0115	Heading 2	2.4 LSTM时间序列预测模型
+0116	Normal	LSTM是循环神经网络的改进结构，适合处理具有时间依赖关系的序列数据[6]。在人才需求预测场景中，岗位需求人数会受到毕业周期、招聘季节、产业政策和区域经济变化影响，具有一定时间波动。本文在论文业务口径上将预测目标统一为岗位需求人数或人才需求热度，薪资仅作为就业质量和推荐解释的辅助字段。
+0117	Normal	预测误差常用MAE、RMSE和MAPE衡量，设真实值为y_i，预测值为ŷ_i，样本数为n，则公式如下。
+0118	Normal	MAE = (1/n) Σ|y_i - ŷ_i|
+0119	Normal	RMSE = sqrt((1/n) Σ(y_i - ŷ_i)^2)
+0120	Normal	MAPE = (100%/n) Σ |(y_i - ŷ_i) / y_i|
+0121	Normal	图2-3说明需求预测从月度聚合到结果表落库的主要步骤。
+0123	Normal	图2-3 LSTM需求预测流程图
+0124	Normal	当前项目的scripts/LSTM-all.py采用“LSTM预测思想与季节性回退策略结合”的工程实现，脚本中未直接依赖TensorFlow训练深度模型，而是基于历史需求序列、季节因子、政策热度和专业强度生成未来12个月预测，并将结果写入ads_job_demand_forecast、ads_job_demand_forecast_eval和ads_job_demand_forecast_backtest。
+0125	Heading 2	2.5 协同过滤与匹配推荐算法
+0126	Normal	协同过滤算法基于历史交互或评分矩阵发现对象之间的潜在偏好关系[7]。在本文场景中，招生匹配可抽象为专业与生源画像、就业质量、产业需求之间的适配计算；就业推荐可抽象为学生画像与岗位画像之间的相似度计算。
+0128	Normal	图2-4 专业—生源匹配与岗位推荐计算示意图
+0129	Normal	图2-4体现了匹配推荐类算法的共性流程：先构造画像，再转化为矩阵或向量表示，随后计算匹配分或相似度，最后输出Top-K结果。当前项目中，scripts/CF-all.py生成ads_enrollment_matching和ads_major_optimization，scripts/job_recommendation.py生成ads_job_recommendation。
+0130	Heading 2	2.6 FP-Growth关联规则挖掘
+0131	Normal	关联规则挖掘用于发现事务数据中不同项之间的共现关系。FP-Growth通过构建频繁模式树减少候选集生成开销，适合在课程、技能、岗位和就业结果等离散标签中挖掘高频组合[8]。设规则为A=>B，支持度、置信度和提升度定义如下。
+0132	Normal	support(A=>B) = count(A∪B) / N
+0133	Normal	confidence(A=>B) = count(A∪B) / count(A)
+0134	Normal	lift(A=>B) = confidence(A=>B) / support(B)
+0135	Normal	当前项目中，scripts/FPgrowth-all.py读取fact_course_skill、fact_employment和dim_job_category等数据，生成ads_training_rules。该表保存antecedents、consequents、support、confidence、lift和evidence_score，为培养优化页面提供规则证据。
+0136	Heading 2	2.7 余弦相似度与就业推荐
+0137	Normal	余弦相似度用于衡量两个向量方向的一致程度，适合描述学生画像与岗位画像之间的匹配关系。给定学生向量a和岗位向量b，其计算公式如下。
+0138	Normal	cos(a,b) = (a · b) / (||a|| ||b||)
+0139	Normal	当前项目的就业推荐模块综合学生专业、技能标签、求职意向、岗位需求强度、历史就业质量和企业属性计算相似度，并输出similarity_score、confidence_level、salary_reference和recommendation_reason等字段。
+0140	Heading 2	2.8 B/S架构、Web API与数据可视化
+0141	Normal	B/S架构将客户端统一为浏览器，适合高校、政府和公众等多角色访问。本文平台前端使用React、Ant Design和ECharts构建页面，通过Axios调用Flask后端接口；后端统一读取MySQL中的基础表和ADS结果表，并返回JSON数据。
+0143	Normal	图2-5 Flask API与前端调用流程图
+0144	Normal	图2-5说明了前端调用链路。浏览器页面通过Axios携带Token访问Flask接口，后端完成角色校验和SQL查询后，将结果以code、message、data结构返回，前端再使用ECharts或Ant Design组件渲染。该技术在本文中主要落点为frontend/src/services/dataService.js、app.py和各页面组件。
+0145	Heading 2	2.9 数据安全、权限控制与审计日志
+0146	Normal	高校数据具有个人信息属性，学生学籍、就业去向、薪资、社保核验等字段均需要严格保护。个人信息安全规范强调个人信息处理过程中的收集、存储、使用和安全管理要求[9]。因此，本文将安全设计作为数据库应用系统的基础功能。
+0147	Normal	当前项目中，sys_user_account保存账号、角色、school_id和password_hash，sys_audit_log保存登录、访问和模块操作记录；前端通过Token访问接口，后端根据教师、政府和公众角色限制数据范围。该设计支撑教师端本校明细、政府端跨校汇总和公众端脱敏展示。
+0148	样式1	第3章 需求分析与系统设计
+0149	Heading 2	3.1 需求分析
+0150	Heading 3	3.1.1功能性需求分析
+0151	Normal	平台面向高校人才培养与就业治理场景，核心目标是把外部产业需求、招生入口、培养过程、就业结果和动态监测组织为连续业务链条。教师或专业负责人需要掌握本校专业就业表现、课程能力短板和岗位匹配方向；教育主管部门需要掌握区域内高校专业布局、就业质量差异和重点产业人才供给；公众用户需要获得公开、可理解的院校与专业就业信息。
+0152	Normal	业务场景中的关键矛盾表现为信息链条断裂。外部招聘市场的岗位需求变化不能及时反馈到专业招生与培养方案中，学生就业结果也难以反向说明课程体系和专业结构的有效性。平台通过统一数据库和结果表体系，把这些数据节点串联起来，使各模块能够共享同一底层事实。
+0153	Normal	系统以高仿真样本验证链路可运行性。样本生成覆盖学生基础信息、学业事实、就业事实和企业维度属性，并通过学校层级、专业类别、行业标签、企业规模、薪资水平等变量构造真实感较强的教育就业场景。
+0155	Normal	图3-1 系统功能框架图
+0156	Heading 3	3.1.2 用户角色与功能需求
+0157	Normal	平台设置教师端、政府端、公众端和管理端等角色。教师端面向专业负责人、学院管理人员和就业指导教师，主要使用需求预测、招生匹配、培养方案优化、就业推荐和规则证据库等模块。政府端面向教育主管部门或区域治理部门，重点使用宏观监测、学校对标、需求预测、智能专报和政策辅助分析等模块。公众端面向学生、家长和社会用户，主要提供院校对比、专业就业质量、热门行业去向和公开就业趋势。
+0158	Normal	不同角色共享同一数据底座，但页面权限与指标粒度有所区别。教师端可以查看本校和本专业相关的较细粒度分析结果，政府端可以查看跨学校的汇总比较，公众端只展示脱敏后的公开信息。管理端负责账号、角色、审计和系统配置。
+0159	Normal	功能需求可概括为七类：需求预测、招生匹配、培养方案优化、就业推荐、动态监测、智能专报和统一登录审计。各功能均由数据库结果表支撑，通过Flask接口向前端提供JSON数据。
+0160	Normal	表3-1 用户角色与功能需求对应关系
+0161	Heading 3	3.1.3非功能性需求
+0162	Normal	系统的非功能需求包括数据一致性、查询性能、安全性、可扩展性、可维护性和可解释性。数据一致性要求学校、专业、行业、地区、岗位等字段使用统一编码和口径。查询性能要求前端高频页面优先读取结果表，避免每次访问都重新聚合明细数据。安全性要求密码哈希存储、角色权限控制和操作日志记录。
+0163	Normal	可扩展性体现在数据源扩展、模块扩展和角色扩展三个方面。数据源可以从高仿真样本扩展到真实校内教务系统、就业系统、招聘信息和企业数据；模块可以从现有五类分析扩展到专业画像、学生发展跟踪和政策仿真；角色可以根据学校管理制度增加学院管理员、就业辅导员和专业负责人。
+0164	Normal	可解释性是教育治理平台的重要需求。预测曲线需要配套误差指标和回测说明，推荐结果需要给出匹配理由，培养建议需要回溯到规则证据，智能专报需要明确数据来源和指标口径。
+0165	Normal	表3-2 系统非功能性需求
+0166	Heading 3	3.1.4 数据需求分析
+0167	Normal	平台需要的数据对象覆盖学校、专业、企业、岗位需求、毕业生、就业结果、招生计划、课程技能、政策信号、安全账号和审计日志等类型。根据当前项目实现，学校与专业数据主要进入dim_school、dim_major_catalog和bridge_school_major；企业、行业与岗位类别进入dim_enterprise、dim_industry和dim_job_category；岗位、毕业、就业、招生、课程和政策等业务事实进入FACT层；账号、角色和审计信息进入SYS层。
+0168	Normal	表3-3 平台数据需求与数据库承接关系
+0169	Normal	表3-3说明，本文平台的数据需求具有跨主题综合分析特征。将多源数据统一到分层数据库后，后续预测、匹配、规则挖掘、推荐和监测模块能够复用同一套编码体系和结果口径。
+0170	Heading 2	3.2系统架构设计
+0171	Normal	系统采用B/S架构，整体可划分为数据源层、数据治理层、数据库层、算法分析层、接口服务层和应用展示层。数据源层包括学生、学业、就业、企业、招聘和政策等数据；数据治理层负责清洗、标准化、标签归一和脱敏；数据库层保存基础表、事实表、应用结果表和安全审计表；算法分析层负责预测、匹配、规则和推荐；接口服务层基于Flask提供统一REST服务；应用展示层基于React和ECharts形成多角色页面。
+0172	Normal	该架构的核心思想是用数据库结果表作为上下层之间的稳定契约。算法脚本可以独立运行并写入结果表，后端服务只需要按接口读取结果表并进行权限校验，前端页面无需感知算法内部细节。这样能够降低模块耦合，提升问题定位效率。
+0174	Normal	图3-2 系统架构图
+0175	Normal	为进一步说明各层职责，图3-2补充展示系统从数据源到页面展示的处理关系。
+0177	Normal	图3-2 系统六层架构职责图
+0178	Normal	图3-2表明，数据源层提供原始业务对象，数据治理层完成清洗、标签和脱敏处理，数据库层以DIM、FACT、ADS、SYS保存稳定数据，算法分析层批量写入结果表，接口服务层负责角色校验和JSON封装，应用展示层面向教师端、政府端和公众端进行差异化呈现。
+0179	Heading 2	3.3系统详细设计
+0180	Normal	在完成需求分析和总体架构设计后，系统详细设计需要进一步回答各业务模块如何协同、数据库如何承接算法结果、用户界面如何支撑不同角色使用等问题。参照系统分层架构，本文将详细设计划分为功能模块设计、数据库设计和用户界面设计三个部分。整体思路是以数据库表结构作为稳定契约，以离线算法脚本形成可复现的数据结果，以后端接口完成权限校验和结果封装，最终通过前端页面向教师端、政府端和公众端提供差异化服务。
+0181	Heading 3	3.3.1系统功能设计
+0182	Normal	平台的功能设计围绕“需求—招生—培养—就业—监测”业务闭环展开。与单一就业统计系统不同，本文系统并不只展示就业率、薪资等结果指标，而是将外部岗位需求、招生计划、培养课程、毕业生画像和就业去向放入同一条数据链路中，使需求变化能够传导到招生匹配和培养优化，学生就业结果也能够反向验证专业结构与课程体系的适配程度。
+0183	Normal	从工程实现角度看，系统功能可分为八个模块。数据治理与入库模块负责生成或接入多源数据，并完成清洗、脱敏、标准映射和分层入库；岗位需求预测模块依据岗位月度需求、政策热度、专业强度和薪资水平预测未来需求；招生匹配模块综合就业质量、需求增长、政策热度和专业基础给出专业匹配分；培养优化模块依据课程、技能、岗位和就业结果之间的关联规则提出调整建议；就业推荐模块根据学生画像和岗位画像计算匹配度；动态监测模块面向政府端和公众端展示学校对标、产业流向和风险预警；智能专报模块将数据库指标组织为可解释文本；权限审计模块负责账号、角色、访问范围和操作留痕。其结构如图3-3所示。
+0185	Normal	图3-3 系统详细功能模块设计图
+0186	Normal	图3-3体现了平台各功能模块相互衔接的页面集合，而是以数据治理和ADS结果表为共同基础形成的业务闭环。需求预测的结果会进入招生匹配、培养优化和就业推荐模块；培养规则和专业优化建议又为教师端的专业建设提供解释依据；政府端和公众端则在权限过滤后读取汇总结果，避免明细数据越权展示。
+0187	Normal	表3-3 核心功能模块设计
+0188	Normal	在模块调用关系上，系统采用离线计算与在线服务相结合的方式。数据生成、特征加工、模型预测、规则挖掘和推荐计算由脚本批量执行并写入结果表；在线服务主要负责身份认证、参数过滤、SQL查询、结果格式化和异常处理。这样设计可以避免前端访问时重复执行复杂计算，也便于通过算法链路日志追踪每个阶段的输入表、输出表、运行状态和耗时。
+0189	Heading 3	3.3.2数据库设计
+0190	Normal	数据库设计是本文平台的核心。系统采用MySQL作为关系型数据库管理系统，并借鉴数据仓库分层思想，将表结构划分为DIM维度层、FACT事实层、ADS应用结果层和SYS安全审计层。维度层提供学校、专业、行业、岗位和企业等稳定描述；事实层记录招聘、毕业、就业、招生、课程和政策等业务明细；应用层保存预测、匹配、规则、优化和推荐等算法结果；安全层保存用户账号、审计日志和算法链路日志。
+0192	Normal	图3-4 数据库分层与算法结果承接关系
+0193	Normal	图3-4说明了本文数据库设计的关键原则：第一，基础业务数据与分析结果数据分离，避免模型结果反向污染原始事实；第二，学校、专业、行业和岗位等编码在各层保持一致，使跨模块追溯成为可能；第三，前端页面优先读取ADS应用层，保证展示性能和接口稳定性；第四，安全审计表独立于业务表，便于后续增加账号策略、操作追踪和风险审计功能。
+0194	Normal	表3-4 数据库分层表设计
+0195	Normal	维度表采用主键编码和常用查询字段索引。例如dim_school以school_id作为主键，dim_major_catalog以major_code作为主键，bridge_school_major以school_id和major_code组成联合主键，用于描述某高校是否开设某专业、是否为优势专业以及历史招生规模。行业与岗位维度通过industry_id和job_category_id形成层级关系，企业维度记录企业规模、所有制、高新技术、专精特新和上海重点产业标签，为就业质量分析和推荐计算提供画像。
+0196	Normal	事实表围绕业务事件展开。fact_job_posting按月份记录企业岗位需求人数、薪资区间、学历要求、技能标签和偏好专业；fact_graduate记录毕业生学校、专业、学历、技能、实习和求职意向；fact_employment记录毕业生就业单位、行业、岗位、薪资、专业相关度和社保核验状态；fact_enrollment_plan、fact_course_skill和fact_policy_signal分别支撑招生分析、培养规则挖掘和政策热度计算。通过这些事实表，系统能够从需求侧、供给侧和政策侧同时刻画高校人才培养环境。
+0197	Normal	应用结果表采用“按场景冗余关键展示字段”的方式设计。例如ads_job_demand_forecast不仅保存school_id、major_code等编码，还保存school_name、major_name、industry_name和job_category_name，便于前端直接展示；ads_job_recommendation保存推荐岗位、企业、相似度、置信等级和推荐理由，避免页面再进行复杂拼接；ads_major_optimization保存建议类型、优先级、证据分、原因说明和相关指标，使教师端能够解释为什么某个专业被建议扩招、稳招、缩招或加强实践培养。
+0198	Normal	在关键表字段设计上，本文优先列出支撑核心业务链路的代表字段。字段选择以当前scripts/create_tables.py中的DDL为依据，既覆盖业务主键，也覆盖接口查询和页面展示所需字段。
+0199	Normal	表3-6 关键数据表字段说明
+0200	Normal	表3-6说明，平台数据库以school_id、major_code、industry_id、job_category_id和month等字段贯通业务事实和算法结果。对于多学校、多专业和多岗位组合，统一编码可以显著降低接口聚合和前端展示的复杂度。
+0201	Normal	在约束与索引设计方面，dim_school、dim_major_catalog、dim_industry、dim_job_category和dim_enterprise均设置主键；bridge_school_major采用school_id与major_code联合主键；事实表使用posting_id、graduate_id、employment_id等业务主键。常用过滤字段包括school_id、major_code、industry_id、job_category_id、month、forecast_month和user_id，并在DDL中设置相应索引。当前实现主要通过主键和索引保证查询效率，外键关系以逻辑约束和脚本校验为主，便于原型系统快速重建和批量导入。
+0202	Heading 3	3.3.3用户使用界面设计
+0203	Normal	用户界面采用B/S架构，前端使用React、Ant Design和ECharts实现。系统入口为登录页，用户登录后根据角色进入不同工作台。教师端默认进入上海大学口径的专业建设与就业治理工作台，政府端进入区域高校治理驾驶舱，公众端进入公开展示平台。不同端口共享组件体系和数据服务层，但菜单、指标粒度和可访问接口不同。
+0204	Normal	表3-5 多角色界面设计
+0205	Normal	在交互设计上，教师端页面更强调“可钻取”和“可解释”。需求预测页面使用折线图展示未来12个月岗位需求人数，并通过图例区分专业和岗位组合；招生匹配页面使用KPI卡片、画像条形图和专业列表展示匹配分；培养优化页面使用气泡图和建议卡片展示优先级、建议类型和原因；就业推荐页面提供学生ID查询、Top-K推荐列表和推荐理由。政府端页面更强调“对比”和“预警”，通过学校榜单、产业分布、区域预警和专报文本支撑宏观治理。公众端则减少内部管理字段，只保留适合公开展示的院校对比和专业趋势。
+0206	Normal	前端通过统一的dataService封装Axios请求，并在请求拦截器中自动携带Token。后端接口统一返回code、message和data结构，前端通过数据适配器将不同接口结果转换为图表组件所需格式。该设计降低了页面与数据库字段之间的直接耦合，也便于后续在不改动页面的情况下增加接口缓存、异常提示和空数据状态处理。
+0208	Heading 1	第4章 一体化平台开发与实现
+0209	Normal	本章在前文需求分析、关键技术和系统设计的基础上，介绍平台的具体开发与实现过程。按照当前项目代码结构，系统实现可分为运行环境搭建、数据生成与入库、特征加工与需求预测、招生匹配与培养优化、就业推荐与动态监测、后端接口与前端展示、安全审计与链路验证等部分。与第三章偏重设计说明不同，本章重点说明各模块在工程中的输入、处理逻辑、输出结果和实现效果。
+0210	Heading 2	4.1 开发工具与开发环境介绍
+0211	Normal	平台采用前后端分离的B/S架构。后端以Python和Flask为核心，负责接口服务、数据库查询、权限认证、审计日志和智能专报生成；数据处理脚本使用Pandas、SQLAlchemy和Spark风格聚合逻辑完成特征加工、模型计算和结果写入；数据库使用MySQL保存基础数据、事实数据、算法结果和安全表；前端使用React、Ant Design、ECharts和Vite实现多角色可视化页面。
+0212	Normal	表4-1 开发环境与技术栈
+0213	Normal	项目目录也体现了上述分工。scripts目录保存数据生成、建表、导入、算法计算和验收脚本；app.py提供主要Flask接口；backend目录保存安全、提示词和大模型调用相关代码；frontend目录保存React前端页面、组件、路由、数据服务和图表适配逻辑；data/generated目录保存生成后的CSV和验收报告；docs目录保存接口、页面和全链路检查报告。
+0214	Heading 2	4.2 数据生成、清洗与入库实现
+0215	Normal	由于真实高校学生和就业数据具有较强隐私属性，本文在系统实现阶段使用脱敏仿真数据验证平台链路。数据生成脚本platform_data_factory.py依据上海高校、专业目录、行业岗位分类、企业画像、政策方向和季节性招聘规律构造样本数据。生成内容覆盖学校、专业、行业、企业、岗位需求、毕业生、就业结果、招生计划、课程技能和政策信号等对象，能够支撑后续预测、匹配、规则挖掘和推荐计算。
+0217	Normal	图4-1 数据处理与入库实现流程
+0218	Normal	如图4-1所示，数据处理链路首先生成标准CSV文件，然后通过create_tables.py创建数据库表结构和索引，再由PutData.py批量导入MySQL。导入后，质量检查脚本会验证学校数量、专业目录覆盖、岗位行业分布、就业率差异、薪资差异、岗位需求季节波动和模型结果非负等条件。质量检查通过后，Spark-all.py对事实表进行多表关联和聚合，生成ads_job_demand_features等应用层输入。
+0219	Normal	表4-2 全链路验收主要数据表规模
+0220	Normal	本次全链路验收结果显示，基础数据和结果数据均已成功生成并写入数据库。其中岗位需求事实表达到81000条，毕业生事实表达到51000条，就业事实表达到42000条，Spark聚合后生成127501条岗位需求特征记录。质量检查中，计算机相关岗位占比为0.1075，非计算机岗位覆盖18个行业，岗位需求曲线季节波动系数为2.063，说明样本具有一定业务差异性和趋势波动特征。
+0221	Heading 2	4.3 核心算法模块实现
+0222	Normal	平台核心算法链路由特征聚合、需求预测、招生匹配、培养规则挖掘、就业推荐和动态监测六个阶段组成。各阶段均以数据库表为输入和输出，不依赖前端页面实时计算。算法脚本运行后会将状态、输入表、输出表、算法名称、记录数和耗时写入ads_algorithm_chain_log，便于在算法链路页面中展示运行情况。
+0224	Normal	图4-2 核心算法链路实现流程
+0225	Heading 3	4.3.1 Spark特征聚合与需求预测实现
+0226	Normal	Spark特征聚合模块读取fact_job_posting、fact_employment、fact_enrollment_plan和fact_policy_signal等表，对岗位需求、就业质量、招生热度和政策热度进行统一加工。聚合粒度为月份、学校、专业、行业和岗位类别，输出字段包括demand_count_sum、posting_count、avg_salary、policy_heat、employment_rate、match_score、skill_gap_score、enrollment_pressure和school_major_strength_score等。这些字段既服务于需求预测，也为招生匹配和培养优化提供基础特征。
+0227	Normal	需求预测模块读取ads_job_demand_features，选择样本月份较完整的学校—专业—行业—岗位组合，构造未来12个月的预测结果。工程实现中采用LSTM时序预测思想，并结合季节性回退策略处理样本不足和局部波动问题。模型不仅输出predicted_demand_count，还给出lower_bound、upper_bound、demand_growth_rate、demand_level、mape和track_rank等字段，便于页面展示预测区间、需求等级和模型解释。
+0228	Heading 3	4.3.2 招生匹配与培养优化实现
+0229	Normal	招生匹配模块将专业视为分析对象，综合未来需求、就业率、平均薪资、招生热度、政策热度和学校专业强度计算match_score。对于每个学校专业，系统输出建议类型、建议动作和原因说明。例如当需求增长和就业质量较高时，专业可能被建议扩招；当就业率和需求增长均不足时，可能被建议缩招；当政策热度高且学校专业基础较好时，可能被建议重点扶持。
+0230	Normal	培养优化模块由两部分组成。首先，FPgrowth-all.py从课程技能、就业结果和岗位类别中挖掘“课程—技能—岗位”关联规则，输出support、confidence、lift和evidence_score等指标；其次，CF-all.py将需求预测、就业质量、招生热度、政策热度和规则证据综合为专业结构优化建议，写入ads_major_optimization。该实现方式使培养建议能够回溯到规则证据和业务指标，避免只给出结论而缺乏解释。
+0231	Heading 3	4.3.3 就业推荐与动态监测实现
+0232	Normal	就业推荐模块读取毕业生画像、岗位预测结果、岗位技能标签、企业属性和历史就业质量数据，将学生技能、求职意向、岗位需求强度、专业基础和企业吸引力组合为相似度分数。每名学生输出Top-K推荐岗位和企业，并给出similarity_score、confidence_level、salary_reference和recommendation_reason等字段。推荐理由采用结构化文本，说明学生专业与岗位技能、求职意向和未来需求之间的匹配关系。
+0233	Normal	动态监测模块主要面向政府端和公众端。政府端可以查看跨校就业率、平均薪资、高质量就业比例、重点产业就业占比、学校对标和区域风险预警；公众端只展示脱敏公开汇总信息，如院校对比、专业趋势和就业方向建议。由于监测页面直接读取ADS或汇总接口结果，因此既保证了响应速度，也避免了公众端接触敏感明细数据。
+0234	Normal	表4-3 核心算法输出与评价结果
+0235	Heading 2	4.4 后端接口服务实现
+0236	Normal	后端接口集中由根目录app.py提供，backend/app.py作为启动入口导入app对象并执行启动检查。接口统一使用/api路径前缀，返回结构为code、message和data。前端dataService.js通过Axios封装调用，并在请求拦截器中携带Token。
+0238	Normal	表4-4 主要接口与项目页面对应关系
+0239	Normal	表4-4中的接口名称均来自当前app.py和dataService.js。API合约检查报告显示，教师端、政府端和公众端主要接口均能返回HTTP 200和code=0，且核心数据不存在全0风险。
+0240	Heading 2	4.5 前端页面实现与可视化展示
+0241	Heading 3	界面设计风格
+0242	Normal Indent	系统界面整体采用“驾驶舱概览+模块化详情页”的设计思路。视觉风格强调信息密度适中、层次清晰以及图表与文字说明并重。页面通常由顶部概览指标卡、主体图表区、辅助说明区和底部业务解释区构成，既满足业务浏览需求，也便于管理者对结果进行快速研判。
+0243	Heading 3	主要功能页面
+0244	Normal Indent	登录页面如图5所示。该页面承担统一身份认证与角色分流功能，是教师端、政府端与公众端进入平台的统一入口。页面设计在视觉上保持简洁，突出账号输入、身份识别与统一入口三项核心任务，以减少首次使用时的操作负担。登录页面并不是独立的静态入口，而是后续角色授权、访问控制和审计记录链路的前置节点，因此在平台整体架构中承担着连接业务访问与安全控制的双重作用。
+0246	Caption	图 5 登录页面
+0247	Normal Indent	教师端总览页如图6所示。该页重点汇聚需求预测、培养优化与就业推荐等教学决策相关指标，便于快速了解本校整体情况。页面强调“概览先行、问题导向、结果下钻”的浏览逻辑，通过指标卡、趋势图和模块入口将原本分散的分析结果集中呈现，帮助教师和管理人员迅速识别本校在培养质量、就业表现与专业调整方面的关键问题。该页面既承担教师端的首屏总入口功能，也承担各类分析页面之间的导航枢纽作用。
+0249	Caption	图 6 平台总览页面（教师端）
+0250	Normal Indent	政府端总览页如图7所示。该页面更强调区域层面的宏观监测与结构对比，以支撑跨学校、跨专业的综合研判。与教师端更关注单校改进不同，政府端页面在布局上更突出学校间比较、区域总体趋势和治理指标联动，使管理者能够从更高层级观察人才培养与就业结构变化。该页面体现了平台在“单校业务分析”之外向“区域治理支撑”延伸的应用价值。
+0252	Caption	图 7 平台总览页面（政府端）
+0253	Normal Indent	学校对标分析页面如图8所示。该页面通过横向比较帮助管理者识别学校之间在就业质量、薪资表现和结构特征上的差异。页面通过并列指标、对比图形和综合排序等方式，将原本难以直观看出的相对差距转化为可比、可解释的可视结果，使管理者能够更准确地识别优势学校、短板学校与波动指标。该页面的意义不仅在于“展示差异”，更在于为后续政策调整、资源配置和学校分类指导提供可操作的观察依据。
+0255	Caption	图 8 学校对标分析页面（政府端）
+0256	Normal Indent	规则证据库页面如图9所示。该页面用于呈现规则挖掘结果及其支持度、置信度和提升度等指标，为培养优化建议提供依据。页面设计强调“证据先于结论”的表达方式，先展示规则本身及其统计强度，再引导用户理解规则所对应的专业特征、技能组合与就业结果关系。通过这一页面，培养方案优化不再停留于经验判断，而能够建立在较为明确的数据证据之上。
+0258	Caption	图 9 规则证据库页面
+0259	Normal Indent	培养方案优化页面如图10所示。该页面将规则挖掘结果转化为面向课程体系、能力培养和实践教学的结构化建议。页面并非简单罗列建议条目，而是强调从规则证据到优化方向的解释链条，使用户能够理解“为什么提出该建议、该建议对应的培养短板是什么、其改进重点落在何处”。这种页面组织方式增强了建议结果的可解释性，也更符合教学管理场景下对改进方案可落地性的要求。
+0261	Caption	图 10 培养方案优化页面
+0262	Normal Indent	图11展示了政府端的培养优化视图，其重点在于从更高层面观察不同学校和专业的培养改进方向。相较于教师端更关注单一学校的培养修订，政府端更强调跨学校、跨专业类别的结构性差异，并据此识别具有代表性的共性问题和区域性改进需求。该视图使培养优化从单点改进提升到治理层面的统筹分析，为教育主管部门开展结构调整与资源引导提供了更高层级的参考依据。
+0264	Caption	图 11 培养方案优化页面（政府端）
+0265	Normal Indent	就业推荐页面如图12所示。该页面给出岗位匹配结果、推荐原因与可信度统计，用于辅助学生就业指导与岗位分析。页面在结果展示上不仅呈现Top-K推荐列表，还通过匹配理由和可信度信息提升推荐结果的解释性，避免将推荐过程简化为“黑箱排序”。对于教师指导和学生择岗而言，这一页面更重要的价值在于将人岗匹配结果转化为可讨论、可验证、可调整的指导依据。
+0267	Caption	图 12 就业推荐页面
+0268	Normal Indent	治理专报页面如图13所示。该页面将多模块分析结果组织为文本化结论，增强平台在管理汇报与决策沟通中的表达能力。页面将原本分散在预测、监测、匹配和优化模块中的结果重新整合为连续文本，使系统不仅能够“显示图表”，也能够“输出判断”。这一设计显著提升了平台结果在会议汇报、治理沟通和决策支持场景中的可传播性与可理解性。
+0270	Caption	图 13 治理专报页面
+0271	Normal Indent	需求预测页面如图14所示。该页面展示未来薪资趋势、评估指标与业务解释，使需求变化研判具备前瞻性。页面通过趋势曲线、误差指标和文字解读三类内容的组合，既保留了模型结果的量化特征，也为非技术用户提供了较直观的业务解释。由此，需求预测不再只是模型演算结果的可视化输出，而是成为专业布局和招生判断的重要辅助信息来源。
+0273	Caption	图 14 需求预测页面
+0274	Normal Indent	招生匹配页面如图15所示。该页面呈现专业与生源画像之间的匹配结果与评估指标，为招生策略调整提供辅助依据。页面通过匹配分值、评价指标和相关画像信息共同刻画“哪些生源更可能与哪些专业形成较好适配”，使招生分析从经验判断走向数据支持。对学校而言，这一页面不仅有助于优化招生宣传重点，也有助于从源头改善招生结构与后续培养适配度。
+0276	Caption	图 15 招生匹配页面
+0277	Normal Indent	社会公众端总览页如图16所示。该总览页突出公开信息展示与总体趋势浏览，强调信息公开与社会服务属性。页面内容在保持信息完整性的同时，尽量降低专业门槛，使社会公众能够从更直观的方式了解高校就业总体表现、行业去向与趋势变化。该页面体现了平台不仅服务内部治理，也兼顾对外展示与社会沟通的公共属性。
+0279	Caption	图 16 平台总览页面（社会公众端）
+0280	Normal Indent	院校对比页面如图17所示。该页面便于公众从多校维度观察就业表现与结构差异，提升平台的外部展示能力。通过多校并列比较，页面将原本分散的学校信息组织为可横向观察的结构化结果，有助于公众理解不同院校在就业质量、薪资水平和去向结构上的相对差异。该页面既强化了平台对外展示能力，也提升了高校就业信息公开的可读性与透明度。
+0282	Caption	图 17 院校对比页面（社会公众端）
+0283	Normal Indent	除图示页面外，各主要界面的业务定位与设计重点如表13所示。与图示页面侧重直观呈现不同，表13进一步从页面职责、信息组织方式和用户使用目标三个方面，对主要页面进行归纳，有助于从整体上理解平台界面的设计逻辑。通过对页面的业务定位的进一步归纳，说明平台页面设计并非简单按功能名称命名，而是围绕不同用户在不同场景下的任务需求进行组织。总览页强调概览与入口，详情页强调分析与解释，专报页强调文本化输出，整体上形成了较完整的页面协同关系。
+0284	Caption	表 13 主要功能页面说明表
+0287	Normal	界面展示
+0288	Heading 2	4.6 安全审计与全链路验证
+0289	Normal	平台涉及学生就业、薪资、企业和推荐结果等敏感数据，当前实现通过账号表、Token、角色权限和审计日志进行基础保护。sys_user_account保存password_hash、hash_algo、role和school_id等字段；登录成功后后端签发Token；前端请求时自动携带Token；后端根据角色限制教师端、政府端和公众端的数据范围。
+0290	Normal	全链路验收脚本run_full_pipeline_check.py共执行15个步骤，覆盖数据生成、建表、导入、Spark聚合、岗位需求预测、招生匹配、培养方案优化、就业推荐、安全初始化、数据质量检查、页面逻辑检查、API合约检查、前端静态扫描、依赖安装和前端构建。验收报告显示总体结论为通过，阻断性问题为0。
+0291	Heading 2	4.7 本章小结
+0292	Normal	本章从开发环境、数据入库、算法链路、接口服务、前端页面和安全审计等方面说明了一体化平台的实现过程。当前系统以MySQL分层数据库为核心，以脚本化算法计算形成ADS结果表，以Flask接口和React页面完成多角色展示，形成了从数据治理到业务可视化的闭环实现。
+0294	Heading 1	第5章 系统测试与结果分析
+0295	Normal	本章基于项目已有验收脚本和报告，对系统数据质量、功能完整性、接口可用性、算法结果解释性和权限审计进行分析。测试结果主要来自docs/FINAL_CHAIN_AUDIT_REPORT.md、docs/FULL_PIPELINE_CHECK_REPORT.md、data/generated/api_contract_report.json和data/generated/page_logic_check_report.json。
+0296	Heading 2	5.1 测试环境与测试数据
+0297	Normal	测试在本地Windows环境下完成，后端服务监听http://127.0.0.1:5000，前端服务监听http://127.0.0.1:5173。测试数据为脱敏仿真样本，十万级样本指多表合计规模，包含岗位需求、毕业生、就业、招生、课程和政策等多类数据；就业事实表只是其中一类事实数据。
+0298	Normal	表5-1 测试数据规模
+0299	Heading 2	5.2 数据质量与入库测试
+0300	Normal	数据质量测试重点验证学校数量、专业目录覆盖、岗位行业分布、就业率差异、薪资差异、季节波动和预测结果非负等条件。检查报告显示，上海10所高校完整生成，本科专业目录845条，覆盖12个学科门类和93个专业类，岗位类别93类，非计算机岗位覆盖18个行业。
+0302	Heading 2	5.3 功能测试
+0303	Normal	表5-2 功能测试结果
+0304	Heading 2	5.4 接口与性能测试
+0305	Normal	接口测试采用scripts/check_api_contract.py生成的报告。由于当前本地测试报告没有记录精确毫秒级响应时间，本文不编造具体耗时，只说明核心接口在本地环境下均能正常返回，页面未出现空数据和全0指标风险。
+0306	Normal	表5-3 主要接口合约测试结果
+0307	Heading 2	5.5 算法结果与可解释性分析
+0308	Normal	算法结果检查显示，Spark聚合生成127501条特征记录；岗位需求预测生成3120条记录，MAPE在合理范围内；培养规则共271条，证据分不同值47个；就业推荐Top1平均相似度为0.8007。这些结果说明原型系统能够形成可查询、可解释的算法结果表。
+0309	Heading 2	5.6 权限控制与审计日志测试
+0310	Normal	安全初始化后，sys_user_account中包含教师端、政府端和公众端默认账号，sys_audit_log记录登录和模块访问行为。验收数据中sys_user_account为3条，sys_audit_log为4条。接口层通过角色限制教师端、本校数据范围和政府端、公众端访问范围。
+0311	Heading 2	5.7 本章小结
+0312	Normal	本章从测试数据、数据质量、功能、接口、算法结果和权限审计等方面验证了系统可运行性。测试结果表明，平台能够支撑核心业务页面展示和算法结果查询，但真实授权数据接入后仍需重新校准模型参数，并补充更严格的浏览器自动化和性能压测。
+0314	Heading 1	第6章 总结与展望
+0315	Heading 2	6.1 本文主要工作
+0316	Normal	本文围绕高校需求—招生—培养—就业—监测一体化治理场景，完成了数据治理流程、分层数据库、算法结果表、后端接口和前端多角色页面的设计与实现。系统构建了覆盖学校、专业、企业、岗位、毕业生、就业、招生、课程和政策信号的脱敏仿真数据链路，并通过DIM、FACT、ADS和SYS分层数据库组织多模块共享数据。
+0317	Heading 2	6.2 本文创新点
+0318	Normal	本文的主要特点体现在三个方面：第一，将市场需求感知、招生匹配、培养优化、就业推荐和动态监测组织为同一数据库应用链路；第二，通过ADS结果表将算法计算结果沉淀为可查询、可解释和可复用的数据资产；第三，面向教师端、政府端和公众端设计差异化页面和权限范围，并通过审计日志追踪关键访问行为。
+0319	Heading 2	6.3 不足与展望
+0320	Normal	当前系统仍存在不足。首先，数据主要为脱敏仿真样本，真实授权数据接入后需要重新进行字段映射、质量校验和模型参数校准；其次，需求预测当前采用LSTM预测思想与季节性回退结合的工程实现，未来可在真实时间序列上接入更完整的深度学习训练流程；再次，当前测试主要依赖接口合约、静态扫描和构建检查，后续可补充Playwright浏览器自动化、接口压测和安全测试。
+0321	Heading 1	参考文献
+0322	Normal	[1] SIEMENS G, LONG P. Penetrating the fog: analytics in learning and education[J]. EDUCAUSE Review, 2011, 46(5): 31-40.
+0323	Normal	[2] DAMA International. DAMA-DMBOK: data management body of knowledge[M]. 2nd ed. Basking Ridge: Technics Publications, 2017.
+0324	Normal	[3] KIMBALL R, ROSS M. The data warehouse toolkit: the definitive guide to dimensional modeling[M]. 3rd ed. Indianapolis: John Wiley & Sons, 2013.
+0325	Normal	[4] HEER J, BOSTOCK M, OGIEVETSKY V. A tour through the visualization zoo[J]. Communications of the ACM, 2010, 53(6): 59-67.
+0326	Normal	[5] ZAHARIA M, CHOWDHURY M, FRANKLIN M J, et al. Spark: cluster computing with working sets[C]//Proceedings of the 2nd USENIX Conference on Hot Topics in Cloud Computing. Berkeley: USENIX Association, 2010.
+0327	Normal	[6] HOCHREITER S, SCHMIDHUBER J. Long short-term memory[J]. Neural Computation, 1997, 9(8): 1735-1780.
+0328	Normal	[7] HU Y, KOREN Y, VOLINSKY C. Collaborative filtering for implicit feedback datasets[C]//2008 Eighth IEEE International Conference on Data Mining. Pisa: IEEE, 2008: 263-272.
+0329	Normal	[8] HAN J, PEI J, YIN Y. Mining frequent patterns without candidate generation[C]//Proceedings of the 2000 ACM SIGMOD International Conference on Management of Data. Dallas: ACM, 2000: 1-12.
+0330	Normal	[9] 国家市场监督管理总局, 国家标准化管理委员会. GB/T 35273-2020 信息安全技术 个人信息安全规范[S]. 北京: 中国标准出版社, 2020.
+0331	Normal	[10] MCCKINNEY W. Python for data analysis[M]. 3rd ed. Sebastopol: O'Reilly Media, 2022.
+0332	Heading 1	附  录
+0334	论文正文1	（1）代码、图表、标准、手册等数据；
+0335	论文正文1	（2）未发表过的一手文献；
+0336	论文正文1	（3）公式推导与证明、调查表等；
+0337	论文正文1	（4）辅助性教学工具或表格；
+0338	论文正文1	（5）其他需要展示或说明的内容
+0339	论文正文1	……
+0342	Heading 1	致  谢
+0343	论文正文1	（致谢部分切勿照搬，本部分内容也在论文查重范围之内）

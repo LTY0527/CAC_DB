@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-04-29T11:42:17",
+  "passed": true,
+  "checks": [
+    {
+      "check": "dim_industry 三大先导产业标签数量 >= 3",
+      "passed": true,
+      "value": 4,
+      "expected": ">=3"
+    },
+    {
+      "check": "dim_enterprise 三大先导企业数量 > 0",
+      "passed": true,
+      "value": 638,
+      "expected": ">0"
+    },
+    {
+      "check": "fact_job_posting 三大先导岗位数量 > 0",
+      "passed": true,
+      "value": 16865,
+      "expected": ">0"
+    },
+    {
+      "check": "fact_employment 三大先导就业人数 > 0",
+      "passed": true,
+      "value": 8706,
+      "expected": ">0"
+    },
+    {
+      "check": "上海大学三大先导就业人数 > 0",
+      "passed": true,
+      "value": 3685,
+      "expected": ">0"
+    },
+    {
+      "check": "AI / IC / BIOMED 三类均有就业记录",
+      "passed": true,
+      "value": {
+        "BIOMED": 4716,
+        "AI": 2015,
+        "IC": 1975
+      },
+      "expected": "AI/IC/BIOMED > 0"
+    },
+    {
+      "check": "教师端 /api/employment-summary 先导产业人数 > 0",
+      "passed": true,
+      "value": 3685,
+      "expected": ">0"
+    },
+    {
+      "check": "政府端 /api/employment-summary 先导产业人数 > 0",
+      "passed": true,
+      "value": 3820,
+      "expected": ">0"
+    },
+    {
+      "check": "政府端 /api/monitor/school 先导产业吸纳人数 > 0",
+      "passed": true,
+      "value": 8706,
+      "expected": ">0"
+    }
+  ],
+  "details": {
+    "code_counts": {
+      "BIOMED": 4716,
+      "AI": 2015,
+      "IC": 1975
+    }
+  }
+}

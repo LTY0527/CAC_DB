@@ -38,7 +38,10 @@ function buildPublicMajorBarOption(data = []) {
       formatter(params) {
         const index = params?.[0]?.dataIndex ?? 0
         const item = data[index] || {}
-        return `${item.major_name || '-'}<br/>平均薪资：${formatNumber(item.avg_salary, 0)} 元<br/>样本规模：${formatNumber(item.sample_count, 0)}`
+        const tags = Array.isArray(item.industry_trend_tags)
+          ? item.industry_trend_tags.join('、')
+          : (item.industry_trend_tags || '')
+        return `${item.major_name || '-'}<br/>平均薪资：${formatNumber(item.avg_salary, 0)} 元<br/>样本规模：${formatNumber(item.sample_count, 0)}${tags ? `<br/>趋势标签：${tags}` : ''}`
       },
     },
     grid: { left: '8%', right: '4%', bottom: '8%', top: '8%', containLabel: true },
@@ -159,10 +162,12 @@ function PublicEmptyState({ dataLoadedAt = '' }) {
   )
 }
 
-function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
+function PublicHome({ employmentData = [], publicSalaryRankingData = [], dataLoadedAt = '' }) {
   const navigate = useNavigate()
   const overview = getPublicOverview(employmentData)
-  const topMajors = getPublicTopMajors(employmentData)
+  const topMajors = Array.isArray(publicSalaryRankingData) && publicSalaryRankingData.length
+    ? publicSalaryRankingData
+    : getPublicTopMajors(employmentData)
   const hasOverview = overview.schoolCount > 0 && overview.avgSalary > 0
 
   if (!hasOverview) {
@@ -189,9 +194,6 @@ function PublicHome({ employmentData = [], dataLoadedAt = '' }) {
           <Row gutter={[16, 16]} align="middle">
             <Col span={24}>
               <div style={sectionTitleStyle}>社会公众端</div>
-              <div style={{ marginTop: 8, color: designTokens.textSecondary, lineHeight: 1.8 }}>
-                面向社会公众展示上海高校专业建设、公开就业结果与院校对比信息。
-              </div>
             </Col>
           </Row>
         </Card>
@@ -292,13 +294,19 @@ function PublicSchoolCompare({ employmentData = [], dataLoadedAt = '' }) {
   )
 }
 
-export default function PublicWorkspace({ employmentData = [], dataLoadedAt = '' }) {
+export default function PublicWorkspace({ employmentData = [], publicSalaryRankingData = [], dataLoadedAt = '' }) {
   const location = useLocation()
 
   if (location.pathname === '/school-compare') {
     return <PublicSchoolCompare employmentData={employmentData} dataLoadedAt={dataLoadedAt} />
   }
 
-  return <PublicHome employmentData={employmentData} dataLoadedAt={dataLoadedAt} />
+  return (
+    <PublicHome
+      employmentData={employmentData}
+      publicSalaryRankingData={publicSalaryRankingData}
+      dataLoadedAt={dataLoadedAt}
+    />
+  )
 }
 
