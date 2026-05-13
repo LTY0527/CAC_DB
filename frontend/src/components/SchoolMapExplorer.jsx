@@ -291,12 +291,31 @@ function FallbackMap({ schools = [], selectedSchool = '', onSelectSchool }) {
 
 export default function SchoolMapExplorer({
   employmentData = [],
+  schoolData = null,
   roleMode = 'public',
   onAction,
   actionLabel = '查看详情',
 }) {
   const chartRef = useRef(null)
-  const schoolStats = useMemo(() => getSchoolMapStats(employmentData), [employmentData])
+  const schoolStats = useMemo(() => {
+    if (Array.isArray(schoolData) && schoolData.length) {
+      return schoolData.map((item) => {
+        const major = item.advantage_major || {}
+        const leadingRate = Number(item.leading_industry_rate || item.leading_industry_employment_rate || 0)
+        return {
+          school_name: item.school_name,
+          school_level: item.school_type || item.school_level || '',
+          total_emp: Number(item.employment_sample_count || item.sample_count || 0),
+          avg_salary: Number(item.avg_salary || major.avg_salary || 0),
+          major_count: Number(item.covered_major_count || 0),
+          top_majors: item.display_major_name || item.major_name ? [item.display_major_name || item.major_name] : (major.major_name ? [major.major_name] : (item.advantage_majors || [])),
+          top_industry: item.top_industry_name || item.top_industry || '',
+          strategic_ratio: leadingRate > 1 ? leadingRate : leadingRate * 100,
+        }
+      })
+    }
+    return getSchoolMapStats(employmentData)
+  }, [employmentData, schoolData])
   const pointMap = useMemo(() => getSchoolGeoPointMap(), [])
   const mapPoints = useMemo(
     () =>
@@ -496,7 +515,7 @@ export default function SchoolMapExplorer({
                       background: '#ffffff',
                     }}
                   >
-                    <div style={metaLabelStyle}>优势专业</div>
+                    <div style={metaLabelStyle}>专业</div>
                     <Space size={[8, 8]} wrap style={{ marginTop: 12 }}>
                       {(selectedDetail.top_majors || []).map((major) => (
                         <Tag key={major} color="processing">

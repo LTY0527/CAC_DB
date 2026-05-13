@@ -177,6 +177,11 @@ export async function fetchPublicSalaryRanking(limit = 10) {
   return ensurePayload(response, { items: [] })
 }
 
+export async function fetchPublicSchoolComparison() {
+  const response = await api.get('/public/school-comparison')
+  return ensurePayload(response, { items: [] })
+}
+
 export async function fetchGovSchoolDetail(schoolName) {
   const response = await api.get('/gov/school-detail', {
     params: { school_name: schoolName },

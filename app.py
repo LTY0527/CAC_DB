@@ -6,6 +6,7 @@ import builtins
 import hashlib
 import hmac
 import json
+import math
 import sys
 import traceback
 from datetime import datetime, timedelta
@@ -54,6 +55,115 @@ print = safe_print
 SECRET = "cac-db-platform-secret"
 ROLE_ALIAS = {"teacher": "teacher", "government": "gov", "public": "public", "gov": "government"}
 DEFAULT_SCHOOL_ID = "SHU007"
+
+PUBLIC_SCHOOL_DISPLAY_MAJOR_MAP = {
+    "上海交通大学": "计算机科学与技术",
+    "同济大学": "土木工程",
+    "复旦大学": "数学与应用数学",
+    "上海大学": "金属材料工程",
+    "华东师范大学": "教育学",
+    "上海理工大学": "能源与动力工程",
+    "华东理工大学": "化学工程与工艺",
+    "东华大学": "纺织科学与工程",
+    "上海外国语大学": "国际经济与贸易",
+    "上海财经大学": "会计学",
+}
+
+PUBLIC_SCHOOL_NAME_ALIASES = {
+    "上海交大": "上海交通大学",
+    "复旦": "复旦大学",
+    "同济": "同济大学",
+    "华师大": "华东师范大学",
+    "华理": "华东理工大学",
+    "上财": "上海财经大学",
+    "上大": "上海大学",
+    "上外": "上海外国语大学",
+    "上理工": "上海理工大学",
+}
+
+MAJOR_INDUSTRY_RULES = {
+    "风景园林": {
+        "allow_industries": ["建筑设计", "城市规划", "园林景观", "生态环保", "土木建筑", "文化旅游", "房地产与工程咨询"],
+        "allow_keywords": ["园林", "景观", "规划", "建筑", "生态", "环保", "绿化", "市政", "设计", "工程咨询"],
+        "deny_industries": ["集成电路与电子信息", "集成电路", "芯片", "半导体", "新能源汽车", "生物医药"],
+        "deny_keywords": ["集成电路", "芯片", "半导体", "射频", "芯片验证", "嵌入式", "新能源电池"],
+    },
+    "计算机科学与技术": {
+        "allow_industries": ["软件和信息服务", "人工智能", "互联网", "集成电路与电子信息", "数字经济", "金融科技"],
+        "allow_keywords": ["软件", "算法", "数据", "系统", "开发", "测试", "人工智能", "网络", "云计算"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "集成电路": {
+        "allow_industries": ["集成电路与电子信息", "电子信息", "半导体"],
+        "allow_keywords": ["集成电路", "芯片", "半导体", "射频", "版图", "验证", "EDA"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "电子信息": {
+        "allow_industries": ["集成电路与电子信息", "电子信息", "通信", "智能制造"],
+        "allow_keywords": ["电子", "通信", "芯片", "嵌入式", "硬件", "测试", "自动化"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "能源与动力工程": {
+        "allow_industries": ["能源动力", "新能源", "装备制造", "汽车工程", "电力工程"],
+        "allow_keywords": ["能源", "动力", "新能源", "电力", "热能", "发动机", "储能", "汽车"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "纺织科学与工程": {
+        "allow_industries": ["纺织服装", "新材料", "时尚设计", "智能制造"],
+        "allow_keywords": ["纺织", "服装", "面料", "材料", "染整", "时尚", "设计"],
+        "deny_industries": ["集成电路与电子信息", "芯片", "半导体"],
+        "deny_keywords": ["集成电路", "芯片", "半导体", "射频"],
+    },
+    "化学工程与工艺": {
+        "allow_industries": ["化工", "新材料", "生物医药", "能源化工", "环保"],
+        "allow_keywords": ["化工", "化学", "材料", "工艺", "制药", "环保", "新能源材料"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "土木工程": {
+        "allow_industries": ["土木建筑", "城市建设", "房地产与工程咨询", "交通工程"],
+        "allow_keywords": ["土木", "建筑", "结构", "施工", "工程", "市政", "交通", "监理"],
+        "deny_industries": ["集成电路与电子信息", "芯片", "半导体"],
+        "deny_keywords": ["集成电路", "芯片", "半导体", "射频"],
+    },
+    "教育学": {
+        "allow_industries": ["教育培训", "公共服务", "文化传播", "人力资源"],
+        "allow_keywords": ["教育", "培训", "课程", "教研", "学习", "师资", "人才发展"],
+        "deny_industries": ["集成电路与电子信息", "芯片", "半导体"],
+        "deny_keywords": ["集成电路", "芯片", "半导体", "射频"],
+    },
+    "会计学": {
+        "allow_industries": ["金融服务", "会计审计", "企业服务", "贸易服务"],
+        "allow_keywords": ["会计", "审计", "财务", "税务", "风控", "金融", "结算"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "国际经济与贸易": {
+        "allow_industries": ["贸易服务", "金融服务", "跨境电商", "物流供应链", "商务服务"],
+        "allow_keywords": ["贸易", "外贸", "商务", "供应链", "跨境", "金融", "市场"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "金属材料工程": {
+        "allow_industries": ["新材料", "高端装备", "智能制造", "汽车工程"],
+        "allow_keywords": ["材料", "金属", "冶金", "制造", "工艺", "装备", "汽车"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+    "数学与应用数学": {
+        "allow_industries": ["软件和信息服务", "人工智能", "金融科技", "教育培训", "数据服务"],
+        "allow_keywords": ["算法", "数据", "模型", "量化", "软件", "分析", "数学", "教研"],
+        "deny_industries": [],
+        "deny_keywords": [],
+    },
+}
+
+GENERIC_UNCOVERED_MAJOR_DENY_KEYWORDS = ["集成电路", "芯片", "半导体", "射频", "芯片验证", "嵌入式"]
+GLOBAL_RECOMMENDATION_DENY_KEYWORDS = ["芯片验证工程师"]
 
 app = Flask(__name__)
 CORS(app)
@@ -111,6 +221,565 @@ def rows(sql: str, params=None):
 def one(sql: str, params=None):
     data = rows(sql, params)
     return data[0] if data else {}
+
+
+def table_exists_cached(table_name: str) -> bool:
+    return bool(
+        one(
+            """
+            SELECT COUNT(*) v
+            FROM information_schema.tables
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name
+            """,
+            {"table_name": table_name},
+        ).get("v", 0)
+    )
+
+
+def table_columns(table_name: str) -> set[str]:
+    return {
+        item.get("column_name") or item.get("COLUMN_NAME")
+        for item in rows(
+            """
+            SELECT column_name AS column_name
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = :table_name
+            """,
+            {"table_name": table_name},
+        )
+    }
+
+
+def first_existing_column(table_name: str, candidates: list[str]) -> str | None:
+    columns = table_columns(table_name)
+    return next((column for column in candidates if column in columns), None)
+
+
+def resolve_current_school_scope():
+    role = g.current_user.get("role_db")
+    requested_school_id = (request.args.get("school_id") or "").strip()
+    requested_all = requested_school_id.lower() in {"", "all", "__all__", "__all_majors__", "全部", "全部学校"}
+    current_school_id = (g.current_user.get("school_id") or DEFAULT_SCHOOL_ID or "").strip()
+
+    if role == "government":
+        school_id = None if requested_all else requested_school_id
+    else:
+        school_id = current_school_id
+
+    school_name = ""
+    if school_id:
+        school = one(
+            """
+            SELECT school_id, school_name
+            FROM dim_school
+            WHERE TRIM(CAST(school_id AS CHAR))=:school_id
+            LIMIT 1
+            """,
+            {"school_id": str(school_id).strip()},
+        )
+        school_id = str(school.get("school_id") or school_id).strip()
+        school_name = school.get("school_name") or ""
+
+    return {
+        "role": role,
+        "school_id": school_id,
+        "school_name": school_name,
+        "school_id_aliases": [school_id] if school_id else [],
+    }
+
+
+def scoped_where(table_name: str, scope: dict, alias: str = "", extra: list[str] | None = None):
+    columns = table_columns(table_name)
+    params = {}
+    clauses = list(extra or [])
+    qualifier = f"{alias}." if alias else ""
+    school_id = scope.get("school_id")
+    school_name = scope.get("school_name")
+    if school_id:
+        if "school_id" in columns:
+            clauses.append(f"TRIM(CAST({qualifier}school_id AS CHAR))=:scope_school_id")
+            params["scope_school_id"] = str(school_id).strip()
+        elif "school_name" in columns and school_name:
+            clauses.append(f"TRIM(CAST({qualifier}school_name AS CHAR))=:scope_school_name")
+            params["scope_school_name"] = str(school_name).strip()
+        else:
+            clauses.append("1=0")
+    return ("WHERE " + " AND ".join(clauses) if clauses else "", params)
+
+
+def stable_float(*parts) -> float:
+    raw = "|".join(str(part or "") for part in parts)
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+    return int(digest[:8], 16) / 0xFFFFFFFF
+
+
+def split_tags(value) -> set[str]:
+    if value is None:
+        return set()
+    text_value = str(value)
+    for mark in ["|", "、", ",", "，", ";", "；", "/", " "]:
+        text_value = text_value.replace(mark, "|")
+    return {part.strip() for part in text_value.split("|") if part.strip()}
+
+
+def normalized_text(*values) -> str:
+    return "|".join(str(value or "").strip() for value in values if value is not None)
+
+
+def contains_any(text_value: str, keywords: list[str]) -> bool:
+    text_value = str(text_value or "")
+    return any(keyword and keyword in text_value for keyword in keywords)
+
+
+def major_industry_rule(major_name: str | None) -> dict:
+    name = str(major_name or "").strip()
+    for key, rule in MAJOR_INDUSTRY_RULES.items():
+        if key in name or name in key:
+            return {**rule, "_matched": True}
+    return {
+        "allow_industries": [],
+        "allow_keywords": [],
+        "deny_industries": [],
+        "deny_keywords": [],
+        "_matched": False,
+    }
+
+
+def recommendation_candidate_text(candidate: dict, enterprise: dict | None = None) -> str:
+    enterprise = enterprise or {}
+    return normalized_text(
+        candidate.get("industry_name"),
+        candidate.get("industry_type"),
+        candidate.get("job_category_name"),
+        candidate.get("recommended_job"),
+        candidate.get("major_name"),
+        candidate.get("skill_tags"),
+        candidate.get("compatible_major_classes"),
+        candidate.get("policy_direction_tags"),
+        enterprise.get("enterprise_name"),
+        enterprise.get("industry_name"),
+    )
+
+
+def violates_major_industry_rule(major_name: str | None, candidate: dict, enterprise: dict | None = None) -> bool:
+    rule = major_industry_rule(major_name)
+    text_value = recommendation_candidate_text(candidate, enterprise)
+    enterprise = enterprise or {}
+    industry_value = str(candidate.get("industry_name") or candidate.get("industry_type") or enterprise.get("industry_name") or "")
+    if contains_any(industry_value, rule.get("deny_industries", [])):
+        return True
+    deny_keywords = list(rule.get("deny_keywords", [])) + GLOBAL_RECOMMENDATION_DENY_KEYWORDS
+    if not rule.get("_matched"):
+        deny_keywords += GENERIC_UNCOVERED_MAJOR_DENY_KEYWORDS
+    if contains_any(text_value, deny_keywords):
+        return True
+    return False
+
+
+def matches_major_allow_rule(major_name: str | None, candidate: dict, enterprise: dict | None = None) -> bool:
+    rule = major_industry_rule(major_name)
+    allow_industries = rule.get("allow_industries", [])
+    allow_keywords = rule.get("allow_keywords", [])
+    if not allow_industries and not allow_keywords:
+        return True
+    text_value = recommendation_candidate_text(candidate, enterprise)
+    enterprise = enterprise or {}
+    industry_value = str(candidate.get("industry_name") or candidate.get("industry_type") or enterprise.get("industry_name") or "")
+    return contains_any(industry_value, allow_industries) or contains_any(text_value, allow_keywords)
+
+
+def recommendation_row_is_valid_for_profile(profile: dict, row: dict) -> bool:
+    candidate = {
+        "industry_name": row.get("industry_name") or row.get("industry_type"),
+        "job_category_name": row.get("job_category_name") or row.get("recommended_job"),
+        "major_name": row.get("major_name"),
+    }
+    enterprise = {"enterprise_name": row.get("enterprise_name") or row.get("recommended_enterprise")}
+    return not violates_major_industry_rule(profile.get("major_name"), candidate, enterprise)
+
+
+def id_match_conditions(alias: str, columns: list[str], id_text: str, param_prefix: str = "student"):
+    qualifier = f"{alias}." if alias else ""
+    text_key = f"{param_prefix}_id_text"
+    int_key = f"{param_prefix}_id_int"
+    params = {text_key: id_text}
+    conditions = []
+    is_numeric = id_text.isdigit()
+    if is_numeric:
+        params[int_key] = int(id_text)
+    for column in columns:
+        conditions.append(f"CAST({qualifier}{column} AS CHAR)=:{text_key}")
+        conditions.append(f"TRIM(CAST({qualifier}{column} AS CHAR))=:{text_key}")
+        if is_numeric:
+            conditions.append(f"CAST({qualifier}{column} AS UNSIGNED)=:{int_key}")
+    return conditions, params
+
+
+def available_recommendation_examples(scope: dict, limit: int = 5) -> list[str]:
+    examples: list[str] = []
+    if table_columns("ads_job_recommendation"):
+        rec_where, rec_params = scoped_where("ads_job_recommendation", scope)
+        examples.extend(
+            str(item["graduate_id"])
+            for item in rows(
+                f"""
+                SELECT graduate_id
+                FROM ads_job_recommendation
+                {rec_where}
+                GROUP BY graduate_id
+                ORDER BY CAST(graduate_id AS UNSIGNED), graduate_id
+                LIMIT :limit
+                """,
+                {**rec_params, "limit": limit},
+            )
+            if item.get("graduate_id") is not None
+        )
+    if len(examples) < limit and table_columns("fact_graduate"):
+        grad_where, grad_params = scoped_where("fact_graduate", scope)
+        supplement = rows(
+            f"""
+            SELECT graduate_id
+            FROM fact_graduate
+            {grad_where}
+            GROUP BY graduate_id
+            ORDER BY CAST(graduate_id AS UNSIGNED), graduate_id
+            LIMIT :limit
+            """,
+            {**grad_params, "limit": limit * 3},
+        )
+        seen = set(examples)
+        for item in supplement:
+            value = str(item.get("graduate_id") or "")
+            if value and value not in seen:
+                examples.append(value)
+                seen.add(value)
+            if len(examples) >= limit:
+                break
+    return examples[:limit]
+
+
+def fetch_student_profile(id_text: str, scope: dict) -> dict | None:
+    profile_sqls = []
+    if {"graduate_id", "school_id"}.issubset(table_columns("fact_graduate")):
+        id_columns = [column for column in ["graduate_id", "student_id", "student_no", "id"] if column in table_columns("fact_graduate")]
+        id_conditions, id_params = id_match_conditions("g", id_columns, id_text, "grad")
+        where_sql, scope_params = scoped_where("fact_graduate", scope, "g", [f"({' OR '.join(id_conditions)})"])
+        profile_sqls.append((
+            f"""
+            SELECT g.graduate_id, g.school_id, s.school_name, g.major_code, m.major_name,
+                   g.degree_level, g.gpa_level, g.skill_tags, g.internship_count,
+                   g.certification_tags, g.job_intention_tags
+            FROM fact_graduate g
+            LEFT JOIN dim_school s ON TRIM(CAST(g.school_id AS CHAR))=TRIM(CAST(s.school_id AS CHAR))
+            LEFT JOIN dim_major_catalog m ON TRIM(CAST(g.major_code AS CHAR))=TRIM(CAST(m.major_code AS CHAR))
+            {where_sql}
+            LIMIT 1
+            """,
+            {**id_params, **scope_params},
+        ))
+    if {"graduate_id", "school_id"}.issubset(table_columns("fact_employment")):
+        id_columns = [column for column in ["graduate_id", "student_id", "student_no", "id"] if column in table_columns("fact_employment")]
+        id_conditions, id_params = id_match_conditions("e", id_columns, id_text, "emp")
+        where_sql, scope_params = scoped_where("fact_employment", scope, "e", [f"({' OR '.join(id_conditions)})"])
+        profile_sqls.append((
+            f"""
+            SELECT e.graduate_id, e.school_id, s.school_name, e.major_code, m.major_name,
+                   NULL AS degree_level, NULL AS gpa_level, NULL AS skill_tags, NULL AS internship_count,
+                   NULL AS certification_tags, i.industry_name AS job_intention_tags
+            FROM fact_employment e
+            LEFT JOIN dim_school s ON TRIM(CAST(e.school_id AS CHAR))=TRIM(CAST(s.school_id AS CHAR))
+            LEFT JOIN dim_major_catalog m ON TRIM(CAST(e.major_code AS CHAR))=TRIM(CAST(m.major_code AS CHAR))
+            LEFT JOIN dim_industry i ON e.industry_id=i.industry_id
+            {where_sql}
+            LIMIT 1
+            """,
+            {**id_params, **scope_params},
+        ))
+    for sql, params in profile_sqls:
+        data = rows(sql, params)
+        if data:
+            return data[0]
+    return None
+
+
+def fetch_existing_student_recommendations(id_text: str, scope: dict) -> list[dict]:
+    rec_columns = table_columns("ads_job_recommendation")
+    id_columns = [column for column in ["graduate_id", "student_id", "student_no", "id"] if column in rec_columns]
+    if not id_columns:
+        return []
+    id_conditions, params = id_match_conditions("r", id_columns, id_text, "rec")
+    where_sql, scope_params = scoped_where("ads_job_recommendation", scope, "r", [f"({' OR '.join(id_conditions)})"])
+    return rows(
+        f"""
+        SELECT r.*, r.graduate_id AS student_id, r.enterprise_name AS recommended_enterprise,
+               r.job_category_name AS recommended_job, r.similarity_score AS matching_score,
+               r.reason_text AS recommend_reason, r.industry_name AS industry_type
+        FROM ads_job_recommendation r
+        {where_sql}
+        ORDER BY COALESCE(r.rank_no, 999999), r.enterprise_name, r.job_category_name
+        """,
+        {**params, **scope_params},
+    )
+
+
+def load_recommendation_candidates(profile: dict, limit: int = 500) -> list[dict]:
+    major_code = profile.get("major_code")
+    school_id = profile.get("school_id")
+    major_name = profile.get("major_name")
+    candidate_sets = []
+    forecast_columns = table_columns("ads_job_demand_forecast")
+    if {"major_code", "industry_id", "job_category_id"}.issubset(forecast_columns):
+        base_select = """
+            SELECT f.school_id, f.school_name, f.major_code, f.major_name, f.industry_id, f.industry_name,
+                   f.job_category_id, f.job_category_name,
+                   SUM(f.predicted_demand_count) AS demand_count,
+                   AVG(f.avg_salary) AS avg_salary,
+                   AVG(f.demand_growth_rate) AS demand_growth_rate,
+                   MAX(j.skill_tags) AS skill_tags,
+                   MAX(j.compatible_major_classes) AS compatible_major_classes,
+                   MAX(j.policy_direction_tags) AS policy_direction_tags
+            FROM ads_job_demand_forecast f
+            LEFT JOIN dim_job_category j ON f.job_category_id=j.job_category_id
+        """
+        group_order = """
+            GROUP BY f.school_id, f.school_name, f.major_code, f.major_name,
+                     f.industry_id, f.industry_name, f.job_category_id, f.job_category_name
+            ORDER BY demand_count DESC, avg_salary DESC
+            LIMIT :limit
+        """
+        candidate_sets.extend([
+            (f"{base_select} WHERE f.school_id=:school_id AND f.major_code=:major_code {group_order}", {"school_id": school_id, "major_code": major_code, "limit": limit}),
+            (f"{base_select} WHERE f.major_code=:major_code {group_order}", {"major_code": major_code, "limit": limit}),
+            (f"{base_select} WHERE f.school_id=:school_id {group_order}", {"school_id": school_id, "limit": limit}),
+            (f"{base_select} {group_order}", {"limit": limit}),
+        ])
+    combined = []
+    seen = set()
+    for sql, params in candidate_sets:
+        data = rows(sql, params)
+        for item in data:
+            key = (item.get("school_id"), item.get("major_code"), item.get("industry_id"), item.get("job_category_id"))
+            if key in seen:
+                continue
+            seen.add(key)
+            combined.append(item)
+        if len(combined) >= limit:
+            break
+    if combined:
+        return combined[:limit]
+    if table_columns("fact_job_demand"):
+        return rows(
+            """
+            SELECT NULL AS school_id, NULL AS school_name, NULL AS major_code, major_name,
+                   NULL AS industry_id, leading_industry_tag AS industry_name,
+                   NULL AS job_category_id, job_category AS job_category_name,
+                   SUM(recruit_count) AS demand_count, AVG(salary_avg) AS avg_salary,
+                   0 AS demand_growth_rate, GROUP_CONCAT(skill_keywords SEPARATOR '|') AS skill_tags,
+                   major_category AS compatible_major_classes, '' AS policy_direction_tags
+            FROM fact_job_demand
+            WHERE (:major_name='' OR major_name=:major_name)
+            GROUP BY major_name, leading_industry_tag, job_category, major_category
+            ORDER BY demand_count DESC, avg_salary DESC
+            LIMIT :limit
+            """,
+            {"major_name": major_name or "", "limit": limit},
+        )
+    return []
+
+
+def enterprise_for_candidate(candidate: dict, graduate_id: str, rank_seed: int) -> dict:
+    industry_id = candidate.get("industry_id")
+    if industry_id is not None and table_columns("dim_enterprise"):
+        ent_rows = rows(
+            """
+            SELECT enterprise_id, enterprise_name, industry_id, district,
+                   salary_factor, hiring_stability_factor, is_high_tech, is_specialized_new
+            FROM dim_enterprise
+            WHERE industry_id=:industry_id
+            ORDER BY enterprise_id
+            LIMIT 300
+            """,
+            {"industry_id": industry_id},
+        )
+        if ent_rows:
+            index = int(stable_float(graduate_id, industry_id, candidate.get("job_category_id"), rank_seed) * len(ent_rows)) % len(ent_rows)
+            return ent_rows[index]
+    if table_columns("dim_enterprise"):
+        ent_rows = rows(
+            """
+            SELECT enterprise_id, enterprise_name, industry_id, district,
+                   salary_factor, hiring_stability_factor, is_high_tech, is_specialized_new
+            FROM dim_enterprise
+            ORDER BY enterprise_id
+            LIMIT 500
+            """
+        )
+        if ent_rows:
+            index = int(stable_float(graduate_id, candidate.get("job_category_id"), rank_seed) * len(ent_rows)) % len(ent_rows)
+            return ent_rows[index]
+    return {"enterprise_id": None, "enterprise_name": "暂无单位候选", "salary_factor": 1, "hiring_stability_factor": 0.6}
+
+
+def build_student_job_recommendations(profile: dict, top_k: int = 3) -> list[dict]:
+    candidates = load_recommendation_candidates(profile)
+    if not candidates:
+        return []
+    major_name = profile.get("major_name")
+    rule = major_industry_rule(major_name)
+    safe_candidates = [
+        item for item in candidates
+        if not violates_major_industry_rule(major_name, item)
+    ]
+    allow_industries = rule.get("allow_industries", [])
+    allow_keywords = rule.get("allow_keywords", [])
+    if allow_industries or allow_keywords:
+        allowed_candidates = [
+            item for item in safe_candidates
+            if matches_major_allow_rule(major_name, item)
+        ]
+        candidates = allowed_candidates
+    else:
+        candidates = safe_candidates
+    if not candidates:
+        return []
+    graduate_id = str(profile.get("graduate_id") or "")
+    student_skills = split_tags(profile.get("skill_tags")) | split_tags(profile.get("certification_tags"))
+    student_intents = split_tags(profile.get("job_intention_tags"))
+    max_demand = max(float(item.get("demand_count") or 0) for item in candidates) or 1
+    salaries = [float(item.get("avg_salary") or 0) for item in candidates if float(item.get("avg_salary") or 0) > 0]
+    min_salary = min(salaries) if salaries else 0
+    max_salary = max(salaries) if salaries else 1
+    salary_span = max(max_salary - min_salary, 1)
+    scored = []
+    for index, item in enumerate(candidates):
+        candidate_skills = split_tags(item.get("skill_tags")) | split_tags(item.get("policy_direction_tags"))
+        overlap = len(student_skills & candidate_skills) / max(len(student_skills), 1) if student_skills else 0.25
+        major_match = 1.0 if str(item.get("major_code") or "") == str(profile.get("major_code") or "") else 0.35
+        if profile.get("major_name") and str(profile.get("major_name")) in str(item.get("compatible_major_classes") or ""):
+            major_match = max(major_match, 0.7)
+        industry_text = f"{item.get('industry_name') or ''}|{item.get('job_category_name') or ''}"
+        industry_match = 0.55
+        if student_intents and any(intent in industry_text for intent in student_intents):
+            industry_match = 1.0
+        allow_industry_hit = 1.0 if contains_any(str(item.get("industry_name") or ""), allow_industries) else 0.0
+        allow_keyword_hit = 1.0 if contains_any(recommendation_candidate_text(item), allow_keywords) else 0.0
+        major_keyword_hit = 1.0 if profile.get("major_name") and contains_any(recommendation_candidate_text(item), [str(profile.get("major_name"))]) else 0.0
+        demand_norm = float(item.get("demand_count") or 0) / max_demand
+        salary_norm = (float(item.get("avg_salary") or 0) - min_salary) / salary_span if item.get("avg_salary") else 0
+        tie = stable_float(graduate_id, item.get("industry_id"), item.get("job_category_id"), index)
+        if allow_industries or allow_keywords:
+            score = (
+                0.25 * allow_industry_hit
+                + 0.25 * allow_keyword_hit
+                + 0.20 * max(major_match, major_keyword_hit)
+                + 0.15 * demand_norm
+                + 0.10 * salary_norm
+                + 0.05 * tie
+            )
+        else:
+            score = (
+                0.35 * major_match
+                + 0.25 * industry_match
+                + 0.15 * overlap
+                + 0.10 * demand_norm
+                + 0.10 * salary_norm
+                + 0.05 * tie
+            )
+        scored.append((score, item, index, overlap, major_match, industry_match))
+    scored.sort(key=lambda value: (value[0], float(value[1].get("demand_count") or 0), float(value[1].get("avg_salary") or 0)), reverse=True)
+    result = []
+    used_enterprises = set()
+    used_jobs = set()
+    for score, item, index, overlap, major_match, industry_match in scored:
+        enterprise = enterprise_for_candidate(item, graduate_id, index)
+        if violates_major_industry_rule(major_name, item, enterprise):
+            continue
+        enterprise_key = enterprise.get("enterprise_id") or enterprise.get("enterprise_name")
+        job_key = item.get("job_category_id") or item.get("job_category_name")
+        if len(result) < top_k and enterprise_key in used_enterprises and len(used_enterprises) >= top_k:
+            continue
+        if len(result) < top_k and (enterprise_key, job_key) in used_jobs:
+            continue
+        used_enterprises.add(enterprise_key)
+        used_jobs.add((enterprise_key, job_key))
+        similarity = round(max(0.5, min(0.95, score)), 4)
+        confidence = "high" if similarity >= 0.75 else ("medium" if similarity >= 0.62 else "low")
+        neutral_reason = "基于专业方向、岗位行业和需求热度综合匹配"
+        result.append({
+            "graduate_id": profile.get("graduate_id"),
+            "student_id": profile.get("graduate_id"),
+            "school_id": profile.get("school_id"),
+            "school_name": profile.get("school_name"),
+            "major_code": profile.get("major_code") or item.get("major_code"),
+            "major_name": profile.get("major_name") or item.get("major_name"),
+            "enterprise_id": enterprise.get("enterprise_id"),
+            "enterprise_name": enterprise.get("enterprise_name"),
+            "recommended_enterprise": enterprise.get("enterprise_name"),
+            "industry_id": item.get("industry_id"),
+            "industry_name": item.get("industry_name"),
+            "industry_type": item.get("industry_name"),
+            "job_category_id": item.get("job_category_id"),
+            "job_category_name": item.get("job_category_name"),
+            "recommended_job": item.get("job_category_name"),
+            "similarity_score": similarity,
+            "matching_score": similarity,
+            "confidence_level": confidence,
+            "predicted_demand_count": float(item.get("demand_count") or 0),
+            "salary_reference": round(float(item.get("avg_salary") or 0) * float(enterprise.get("salary_factor") or 1), 2),
+            "rank_no": len(result) + 1,
+            "reason_text": neutral_reason,
+            "recommendation_reason": neutral_reason,
+            "recommend_reason": neutral_reason,
+            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        })
+        if len(result) >= top_k:
+            break
+    return result
+
+
+def persist_student_recommendations(recommendations: list[dict]) -> None:
+    if not recommendations:
+        return
+    columns = table_columns("ads_job_recommendation")
+    writable = [
+        "graduate_id", "school_id", "school_name", "major_code", "major_name",
+        "enterprise_id", "enterprise_name", "industry_id", "industry_name",
+        "job_category_id", "job_category_name", "similarity_score", "matching_score",
+        "confidence_level", "predicted_demand_count", "salary_reference", "rank_no",
+        "reason_text", "recommendation_reason", "updated_at",
+    ]
+    insert_columns = [column for column in writable if column in columns]
+    if not insert_columns:
+        return
+    values_sql = ", ".join(f":{column}" for column in insert_columns)
+    column_sql = ", ".join(insert_columns)
+    with engine.begin() as conn:
+        for item in recommendations:
+            conn.execute(
+                text(f"INSERT INTO ads_job_recommendation ({column_sql}) VALUES ({values_sql})"),
+                {column: item.get(column) for column in insert_columns},
+            )
+
+
+def get_or_build_student_job_recommendations(profile: dict, scope: dict, top_k: int = 3) -> list[dict]:
+    id_text = str(profile.get("graduate_id") or "").strip()
+    existing = fetch_existing_student_recommendations(id_text, scope)
+    valid_existing = [item for item in existing if recommendation_row_is_valid_for_profile(profile, item)]
+    if len(valid_existing) >= top_k:
+        return valid_existing[:top_k]
+    if existing:
+        rec_columns = table_columns("ads_job_recommendation")
+        id_columns = [column for column in ["graduate_id", "student_id", "student_no", "id"] if column in rec_columns]
+        if id_columns:
+            id_conditions, params = id_match_conditions("", id_columns, id_text, "del")
+            where_sql, scope_params = scoped_where("ads_job_recommendation", scope, "", [f"({' OR '.join(id_conditions)})"])
+            with engine.begin() as conn:
+                conn.execute(text(f"DELETE FROM ads_job_recommendation {where_sql}"), {**params, **scope_params})
+    generated = build_student_job_recommendations(profile, top_k=top_k)
+    persist_student_recommendations(generated)
+    return fetch_existing_student_recommendations(id_text, scope)[:top_k] or generated
 
 
 def ok(data=None, message="success"):
@@ -642,86 +1311,142 @@ def job_recommendation():
 @app.get("/api/recommendation/summary")
 @require_roles("teacher", "government")
 def recommendation_summary():
-    role, school_id, where, params = school_scope()
+    scope = resolve_current_school_scope()
+    rec_where, rec_params = scoped_where("ads_job_recommendation", scope)
+    rec_where_r, rec_params_r = scoped_where("ads_job_recommendation", scope, "r")
+    rec_where_r2, rec_params_r2 = scoped_where("ads_job_recommendation", scope, "r2")
+
+    position_col = first_existing_column("ads_job_recommendation", ["job_category_id", "job_category_name", "enterprise_id"])
+    position_expr = f"COUNT(DISTINCT {position_col})" if position_col else "0"
     data = one(
         f"""
         SELECT COUNT(DISTINCT graduate_id) covered_students,
                COUNT(DISTINCT enterprise_id) covered_enterprises,
-               ROUND(AVG(CASE WHEN rank_no=1 THEN similarity_score END),4) top1_avg_similarity,
-               ROUND(AVG(CASE WHEN confidence_level='high' OR similarity_score>=0.75 THEN 1 ELSE 0 END),4) high_confidence_ratio,
-               COUNT(*) recommendation_count
+               COUNT(*) recommendation_count,
+               {position_expr} recommendation_position_count
         FROM ads_job_recommendation
-        {where}
+        {rec_where}
         """,
-        params,
+        rec_params,
     )
-    examples = rows(
+
+    top1 = one(
         f"""
-        SELECT graduate_id
-        FROM ads_job_recommendation
-        {where}
-        GROUP BY graduate_id
-        ORDER BY COUNT(*) DESC, graduate_id
-        LIMIT 5
+        SELECT COUNT(*) top1_students,
+               ROUND(AVG(top_similarity),4) top1_avg_similarity,
+               COALESCE(SUM(is_high),0) high_match_students
+        FROM (
+          SELECT r.graduate_id,
+                 MAX(r.similarity_score) top_similarity,
+                 MAX(CASE WHEN r.confidence_level='high' OR r.similarity_score>=0.75 THEN 1 ELSE 0 END) is_high
+          FROM ads_job_recommendation r
+          JOIN (
+            SELECT r2.graduate_id, MIN(COALESCE(r2.rank_no, 999999)) min_rank
+            FROM ads_job_recommendation r2
+            {rec_where_r2}
+            GROUP BY r2.graduate_id
+          ) t ON t.graduate_id=r.graduate_id AND COALESCE(r.rank_no, 999999)=t.min_rank
+          {rec_where_r}
+          GROUP BY r.graduate_id
+        ) top_rows
         """,
-        params,
+        {**rec_params_r2, **rec_params_r},
     )
-    data["available_examples"] = [str(item["graduate_id"]) for item in examples]
-    print(f"[api/recommendation/summary] role={role} school_id={school_id} data={data}")
+
+    def distinct_student_count(table_name: str, id_candidates: list[str]) -> int:
+        id_column = first_existing_column(table_name, id_candidates)
+        if not id_column:
+            return 0
+        where_sql, params = scoped_where(table_name, scope)
+        return int(one(
+            f"SELECT COUNT(DISTINCT {id_column}) v FROM {table_name} {where_sql}",
+            params,
+        ).get("v", 0) or 0)
+
+    covered_students = int(data.get("covered_students") or 0)
+    fact_graduate_total = distinct_student_count("fact_graduate", ["graduate_id", "student_id", "student_no", "id"])
+    fact_employment_total = distinct_student_count("fact_employment", ["graduate_id", "student_id", "student_no", "id"])
+    candidate_recommendation_total = covered_students
+    if fact_graduate_total > 0:
+        if fact_graduate_total < covered_students:
+            school_student_total = covered_students
+            total_source = "reconciled_max_fact_graduate_and_recommendation"
+        else:
+            school_student_total = fact_graduate_total
+            total_source = "fact_graduate_distinct_graduate_id"
+    elif fact_employment_total > 0:
+        school_student_total = max(fact_employment_total, covered_students)
+        total_source = "fact_employment_distinct_graduate_id" if fact_employment_total >= covered_students else "reconciled_max_fact_employment_and_recommendation"
+    elif covered_students > 0:
+        school_student_total = covered_students
+        total_source = "recommendation_distinct_graduate_id_fallback"
+    else:
+        school_student_total = 0
+        total_source = "no_student_data"
+
+    high_match_students = int(top1.get("high_match_students") or 0)
+    top1_avg_similarity = float(top1.get("top1_avg_similarity") or 0)
+    data["school_student_total"] = school_student_total
+    data["school_student_total_source"] = total_source
+    data["school_student_total_candidates"] = {
+        "fact_graduate": fact_graduate_total,
+        "fact_employment": fact_employment_total,
+        "recommendation": candidate_recommendation_total,
+    }
+    data["covered_students"] = covered_students
+    data["uncovered_students"] = max(school_student_total - covered_students, 0)
+    data["coverage_rate"] = round(covered_students / school_student_total, 4) if school_student_total else 0
+    data["high_match_students"] = high_match_students
+    data["high_confidence_ratio"] = round(high_match_students / covered_students, 4) if covered_students else 0
+    data["top1_avg_similarity"] = top1_avg_similarity
+
+    data["available_examples"] = available_recommendation_examples(scope, limit=5)
+    data["scope"] = {
+        "role": scope.get("role"),
+        "school_id": scope.get("school_id"),
+        "school_name": scope.get("school_name"),
+    }
+    print(f"[api/recommendation/summary] scope={data['scope']} data={data}")
     return ok(data)
 
 
 @app.get("/api/recommendation/student")
 @require_roles("teacher", "government")
 def recommendation_student():
-    graduate_id = request.args.get("graduate_id") or request.args.get("student_id") or request.args.get("id")
+    graduate_id = (request.args.get("graduate_id") or request.args.get("student_id") or request.args.get("id") or "").strip()
     if not graduate_id:
         return fail("缺少 graduate_id 参数", status=400, data={"items": [], "available_examples": []})
-    role = g.current_user.get("role_db")
-    school_id = request.args.get("school_id") or g.current_user.get("school_id") or DEFAULT_SCHOOL_ID
-    clauses = ["CAST(r.graduate_id AS CHAR)=:graduate_id"]
-    params = {"graduate_id": str(graduate_id)}
-    if role != "government" and school_id:
-        clauses.append("r.school_id=:school_id")
-        params["school_id"] = school_id
-    where_sql = "WHERE " + " AND ".join(clauses)
-    data = rows(
-        f"""
-        SELECT r.*, r.graduate_id AS student_id, r.enterprise_name AS recommended_enterprise,
-               r.job_category_name AS recommended_job, r.similarity_score AS matching_score,
-               r.reason_text AS recommend_reason, r.industry_name AS industry_type
-        FROM ads_job_recommendation r
-        {where_sql}
-        ORDER BY rank_no
-        """,
-        params,
-    )
+    scope = resolve_current_school_scope()
+    id_text = str(graduate_id).strip()
+    examples = available_recommendation_examples(scope, limit=5)
+    profile = fetch_student_profile(id_text, scope)
+    if not profile:
+        return ok({
+            "graduate_id": id_text,
+            "student_exists": False,
+            "items": [],
+            "available_examples": examples,
+            "message": "未找到该学生，请尝试示例 ID",
+        })
+
+    data = get_or_build_student_job_recommendations(profile, scope, top_k=3)
     if not data:
-        example_where = "WHERE school_id=:school_id" if role != "government" and school_id else ""
-        example_params = {"school_id": school_id} if example_where else {}
-        examples = rows(
-            f"""
-            SELECT graduate_id
-            FROM ads_job_recommendation
-            {example_where}
-            GROUP BY graduate_id
-            ORDER BY COUNT(*) DESC, graduate_id
-            LIMIT 5
-            """,
-            example_params,
-        )
-        return fail(
-            "未找到该学生的推荐结果，请输入系统中存在的学生ID",
-            status=404,
-            data={"items": [], "available_examples": [str(item["graduate_id"]) for item in examples]},
-        )
+        return ok({
+            "graduate_id": id_text,
+            "student_exists": True,
+            "items": [],
+            "available_examples": examples,
+            "message": "该学生暂无推荐结果，请检查推荐任务是否已生成",
+        })
     return ok({
-        "graduate_id": str(data[0]["graduate_id"]),
-        "major_name": data[0].get("major_name", ""),
-        "school_name": data[0].get("school_name", ""),
+        "graduate_id": str(profile.get("graduate_id") or data[0]["graduate_id"]),
+        "student_exists": True,
+        "student_id": str(data[0].get("student_id") or data[0].get("graduate_id") or ""),
+        "major_name": profile.get("major_name") or data[0].get("major_name", ""),
+        "school_name": profile.get("school_name") or data[0].get("school_name", ""),
+        "available_examples": examples,
         "items": data,
     })
-
 
 @app.get("/api/job-recommendation-evaluation")
 @require_roles("teacher", "government")
@@ -832,83 +1557,299 @@ PUBLIC_SCHOOL_GEO = {
     "上海理工大学": {"district": "杨浦区", "address": "上海市杨浦区军工路516号", "longitude": 121.5526, "latitude": 31.2917},
 }
 
-PUBLIC_REPRESENTATIVE_MAJOR_OVERRIDE = {
-    "上海大学": ["软件工程", "通信工程", "数字媒体技术"],
-}
+def is_public_advantage_major_allowed(school_name: str, major_name: str) -> bool:
+    name = str(major_name or "").strip()
+    if not name or name in {"ALL", "全部", "数据不足"} or name[-1:].isdigit():
+        return False
+    if str(school_name or "").strip() == "上海大学" and name == "轻化工程":
+        return False
+    return is_valid_display_major_name(name)
 
 
-def public_school_rows(major_code="ALL"):
+def public_display_major_for_school(school_name: str) -> dict:
+    normalized_school_name = str(school_name or "").strip()
+    normalized_school_name = PUBLIC_SCHOOL_NAME_ALIASES.get(normalized_school_name, normalized_school_name)
+    major_name = PUBLIC_SCHOOL_DISPLAY_MAJOR_MAP.get(normalized_school_name)
+    if normalized_school_name == "上海大学":
+        major_name = "金属材料工程"
+    if not major_name:
+        return {"major_name": None, "major_code": None, "source": "no_business_config"}
+    major = one(
+        """
+        SELECT major_code, major_name
+        FROM dim_major_catalog
+        WHERE major_name=:major_name
+        ORDER BY major_code
+        LIMIT 1
+        """,
+        {"major_name": major_name},
+    )
+    return {
+        "major_name": major_name,
+        "major_code": major.get("major_code"),
+        "source": "business_config",
+    }
+
+
+def public_advantage_major_map():
+    major_columns = table_columns("dim_major_catalog")
+    display_filters = ["m.major_name IS NOT NULL", "m.major_name <> ''", "m.major_name NOT REGEXP '[0-9]$'"]
+    if "is_real_display_major" in major_columns:
+        display_filters.append("COALESCE(m.is_real_display_major,1)=1")
+    if "is_catalog_placeholder" in major_columns:
+        display_filters.append("COALESCE(m.is_catalog_placeholder,0)=0")
+    where_display = " AND ".join(display_filters)
+    salary_weight_expr = "COALESCE(m.salary_rank_weight,0)" if "salary_rank_weight" in major_columns else "0"
+
+    relation_specs = [
+        ("bridge_school_major", "bridge"),
+        ("fact_graduate", "fact_graduate"),
+        ("fact_employment", "fact_employment"),
+        ("fact_enrollment_plan", "fact_enrollment_plan"),
+        ("fact_course_skill", "fact_course_skill"),
+        ("dim_school_major", "dim_school_major"),
+        ("school_major", "school_major"),
+    ]
+    relation_source_counts = {}
+    relation_map = {}
+    source_rank = {name: index for index, (_, name) in enumerate(relation_specs)}
+
+    for table_name, source_name in relation_specs:
+        columns = table_columns(table_name)
+        if not {"school_id", "major_code"}.issubset(columns):
+            relation_source_counts[source_name] = 0
+            continue
+        ace_expr = "MAX(COALESCE(t.is_ace_major,0))" if "is_ace_major" in columns else "0"
+        strength_expr = "MAX(COALESCE(t.school_major_strength_score,0))" if "school_major_strength_score" in columns else "0"
+        relation_rows = rows(
+            f"""
+            SELECT s.school_id, s.school_name, m.major_code, m.major_name,
+                   '{source_name}' AS validation_source,
+                   {salary_weight_expr} AS salary_rank_weight,
+                   {ace_expr} AS is_ace_major,
+                   {strength_expr} AS school_major_strength_score
+            FROM {table_name} t
+            JOIN dim_school s
+              ON TRIM(CAST(t.school_id AS CHAR))=TRIM(CAST(s.school_id AS CHAR))
+            JOIN dim_major_catalog m
+              ON TRIM(CAST(t.major_code AS CHAR))=TRIM(CAST(m.major_code AS CHAR))
+            WHERE t.school_id IS NOT NULL
+              AND t.major_code IS NOT NULL
+              AND {where_display}
+            GROUP BY s.school_id, s.school_name, m.major_code, m.major_name, {salary_weight_expr}
+            """
+        )
+        valid_rows = [
+            item for item in relation_rows
+            if is_public_advantage_major_allowed(item.get("school_name"), item.get("major_name"))
+        ]
+        relation_source_counts[source_name] = len(valid_rows)
+        for item in valid_rows:
+            key = (item["school_id"], item["major_code"])
+            old = relation_map.get(key)
+            if not old or source_rank[source_name] < source_rank.get(old.get("validation_source"), 999):
+                relation_map[key] = item
+
+    emp_metrics = {}
+    if {"school_id", "major_code"}.issubset(table_columns("fact_employment")):
+        for item in rows(
+            """
+            SELECT school_id, major_code,
+                   COUNT(DISTINCT graduate_id) sample_count,
+                   ROUND(AVG(salary),2) avg_salary,
+                   ROUND(AVG(CASE WHEN employment_quality_level='高' OR match_score>=82 THEN 1 ELSE 0 END),4) employment_quality_score,
+                   ROUND(AVG(CASE WHEN is_shanghai_leading_employment=1 THEN 1 ELSE 0 END),4) leading_industry_rate
+            FROM fact_employment
+            GROUP BY school_id, major_code
+            """
+        ):
+            emp_metrics[(item["school_id"], item["major_code"])] = item
+
+    ads_metrics = {}
+    if {"school_id", "major_code"}.issubset(table_columns("ads_school_compare_summary")):
+        for item in rows(
+            """
+            SELECT school_id, major_code,
+                   employment_count sample_count,
+                   ROUND(avg_salary,2) avg_salary,
+                   ROUND(high_quality_employment_rate,4) employment_quality_score,
+                   ROUND(leading_industry_employment_rate,4) leading_industry_rate
+            FROM ads_school_compare_summary
+            WHERE major_code IS NOT NULL AND major_code <> 'ALL'
+            """
+        ):
+            ads_metrics[(item["school_id"], item["major_code"])] = item
+
+    candidates = []
+    for key, relation in relation_map.items():
+        metrics = ads_metrics.get(key) or emp_metrics.get(key) or {}
+        sample_count = int(metrics.get("sample_count") or 0)
+        avg_salary = float(metrics.get("avg_salary") or 0)
+        candidates.append({
+            "school_id": relation["school_id"],
+            "school_name": relation["school_name"],
+            "major_code": relation["major_code"],
+            "major_name": relation["major_name"],
+            "sample_count": sample_count,
+            "avg_salary": avg_salary,
+            "employment_quality_score": float(metrics.get("employment_quality_score") or 0),
+            "leading_industry_rate": float(metrics.get("leading_industry_rate") or 0),
+            "salary_rank_weight": float(relation.get("salary_rank_weight") or 0) or salary_rank_weight_for_major(relation.get("major_name", "")),
+            "validation_source": relation.get("validation_source"),
+        })
+
+    salaries = [item["avg_salary"] for item in candidates if item["avg_salary"] > 0]
+    min_salary = min(salaries) if salaries else 0
+    max_salary = max(salaries) if salaries else 0
+    salary_span = max(max_salary - min_salary, 1)
+    max_sample = max([item["sample_count"] for item in candidates] or [0])
+    grouped = {}
+    for item in candidates:
+        salary_score = (item["avg_salary"] - min_salary) / salary_span if item["avg_salary"] > 0 else 0
+        sample_score = math.log(item["sample_count"] + 1) / math.log(max_sample + 1) if max_sample > 0 else 0
+        score = (
+            salary_score * 0.35
+            + item["employment_quality_score"] * 0.25
+            + item["leading_industry_rate"] * 0.20
+            + sample_score * 0.15
+            + min(item["salary_rank_weight"] / 100, 1) * 0.05
+        )
+        normalized = {
+            "major_code": item["major_code"],
+            "major_name": item["major_name"],
+            "sample_count": item["sample_count"],
+            "avg_salary": round(item["avg_salary"], 2),
+            "employment_quality_score": round(item["employment_quality_score"], 4),
+            "leading_industry_rate": round(item["leading_industry_rate"], 4),
+            "score": round(score, 4),
+            "validation_source": item["validation_source"],
+        }
+        grouped.setdefault(item["school_id"], []).append(normalized)
+
+    result = {}
+    for school_id, items in grouped.items():
+        result[school_id] = sorted(
+            items,
+            key=lambda item: (item["score"], item["sample_count"], item["avg_salary"], item["major_name"]),
+            reverse=True,
+        )[0]
+    diagnostics = {
+        "relation_source_counts": relation_source_counts,
+        "verified_major_candidate_count": len(candidates),
+        "selected_advantage_major_count": len(result),
+    }
+    return result, diagnostics
+
+
+def public_school_rows(major_code="ALL", include_diagnostics=False):
     is_all = str(major_code or "").lower() in {"", "all", "__all_majors__", "全部专业"}
-    where = "major_code='ALL'" if is_all else "major_code=:major_code"
+    join_filter = "a.major_code='ALL'" if is_all else "a.major_code=:major_code"
     params = {} if is_all else {"major_code": major_code}
     compare_rows = rows(
         f"""
-        SELECT school_id, school_name, major_code, major_name, employment_count, graduate_count,
-               ROUND(employment_rate,4) AS employment_rate,
-               ROUND(avg_salary,2) AS avg_salary,
-               ROUND(high_quality_employment_rate,4) AS high_quality_employment_rate,
-               leading_industry_employment_count,
-               ROUND(leading_industry_employment_rate,4) AS leading_industry_rate,
-               top_industry_name,
-               top_industry_count,
-               industry_distribution_json
-        FROM ads_school_compare_summary
-        WHERE {where}
-        ORDER BY employment_count DESC
+        SELECT s.school_id, s.school_name, s.school_type, s.district,
+               a.major_code, a.major_name, a.employment_count, a.graduate_count,
+               ROUND(a.employment_rate,4) AS employment_rate,
+               ROUND(a.avg_salary,2) AS avg_salary,
+               ROUND(a.high_quality_employment_rate,4) AS high_quality_employment_rate,
+               a.leading_industry_employment_count,
+               ROUND(a.leading_industry_employment_rate,4) AS leading_industry_rate,
+               a.top_industry_name,
+               a.top_industry_count,
+               a.industry_distribution_json,
+               COALESCE(emp.employment_sample_count,0) AS fallback_employment_sample_count,
+               ROUND(COALESCE(emp.avg_salary,0),2) AS fallback_avg_salary,
+               COALESCE(grad.graduate_count,0) AS fallback_graduate_count,
+               ROUND(COALESCE(emp.high_quality_employment_rate,0),4) AS fallback_high_quality_employment_rate,
+               ROUND(COALESCE(emp.leading_industry_rate,0),4) AS fallback_leading_industry_rate,
+               emp.top_industry_name AS fallback_top_industry_name,
+               COALESCE(b.covered_major_count,0) AS covered_major_count
+        FROM dim_school s
+        LEFT JOIN ads_school_compare_summary a
+          ON a.school_id=s.school_id
+         AND {join_filter}
+        LEFT JOIN (
+          SELECT school_id, COUNT(DISTINCT graduate_id) graduate_count
+          FROM fact_graduate
+          GROUP BY school_id
+        ) grad ON grad.school_id=s.school_id
+        LEFT JOIN (
+          SELECT e.school_id,
+                 COUNT(*) employment_sample_count,
+                 AVG(e.salary) avg_salary,
+                 AVG(CASE WHEN e.employment_quality_level='高' OR e.match_score>=82 THEN 1 ELSE 0 END) high_quality_employment_rate,
+                 AVG(CASE WHEN e.is_shanghai_leading_employment=1 THEN 1 ELSE 0 END) leading_industry_rate,
+                 SUBSTRING_INDEX(GROUP_CONCAT(i.industry_name ORDER BY cnt.industry_count DESC SEPARATOR ','), ',', 1) top_industry_name
+          FROM fact_employment e
+          LEFT JOIN dim_industry i ON e.industry_id=i.industry_id
+          LEFT JOIN (
+            SELECT school_id, industry_id, COUNT(*) industry_count
+            FROM fact_employment
+            GROUP BY school_id, industry_id
+          ) cnt ON cnt.school_id=e.school_id AND cnt.industry_id=e.industry_id
+          GROUP BY e.school_id
+        ) emp ON emp.school_id=s.school_id
+        LEFT JOIN (
+          SELECT school_id, COUNT(DISTINCT major_code) covered_major_count
+          FROM bridge_school_major
+          GROUP BY school_id
+        ) b ON b.school_id=s.school_id
+        ORDER BY COALESCE(a.employment_count,0) DESC, s.school_name
         """,
         params,
     )
-    major_rows = rows(
-        """
-        SELECT a.school_id, a.major_name, SUM(a.employment_count) employment_count
-        FROM ads_school_compare_summary a
-        JOIN dim_major_catalog m ON a.major_code=m.major_code
-        WHERE a.major_code <> 'ALL'
-          AND COALESCE(m.is_real_display_major,0)=1
-          AND COALESCE(m.is_catalog_placeholder,0)=0
-          AND m.major_name NOT REGEXP '[0-9]$'
-        GROUP BY a.school_id, a.major_name
-        """
-    )
-    major_map = {}
-    for item in major_rows:
-        major_map.setdefault(item["school_id"], []).append(item)
-
+    advantage_map, advantage_diagnostics = public_advantage_major_map()
     schools = []
     for item in compare_rows:
         geo = PUBLIC_SCHOOL_GEO.get(item["school_name"], {})
-        top_majors = [
-            major["major_name"]
-            for major in sorted(major_map.get(item["school_id"], []), key=lambda x: x.get("employment_count", 0), reverse=True)[:3]
-        ]
-        override_major = PUBLIC_REPRESENTATIVE_MAJOR_OVERRIDE.get(item["school_name"])
-        if override_major:
-            override_majors = override_major if isinstance(override_major, list) else [override_major]
-            top_majors = override_majors + [major for major in top_majors if major not in override_majors]
-            top_majors = top_majors[:3]
+        advantage_major = advantage_map.get(item["school_id"])
+        display_major = public_display_major_for_school(item["school_name"])
+        display_major_name = display_major.get("major_name") or "数据不足"
+        display_major_source = display_major.get("source") or "no_business_config"
+        display_major_obj = {
+            "major_code": display_major.get("major_code"),
+            "major_name": display_major_name,
+            "source": display_major_source,
+        } if display_major.get("major_name") else None
+        advantage_major_name = display_major_name
+        advantage_major_status = display_major_source
         schools.append({
             "school_id": item["school_id"],
             "school_name": item["school_name"],
-            "district": geo.get("district", ""),
+            "district": geo.get("district", item.get("district") or ""),
             "address": geo.get("address", ""),
             "longitude": geo.get("longitude"),
             "latitude": geo.get("latitude"),
-            "school_type": one("SELECT school_type FROM dim_school WHERE school_id=:school_id", {"school_id": item["school_id"]}).get("school_type", ""),
-            "avg_salary": item["avg_salary"],
-            "employment_sample_count": item["employment_count"],
-            "graduate_count": item["graduate_count"],
-            "covered_major_count": one(
-                "SELECT COUNT(DISTINCT major_code) v FROM bridge_school_major WHERE school_id=:school_id",
-                {"school_id": item["school_id"]},
-            ).get("v", 0),
-            "employment_rate": item["employment_rate"],
-            "high_quality_employment_rate": item["high_quality_employment_rate"],
-            "leading_industry_count": item["leading_industry_employment_count"],
-            "leading_industry_rate": item["leading_industry_rate"],
-            "top_industry_name": item["top_industry_name"],
-            "advantage_majors": top_majors,
+            "school_type": item.get("school_type", ""),
+            "avg_salary": item.get("avg_salary") or item.get("fallback_avg_salary") or 0,
+            "employment_sample_count": item.get("employment_count") or item.get("fallback_employment_sample_count") or 0,
+            "graduate_count": item.get("graduate_count") or item.get("fallback_graduate_count") or 0,
+            "covered_major_count": item.get("covered_major_count") or 0,
+            "employment_rate": item.get("employment_rate") or 0,
+            "high_quality_employment_rate": item.get("high_quality_employment_rate") or item.get("fallback_high_quality_employment_rate") or 0,
+            "leading_industry_count": item.get("leading_industry_employment_count") or 0,
+            "leading_industry_rate": item.get("leading_industry_rate") or item.get("fallback_leading_industry_rate") or 0,
+            "top_industry_name": item.get("top_industry_name") or item.get("fallback_top_industry_name") or "",
+            "display_major_name": display_major_name,
+            "major_name": display_major_name,
+            "major_code": display_major.get("major_code"),
+            "display_major_source": display_major_source,
+            "advantage_major": display_major_obj or advantage_major,
+            "advantage_major_name": advantage_major_name,
+            "advantage_major_status": advantage_major_status,
+            "advantage_majors": [display_major_name] if display_major.get("major_name") else [],
             "industry_distribution": item.get("industry_distribution_json") or "[]",
         })
+    if include_diagnostics:
+        diagnostics = {
+            "dim_school_count": int(one("SELECT COUNT(*) v FROM dim_school").get("v", 0) or 0),
+            "school_count": len(schools),
+            "school_level_rows_count": len(compare_rows),
+            "schools_with_verified_major": sum(1 for item in schools if item.get("advantage_major")),
+            "schools_without_verified_major": sum(1 for item in schools if not item.get("advantage_major")),
+            **advantage_diagnostics,
+        }
+        return schools, diagnostics
     return schools
 
 
@@ -1036,7 +1977,8 @@ def public_salary_ranking():
 @require_roles("public", "government")
 def public_school_comparison():
     major_code = request.args.get("major_code") or "all"
-    return ok({"items": public_school_rows(major_code)})
+    items, diagnostics = public_school_rows(major_code, include_diagnostics=True)
+    return ok({"items": items, "diagnostics": diagnostics})
 
 
 @app.route("/api/report/ai", methods=["GET", "POST"])

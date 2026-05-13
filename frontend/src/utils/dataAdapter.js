@@ -800,9 +800,39 @@ export function getEnrollmentMajors(data = []) {
   return [...new Set((Array.isArray(data) ? data : []).map((item) => item.target_major).filter(Boolean))]
 }
 
+export function normalizeIdForCompare(value) {
+  const raw = String(value ?? '').trim()
+  if (/^\d+$/.test(raw)) {
+    return {
+      raw,
+      normalized: raw.replace(/^0+/, '') || '0',
+      numeric: true,
+    }
+  }
+  return { raw, normalized: raw, numeric: false }
+}
+
+function isSameStudentId(item = {}, studentId) {
+  const target = normalizeIdForCompare(studentId)
+  if (!target.raw) return false
+  const candidates = [
+    item.student_id,
+    item.graduate_id,
+    item.id,
+    item.student_no,
+    item.studentId,
+    item.graduateId,
+  ]
+  return candidates.some((value) => {
+    const current = normalizeIdForCompare(value)
+    if (!current.raw) return false
+    return current.raw === target.raw || (current.numeric && target.numeric && current.normalized === target.normalized)
+  })
+}
+
 export function getRecommendationByStudent(data = [], studentId) {
   return (Array.isArray(data) ? data : [])
-    .filter((item) => String(item.student_id) === String(studentId))
+    .filter((item) => isSameStudentId(item, studentId))
     .sort((a, b) => Number(a.rank_no || 99) - Number(b.rank_no || 99))
 }
 
@@ -1283,44 +1313,7 @@ export function getPublicTopMajors(data = []) {
 }
 
 export function getPublicSchoolComparison(data = []) {
-  const safeData = normalizeEmploymentData(data)
-  const map = new Map()
-
-  safeData.forEach((item) => {
-    const key = item.school_name
-    if (!map.has(key)) {
-      map.set(key, {
-        school_name: item.school_name,
-        major_name: '',
-        total_emp: 0,
-        total_salary: 0,
-        high_tech_total: 0,
-        majorMap: new Map(),
-      })
-    }
-
-    const current = map.get(key)
-    current.total_emp += item.emp_count
-    current.total_salary += item.avg_salary * item.emp_count
-    current.high_tech_total += item.high_tech_ratio * item.emp_count
-    current.majorMap.set(item.major_name, (current.majorMap.get(item.major_name) || 0) + item.emp_count)
-  })
-
-  return [...map.values()]
-    .map((item) => {
-      const avg_salary = item.total_emp ? item.total_salary / item.total_emp : 0
-      const strategic_ratio = item.total_emp ? item.high_tech_total / item.total_emp : 0
-      const topMajor = [...item.majorMap.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || '全部专业'
-      return {
-        school_name: item.school_name,
-        major_name: topMajor,
-        avg_salary: Number(avg_salary.toFixed(0)),
-        sample_count: Number(item.total_emp || 0),
-        strategic_ratio: Number((strategic_ratio * 100).toFixed(1)),
-      }
-    })
-    .sort((a, b) => (b.sample_count * 10 + b.avg_salary / 100) - (a.sample_count * 10 + a.avg_salary / 100))
-    .slice(0, 12)
+  return []
 }
 
 export function getAdminStatus() {
