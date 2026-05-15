@@ -1478,16 +1478,27 @@ def supply_gap():
 @require_roles("teacher", "government", "public")
 def skill_heatmap():
     return ok(rows("""
-        SELECT m.major_name, j.job_category_name AS job_category, SUBSTRING_INDEX(c.skill_tags,'?',1) AS skill_name,
-               COUNT(*) AS skill_count, ROUND(AVG(c.industry_alignment_score)/100,4) AS skill_weight
-        FROM fact_course_skill c
-        JOIN dim_major_catalog m ON c.major_code=m.major_code
-        JOIN fact_employment e ON c.major_code=e.major_code
-        JOIN dim_job_category j ON e.job_category_id=j.job_category_id
-        WHERE COALESCE(m.is_real_display_major,0)=1
-          AND COALESCE(m.is_catalog_placeholder,0)=0
-          AND m.major_name NOT REGEXP '[0-9]$'
-        GROUP BY m.major_name, j.job_category_name, skill_name
+        SELECT skill.major_name, demand.job_category_name AS job_category, skill.skill_name,
+               ROUND(SUM(skill.course_count * demand.demand_count),0) AS skill_count,
+               ROUND(AVG(skill.skill_weight),4) AS skill_weight
+        FROM (
+            SELECT c.major_code, m.major_name,
+                   SUBSTRING_INDEX(c.skill_tags,'?',1) AS skill_name,
+                   COUNT(*) AS course_count,
+                   AVG(c.industry_alignment_score)/100 AS skill_weight
+            FROM fact_course_skill c
+            JOIN dim_major_catalog m ON c.major_code=m.major_code
+            WHERE COALESCE(m.is_real_display_major,0)=1
+              AND COALESCE(m.is_catalog_placeholder,0)=0
+              AND m.major_name NOT REGEXP '[0-9]$'
+            GROUP BY c.major_code, m.major_name, skill_name
+        ) skill
+        JOIN (
+            SELECT major_code, job_category_name, SUM(predicted_demand_count) AS demand_count
+            FROM ads_job_demand_forecast
+            GROUP BY major_code, job_category_name
+        ) demand ON skill.major_code=demand.major_code
+        GROUP BY skill.major_name, demand.job_category_name, skill.skill_name
         ORDER BY skill_count DESC
         LIMIT 300
     """))
