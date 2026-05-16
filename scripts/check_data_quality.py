@@ -100,10 +100,10 @@ def main() -> None:
                 shu_leading_emp = scalar(conn, """
                     SELECT COUNT(*) FROM fact_employment e
                     JOIN dim_school s ON e.school_id=s.school_id
-                    WHERE s.school_name='????' AND e.is_shanghai_leading_employment=1
+                    WHERE s.school_name='上海大学' AND e.is_shanghai_leading_employment=1
                 """)
-                checks.append(check("?????????????? 0", leading_emp > 0, leading_emp, ">0"))
-                checks.append(check("?????????????????? 0", shu_leading_emp > 0, shu_leading_emp, ">0"))
+                checks.append(check("上海重点产业就业记录是否大于 0", leading_emp > 0, leading_emp, ">0"))
+                checks.append(check("上海大学重点产业就业记录是否大于 0", shu_leading_emp > 0, shu_leading_emp, ">0"))
 
     source_text = ""
     for path in (ROOT / "frontend" / "src").rglob("*"):
