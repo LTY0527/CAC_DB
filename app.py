@@ -2107,22 +2107,196 @@ def school_benchmark():
     return ok(payload, message=message)
 
 
+def parse_industry_flow(raw_value, limit=12):
+    if not raw_value:
+        return []
+    try:
+        parsed = raw_value if isinstance(raw_value, list) else json.loads(raw_value)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(parsed, list):
+        return []
+
+    items = []
+    for item in parsed[:limit]:
+        if not isinstance(item, dict):
+            continue
+        employed_count = item.get("employed_count", item.get("count", 0))
+        items.append({
+            "industry_name": item.get("industry_name") or item.get("name") or "",
+            "employed_count": employed_count or 0,
+            "count": employed_count or 0,
+            "rate": item.get("rate", 0),
+        })
+    return [item for item in items if item["industry_name"]]
+
+
 @app.get("/api/gov/school-detail")
 @require_roles("government")
 def school_detail():
-    school_name = request.args.get("school_name", "上海大学")
-    overview = one("SELECT * FROM dim_school WHERE school_name=:school_name", {"school_name": school_name})
-    majors = rows("SELECT o.* FROM ads_major_optimization o WHERE o.school_name=:school_name ORDER BY priority_score DESC LIMIT 30", {"school_name": school_name})
-    return ok({"overview": overview, "majors": majors, "warnings": []})
+    school_name = (request.args.get("school_name") or "上海大学").strip()
+
+    overview_row = one(
+        """
+        SELECT a.school_id, a.school_name, s.school_type AS school_level, s.major_count,
+               a.employment_count, a.graduate_count,
+               ROUND(a.employment_rate * 100, 2) AS employment_rate,
+               ROUND(a.avg_salary, 2) AS avg_salary,
+               ROUND(a.leading_industry_employment_rate * 100, 2) AS strategic_ratio,
+               a.leading_industry_employment_count,
+               a.top_industry_name, a.top_industry_count, a.industry_distribution_json
+        FROM ads_school_compare_summary a
+        LEFT JOIN dim_school s ON a.school_id=s.school_id
+        WHERE a.school_name=:school_name AND a.major_code='ALL'
+        LIMIT 1
+        """,
+        {"school_name": school_name},
+    )
+    if not overview_row:
+        overview_row = one("SELECT * FROM dim_school WHERE school_name=:school_name", {"school_name": school_name})
+
+    major_breakdown = rows(
+        """
+        SELECT major_code, major_name, discipline_category,
+               graduate_count AS student_count,
+               employment_count AS employed_students,
+               ROUND(employment_rate * 100, 2) AS employment_rate,
+               ROUND(avg_salary, 2) AS avg_salary,
+               ROUND(leading_industry_employment_rate * 100, 2) AS strategic_ratio,
+               top_industry_name
+        FROM ads_school_compare_summary
+        WHERE school_name=:school_name AND major_code <> 'ALL'
+        ORDER BY employment_count DESC, avg_salary DESC
+        """,
+        {"school_name": school_name},
+    )
+
+    industry_flow = parse_industry_flow(overview_row.get("industry_distribution_json"))
+    if not industry_flow and overview_row.get("school_id"):
+        industry_flow = rows(
+            """
+            SELECT i.industry_name, COUNT(*) AS employed_count
+            FROM fact_employment e
+            JOIN dim_industry i ON e.industry_id=i.industry_id
+            WHERE e.school_id=:school_id
+            GROUP BY i.industry_name
+            ORDER BY employed_count DESC
+            LIMIT 12
+            """,
+            {"school_id": overview_row.get("school_id")},
+        )
+
+    overview = {
+        **overview_row,
+        "student_count": overview_row.get("graduate_count") or overview_row.get("employment_count") or 0,
+        "employed_students": overview_row.get("employment_count") or 0,
+        "major_count": overview_row.get("major_count") or len(major_breakdown),
+    }
+    return ok({
+        "overview": overview,
+        "major_breakdown": major_breakdown,
+        "industry_flow": industry_flow,
+        "majors": major_breakdown,
+        "warnings": [],
+    })
 
 
 @app.get("/api/gov/major-detail")
 @require_roles("government")
 def major_detail():
-    school_name = request.args.get("school_name", "上海大学")
-    major_name = request.args.get("major_name", "数据科学与大数据技术")
-    data = one("SELECT * FROM ads_major_optimization WHERE school_name=:s AND major_name=:m LIMIT 1", {"s": school_name, "m": major_name})
-    return ok(data or {})
+    school_name = (request.args.get("school_name") or "上海大学").strip()
+    major_name = (request.args.get("major_name") or "计算机科学与技术").strip()
+
+    overview_row = one(
+        """
+        SELECT school_id, school_name, major_code, major_name, discipline_category,
+               graduate_count AS student_count,
+               employment_count AS employed_students,
+               ROUND(employment_rate * 100, 2) AS employment_rate,
+               ROUND(avg_salary, 2) AS avg_salary,
+               ROUND(leading_industry_employment_rate * 100, 2) AS strategic_ratio,
+               leading_industry_employment_count,
+               top_industry_name, top_industry_count, industry_distribution_json
+        FROM ads_school_compare_summary
+        WHERE school_name=:school_name AND major_name=:major_name AND major_code <> 'ALL'
+        LIMIT 1
+        """,
+        {"school_name": school_name, "major_name": major_name},
+    )
+    optimization = one(
+        """
+        SELECT *
+        FROM ads_major_optimization
+        WHERE school_name=:school_name AND major_name=:major_name
+        LIMIT 1
+        """,
+        {"school_name": school_name, "major_name": major_name},
+    )
+    if not overview_row and optimization:
+        overview_row = {
+            **optimization,
+            "student_count": 0,
+            "employed_students": 0,
+            "strategic_ratio": 0,
+            "employment_rate": round(float(optimization.get("employment_rate") or 0) * 100, 2),
+        }
+
+    school_id = overview_row.get("school_id") if overview_row else optimization.get("school_id")
+    major_code = overview_row.get("major_code") if overview_row else optimization.get("major_code")
+
+    industry_flow = parse_industry_flow((overview_row or {}).get("industry_distribution_json"))
+    if not industry_flow and school_id and major_code:
+        industry_flow = rows(
+            """
+            SELECT i.industry_name, COUNT(*) AS employed_count
+            FROM fact_employment e
+            JOIN dim_industry i ON e.industry_id=i.industry_id
+            WHERE e.school_id=:school_id AND e.major_code=:major_code
+            GROUP BY i.industry_name
+            ORDER BY employed_count DESC
+            LIMIT 12
+            """,
+            {"school_id": school_id, "major_code": major_code},
+        )
+
+    salary_trend = []
+    if school_id and major_code:
+        salary_trend = rows(
+            """
+            SELECT employment_month AS stat_month, ROUND(AVG(salary), 2) AS avg_salary
+            FROM fact_employment
+            WHERE school_id=:school_id AND major_code=:major_code
+              AND employment_month IS NOT NULL
+            GROUP BY employment_month
+            ORDER BY employment_month
+            LIMIT 24
+            """,
+            {"school_id": school_id, "major_code": major_code},
+        )
+
+    enrollment_hint = {}
+    if table_exists_cached("ads_enrollment_matching"):
+        enrollment_hint = one(
+            """
+            SELECT ROUND(AVG(COALESCE(matching_score, match_score)), 4) AS avg_match_score,
+                   SUM(COALESCE(sample_size, sample_count, 0)) AS total_sample_size
+            FROM ads_enrollment_matching
+            WHERE school_name=:school_name AND major_name=:major_name
+            """,
+            {"school_name": school_name, "major_name": major_name},
+        )
+
+    overview = overview_row or {}
+    if optimization:
+        overview = {**optimization, **overview}
+
+    return ok({
+        "overview": overview,
+        "salary_trend": salary_trend,
+        "industry_flow": industry_flow,
+        "enrollment_hint": enrollment_hint,
+        "warnings": [],
+    })
 
 
 @app.get("/api/gov/school-benchmark-major")
